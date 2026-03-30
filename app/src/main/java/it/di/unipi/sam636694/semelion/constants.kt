@@ -10,6 +10,16 @@ fun mapHouse(value:Int):String{
     }
 }
 
+fun colorHouse(value:String):String{
+    return when(value){
+        "C"  -> "RED"
+        "D"  -> "RED"
+        "F" -> "BLACK"
+        "P" -> "BLACK"
+        else -> "errorHouse"
+    }
+}
+
 enum class RowOrder { CRESCENT, DECRESCENT, BOTH }
 
 val cardImageMap = mapOf(
