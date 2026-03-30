@@ -88,7 +88,7 @@ fun SemelionScreen(
 
 @Composable
 fun DraggableCard(card: CardUIStates, model:SemelionGameViewModel, size: Dp){
-    val imageResId = if (card.isRevealed) (cardImageMap[card.name])?: R.drawable.gray_back else R.drawable.gray_back
+    val imageResId = if (card.isRevealed) (cardImageMap[card.name])?: R.drawable.purple_back else R.drawable.purple_back
     //ancora poco soddisfacente ma può portare gioie
     val interactionModifier = if (card.isRevealed)
         Modifier
@@ -143,7 +143,7 @@ fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
         //preparazione "misure"
         val rows = state.grid.chunked(7)
 
-        val attentionModifier = Modifier.border(color = Color.Yellow, width = 2.dp, shape = RoundedCornerShape(8.dp))
+        val attentionModifier = Modifier.border(color = Color.Yellow, width = 4.dp, shape = RoundedCornerShape(8.dp))
 
         //utility per non duplicare codice
         fun playerModifier(isActive: Boolean, color: Color): Modifier =

@@ -9,6 +9,7 @@ data class CardUIStates(
 
 data class GameUIState (
     val grid: List<CardUIStates> = emptyList(),
+    val uncoverDeck : List<CardUIStates> = emptyList(),
     val p1Actions: Int = 1,
     val p1ActionsUsed: Int = 0,
     val p2Actions: Int = 1,

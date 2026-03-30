@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.collections.chunked
 import kotlin.math.max
 
 class SemelionGameViewModel: ViewModel() {
@@ -20,8 +21,10 @@ class SemelionGameViewModel: ViewModel() {
     private val validationQueue = Channel<String>(Channel.BUFFERED)
 
     init {
+        val decks = createCards()
         _uiState.value = GameUIState(
-            grid = createCards().shuffled()
+            grid = decks.first,
+            uncoverDeck = decks.second
         )
 
         viewModelScope.launch {
@@ -32,22 +35,61 @@ class SemelionGameViewModel: ViewModel() {
         }
     }
 
-    fun createCards(revealedCards: List<String> = emptyList()): List<CardUIStates> {
-        return buildList {
-            for (i in 1..4) {
-                val currentHouse = mapHouse(i)
-                for (j in 1..7) {
-                    add(
-                        CardUIStates(
-                            name = "$j$currentHouse",
-                            value = j,
-                            house = currentHouse,
-                            isRevealed = "$j$currentHouse" in revealedCards
-                        )
+    fun createCards(): Pair<List<CardUIStates>,List<CardUIStates>> {
+        var allCards = mutableListOf<CardUIStates>()
+        val uncoverDeck = mutableListOf<CardUIStates>()
+
+        for (i in 1..4) {
+            val currentHouse = mapHouse(i)
+            for (j in 1..10) {
+                allCards.add(
+                    CardUIStates(
+                        name = "$j$currentHouse",
+                        value = j,
+                        house = currentHouse,
+                        isRevealed = false
                     )
-                }
+                )
             }
         }
+
+        allCards = allCards.shuffled() as MutableList<CardUIStates>
+
+        //rimuovo 10 carte che non siano figure
+        for (card in allCards){
+            if (uncoverDeck.size == 10){
+                break
+            }
+            if (card.value < 8){
+                uncoverDeck.add(card)
+            }
+        }
+
+        var house = "red"
+        //aggiungo jolly
+        allCards.add(
+            CardUIStates(
+                name = "joker_$house",
+                value = 0,
+                house = house,
+                isRevealed = false
+            )
+        )
+
+        house = "black"
+
+        allCards.add(
+            CardUIStates(
+                name = "joker_$house",
+                value = 0,
+                house = house,
+                isRevealed = false
+            )
+        )
+        val gridDeck = allCards - uncoverDeck.toSet()
+
+        return Pair(gridDeck.shuffled(),uncoverDeck.shuffled())
+
     }
 
     fun revealOnGrid(revealedCards: List<String>, state: GameUIState): List<CardUIStates> {
@@ -119,44 +161,116 @@ class SemelionGameViewModel: ViewModel() {
     }
 
     fun validateState(cardId: String){
+        //Log.d("Figure",cardId)
+        //figureRevealed(cardId)
         _uiState.update { currentState ->
             val rows = currentState.grid.chunked(7)
             var modifiedState = currentState
+
             rows.forEach { row ->
                 row.forEach { card ->
                     modifiedState = coverCard(card.name, modifiedState)
                 }
             }
 
-            val newRows = modifiedState.grid.chunked(7)
-            val p1Actions = calcActions(listOf(newRows[2], newRows[3]))
-            val p2Actions = calcActions(listOf(newRows[0], newRows[1]))
+            //controlla se la carta rivelata è una figura
+            figureRevealed(cardId)
 
-            if (p1Actions - modifiedState.p1ActionsUsed <= 0 && modifiedState.p1Turn){
-                 return@update modifiedState.copy(
-                    p1Actions = p1Actions,
-                    p2Actions = p2Actions,
-                    p1ActionsUsed = 0,
-                    p1Turn = false
-                )
-            }
-            if (p2Actions - _uiState.value.p2ActionsUsed  <=0){
-                return@update modifiedState.copy(
-                    p1Actions = p1Actions,
-                    p2Actions = p2Actions,
-                    p2ActionsUsed = 0,
-                    p1Turn = true
-                )
-            }else{
-                return@update modifiedState.copy(
-                    p1Actions = p1Actions,
-                    p2Actions = p2Actions,
-                )
-            }
+            //cercare jolly sulla griglia
+            modifiedState = jollyApplier(modifiedState,"joker_black")
+
+            //cercare jolly sulla griglia
+            modifiedState = jollyApplier(modifiedState,"joker_red")
+
+            Log.d("validate","${modifiedState.grid.filter { it.name == "joker_black" }}, \n${modifiedState.grid.filter { it.name == "joker_red" }}")
+
+            //aggiorna azioni
+            modifiedState = actionCounter(modifiedState,rows)
+
+
+
+            return@update modifiedState
         }
 
     }
 
+    fun jollyApplier(state: GameUIState, cardId: String): GameUIState{
+        Log.d("applier",cardId)
+        val jolly = findCard(cardId)?.copy() ?: return state
+
+        //posizione in griglia
+        val pos = state.grid.indexOfFirst { it == jolly }
+
+        //il diviso funge da modulo perchè sto usando gli interi
+        val row = pos/7
+
+        Log.d("row",cardId)
+        val orders = state.grid.chunked(7)[row].getPredominantOrder()
+
+        var value = 0
+
+        if (orders.size > 1 || orders.isEmpty() ) return state
+        //controllo che il jolly rosso possa assumere valori solo in righe predominanti rosse
+        if ((orders.first().first == "C" || orders.first().first == "D") && !cardId.contains("red"))return state
+        if ((orders.first().first == "F" || orders.first().first == "P") && !cardId.contains("black")) return state
+
+        when {
+                max(orders.first().second,orders.first().third) == orders.first().second -> value = pos - 7*row +1
+                max(orders.first().second,orders.first().third) == orders.first().third -> value = 7*(row+1) - pos
+        }
+
+        return state.copy(
+            grid = state.grid.map{ card ->
+                when(card.name){
+                    cardId -> CardUIStates(
+                        name = jolly.name,
+                        value = value,
+                        house = orders.first().first,
+                        isRevealed = jolly.isRevealed
+                    )
+                    else -> card.copy()
+                }
+            }
+        )
+    }
+
+    fun figureRevealed(cardId: String){
+        when{
+            cardId.contains("8") -> //add to hand
+                Log.d("pippo","coca")
+            cardId.contains("9") -> //swipe column
+                Log.d("pippo","coca")
+            cardId.contains("10") -> //swipe row
+                Log.d("pippo","coca")
+        }
+    }
+
+    fun actionCounter(state: GameUIState,rows: List<List<CardUIStates>>): GameUIState{
+        val p1Actions = calcActions(listOf(rows[2], rows[3]))
+        val p2Actions = calcActions(listOf(rows[0], rows[1]))
+
+        if (p1Actions - state.p1ActionsUsed <= 0 && state.p1Turn){
+            return state.copy(
+                p1Actions = p1Actions,
+                p2Actions = p2Actions,
+                p1ActionsUsed = 0,
+                p1Turn = false
+            )
+        }
+        if (p2Actions - _uiState.value.p2ActionsUsed  <=0){
+            return state.copy(
+                p1Actions = p1Actions,
+                p2Actions = p2Actions,
+                p2ActionsUsed = 0,
+                p1Turn = true
+            )
+        }else{
+            return state.copy(
+                p1Actions = p1Actions,
+                p2Actions = p2Actions,
+            )
+        }
+    }
     fun findCard(cardID: String): CardUIStates?{
         return _uiState.value.grid.find { it.name == cardID }
     }
@@ -196,8 +310,8 @@ fun List<CardUIStates>.getRowOrder(index:Int) : RowOrder {
     Log.d("ORDER","Riga:$index, Tripla:$order")
     return when {
         order.size == 2 -> RowOrder.BOTH
-        order.first().second > order.first().third && order.first().second > 1  -> RowOrder.CRESCENT
-        order.first().second < order.first().third && order.first().third > 1 -> RowOrder.DECRESCENT
+        order.isNotEmpty() && order.first().second > order.first().third && order.first().second > 1  -> RowOrder.CRESCENT
+        order.isNotEmpty() && order.first().second < order.first().third && order.first().third > 1 -> RowOrder.DECRESCENT
         else -> RowOrder.BOTH
     }
 
@@ -212,7 +326,7 @@ fun houseRowOrder(house:String,cards:List<CardUIStates>):Triple<String,Int,Int>{
             // Log.d("CRESCENTORDER","card:${card.isRevealed},houseCard:${houseCard.isRevealed}, ${houseCard.isRevealed && card.isRevealed && (houseCard.name == card.name)}")
             card.name == houseCard.name
         }
-        Log.d("CRESCENTORDER","index:$index,houseCard:${houseCard.value} formulaCrescente:${houseCard.value==index+1},formulaDecrescente:${houseCard.value == 7 - index }")
+        //Log.d("CRESCENTORDER","index:$index,houseCard:${houseCard.value} formulaCrescente:${houseCard.value==index+1},formulaDecrescente:${houseCard.value == 7 - index }")
         when{
             index == -1 -> acc
             houseCard.value == index+1 -> acc+1
@@ -231,8 +345,10 @@ fun houseRowOrder(house:String,cards:List<CardUIStates>):Triple<String,Int,Int>{
     }
     return  Triple(house,crescentOrder,decrescentOrder)
 }
+
 //aggiustare caso limite in cui hai due triple con stesso numero di ordinamenti crescenti/decrescenti es ("P",2,0) e ("F",2,0) -> in realtà potrei accettare che solo 1 dei due ordinamenti vale
-fun findMax(triples:List<Triple<String,Int,Int>>,parameter:String):Triple<String,Int,Int>{
+fun findMax(triples:List<Triple<String,Int,Int>>,parameter:String):Triple<String,Int,Int>?{
+    if (triples.isEmpty()) return null
     var bestTriple = triples.first()
     when (parameter){
         "second" -> triples.forEach { triple -> if (triple.second > bestTriple.second) bestTriple = triple }
@@ -253,9 +369,11 @@ fun List<CardUIStates>.getPredominantOrder():List<Triple<String,Int,Int>>{
 
     houses.forEach { house -> triples.add(houseRowOrder(house,cards)) }
 
-    val maxCrescent = findMax(triples,"second")
+    if (triples.isEmpty()) return emptyList()
 
-    val maxDecrescent = findMax(triples,"third")
+    val maxCrescent = findMax(triples,"second") ?: return emptyList()
+
+    val maxDecrescent = findMax(triples,"third") ?: return emptyList()
 
     return when {
         maxCrescent.second > maxDecrescent.third ->  listOf(maxCrescent)
