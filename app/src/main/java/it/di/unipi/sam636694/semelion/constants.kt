@@ -1,7 +1,5 @@
 package it.di.unipi.sam636694.semelion
 
-import it.di.unipi.sam636694.semelion.R
-
 fun mapHouse(value:Int):String{
     return when (value){
         1 -> "F"
