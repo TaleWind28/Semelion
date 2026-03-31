@@ -105,8 +105,9 @@ class SemelionGameViewModel: ViewModel() {
 
     fun coverCard(cardId: String, state: GameUIState): GameUIState{
         val selectedCard = findCard(cardId) ?: return state
+        Log.d("cover","value:${selectedCard.value}")
 
-        if (selectedCard.value != 7) return state
+        if (selectedCard.value != 7 || !selectedCard.isRevealed) return state
 
         val position = state.grid.indexOfFirst { card -> card.name == selectedCard.name }
 
@@ -116,8 +117,10 @@ class SemelionGameViewModel: ViewModel() {
         //se rivelo il 7 devo terminare il turno
         var p1Actions = 0
         var p2Actions = 0
+
         if (state.p1Turn) p1Actions = state.p1Actions
         else p2Actions = state.p2Actions
+
         return state.copy(
             grid = revealOnGrid(revealedCards, state),
             revealedCards = revealedCards,
@@ -129,7 +132,7 @@ class SemelionGameViewModel: ViewModel() {
     fun swapCards(id1: String, id2: String){
         val card1 = findCard(id1) ?: return
         val card2 = findCard(id2) ?: return
-        if (card1 == card2) return
+
         val (p1Actions, p2Actions) = increaseUsedActions(_uiState.value)
         _uiState.update { state ->
             state.copy(

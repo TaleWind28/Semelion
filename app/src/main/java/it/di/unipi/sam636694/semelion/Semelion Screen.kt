@@ -97,8 +97,6 @@ fun DraggableCard(card: CardUIStates, model:SemelionGameViewModel, size: Dp){
                     return@dragAndDropSource DragAndDropTransferData(
                         clipData = ClipData.newPlainText(card.name, card.name)
                     )
-
-
                 }
             )
     else
@@ -119,6 +117,7 @@ fun DraggableCard(card: CardUIStates, model:SemelionGameViewModel, size: Dp){
                     override fun onDrop(event: DragAndDropEvent): Boolean {
                         val text = (event.toAndroidDragEvent()
                             .clipData?.getItemAt(0)?.text ?: "") as String
+                        if (text == card.name) return false
                         model.swapCards(text, card.name)
                         return true
                     }
