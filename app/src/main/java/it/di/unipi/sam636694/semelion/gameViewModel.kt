@@ -57,7 +57,7 @@ class SemelionGameViewModel: ViewModel() {
             for (i in 1..4) {
                 val currentHouse = mapHouse(i)
                 //aggiungi tutto
-                for (j in 1..8) {
+                for (j in 1..7) {
                     add(
                         CardUIStates(
                             name = "$j$currentHouse",
@@ -69,7 +69,7 @@ class SemelionGameViewModel: ViewModel() {
                 }
             }
 
-            //aggiungo donne e re
+            //aggiungo jack, donne e re
             figures.forEach{
                 add(
                     CardUIStates(
@@ -105,7 +105,6 @@ class SemelionGameViewModel: ViewModel() {
 
     fun coverCard(cardId: String, state: GameUIState): GameUIState{
         val selectedCard = findCard(cardId) ?: return state
-        Log.d("cover","value:${selectedCard.value}")
 
         if (selectedCard.value != 7 || !selectedCard.isRevealed) return state
 
@@ -115,17 +114,14 @@ class SemelionGameViewModel: ViewModel() {
 
         val revealedCards = state.revealedCards - cardId
         //se rivelo il 7 devo terminare il turno
-        var p1Actions = 0
-        var p2Actions = 0
 
-        if (state.p1Turn) p1Actions = state.p1Actions
-        else p2Actions = state.p2Actions
+//        if (state.p1Turn) p1Actions = state.p1Actions
+//        else p2Actions = state.p2Actions
 
         return state.copy(
             grid = revealOnGrid(revealedCards, state),
             revealedCards = revealedCards,
-            p1ActionsUsed = p1Actions,
-            p2ActionsUsed = p2Actions
+            incorrectSevenReveled = true
         )
     }
 
@@ -208,6 +204,7 @@ class SemelionGameViewModel: ViewModel() {
         val jolly = findCard(suit)?:return state
         val correctCard = findCard("${jolly.value}${jolly.house}") ?: return state
         if (!correctCard.isRevealed || !jolly.isRevealed) return state
+
         return state.copy(
             grid = state.grid.map {
                 when(it.name){
@@ -215,7 +212,13 @@ class SemelionGameViewModel: ViewModel() {
                     correctCard.name -> jolly.copy()
                     else -> it.copy()
                 }
+            },
+            revealedCards = if (correctCard.value == 7){
+                state.revealedCards + correctCard.name
             }
+            else state.revealedCards,
+            incorrectSevenReveled = false
+
         )
     }
 
@@ -333,6 +336,29 @@ class SemelionGameViewModel: ViewModel() {
         val p1Actions = calcActions(listOf(rows[2], rows[3]))
         val p2Actions = calcActions(listOf(rows[0], rows[1]))
 
+        //se p1 ha rivelato un 7 passa
+        if (state.p1Turn && state.incorrectSevenReveled){
+            return state.copy(
+                p1Actions = p1Actions,
+                p2Actions = p2Actions,
+                p1ActionsUsed = 0,
+                p1Turn = false,
+                incorrectSevenReveled = false
+            )
+        }
+
+        //se p2 ha rivelato un 7 passa
+        if (!state.p1Turn && state.incorrectSevenReveled){
+            return state.copy(
+                p1Actions = p1Actions,
+                p2Actions = p2Actions,
+                p2ActionsUsed = 0,
+                p1Turn = true,
+                incorrectSevenReveled = false
+            )
+        }
+
+        //fine turno p1
         if (p1Actions - state.p1ActionsUsed <= 0 && state.p1Turn){
             return state.copy(
                 p1Actions = p1Actions,

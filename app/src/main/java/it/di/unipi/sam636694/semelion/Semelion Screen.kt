@@ -2,6 +2,12 @@ package it.di.unipi.sam636694.semelion
 
 import android.content.ClipData
 import android.content.ClipDescription
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Point
+import android.util.Log
+import android.view.View
+import androidx.annotation.Size
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -50,6 +56,17 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draganddrop.DragAndDropTransferData
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.imageResource
+
 
 import it.di.unipi.sam636694.semelion.R
 
@@ -86,50 +103,6 @@ fun SemelionScreen(
 
 
 
-@Composable
-fun DraggableCard(card: CardUIStates, model:SemelionGameViewModel, size: Dp){
-    val imageResId = if (card.isRevealed) (cardImageMap[card.name])?: R.drawable.purple_back else R.drawable.purple_back
-    //ancora poco soddisfacente ma può portare gioie
-    val interactionModifier = if (card.isRevealed)
-        Modifier
-            .dragAndDropSource(
-                transferData = {
-                    return@dragAndDropSource DragAndDropTransferData(
-                        clipData = ClipData.newPlainText(card.name, card.name)
-                    )
-                }
-            )
-    else
-        Modifier
-            .clickable{
-                model.cardClicked(card.name)
-            }
-
-
-    Image(
-        modifier = interactionModifier.size(size).dragAndDropTarget(
-            shouldStartDragAndDrop = { event ->
-                event.mimeTypes()
-                    .contains(ClipDescription.MIMETYPE_TEXT_PLAIN)
-            },
-            target = remember(card.name) {
-                object : DragAndDropTarget {
-                    override fun onDrop(event: DragAndDropEvent): Boolean {
-                        val text = (event.toAndroidDragEvent()
-                            .clipData?.getItemAt(0)?.text ?: "") as String
-                        if (text == card.name) return false
-                        model.swapCards(text, card.name)
-                        return true
-                    }
-                }
-            }
-        ),
-        painter = painterResource(id = imageResId),
-        contentDescription = "Carta Semelion"
-    )
-
-
-}
 
 @Composable
 fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
@@ -207,7 +180,7 @@ fun CardRows(rows:List<List<CardUIStates>>,model: SemelionGameViewModel,rotation
                 RowLabel(rowOrder = rowOrder, showOn = 180f)
 
                 rowItems.forEach { card ->
-                    DraggableCard(card = card, model = model, size = cardSize)
+                    FinalCard(card = card, model = model, size = cardSize)
                 }
 
                 RowLabel(rowOrder = rowOrder, showOn = 0f)
@@ -219,5 +192,114 @@ fun CardRows(rows:List<List<CardUIStates>>,model: SemelionGameViewModel,rotation
 }
 
 
+@Composable
+fun DraggableCard(card: CardUIStates, model:SemelionGameViewModel, size: Dp){
+    val imageResId = if (card.isRevealed) (cardImageMap[card.name])?: R.drawable.purple_back else R.drawable.purple_back
+    //ancora poco soddisfacente ma può portare gioie
+    val interactionModifier = if (card.isRevealed)
+        Modifier
+            .dragAndDropSource(
+                transferData = {
+                    return@dragAndDropSource DragAndDropTransferData(
+                        clipData = ClipData.newPlainText(card.name, card.name)
+                    )
+                }
+            )
+    else
+        Modifier
+            .clickable{
+                model.cardClicked(card.name)
+            }
 
 
+    Image(
+        modifier = interactionModifier.size(size).dragAndDropTarget(
+            shouldStartDragAndDrop = { event ->
+                event.mimeTypes()
+                    .contains(ClipDescription.MIMETYPE_TEXT_PLAIN)
+            },
+            target = remember(card.name) {
+                object : DragAndDropTarget {
+                    override fun onDrop(event: DragAndDropEvent): Boolean {
+                        val text = (event.toAndroidDragEvent()
+                            .clipData?.getItemAt(0)?.text ?: "") as String
+                        if (text == card.name) return false
+                        model.swapCards(text, card.name)
+                        return true
+                    }
+                }
+            }
+        ),
+        painter = painterResource(id = imageResId),
+        contentDescription = "Carta Semelion"
+    )
+
+
+}
+
+@Composable
+fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
+    //context densità e size in pixel
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val sizePx = with(density) { size.toPx().toInt()}
+    Log.d("final","$sizePx")
+
+    val imageResId = if (card.isRevealed)
+        (cardImageMap[card.name]) ?: R.drawable.purple_back
+    else
+        R.drawable.purple_back
+
+    val view = LocalView.current
+
+    val imageBitmap = remember(imageResId) {
+        ImageBitmap.imageResource(context.resources, imageResId)
+    }
+
+    Image(
+        modifier = Modifier
+            .size(size)
+                .pointerInput(card.name, card.isRevealed) {
+                detectTapGestures(
+                    onTap = {
+                        if (!card.isRevealed) model.cardClicked(card.name)
+                    },
+                    onLongPress = {
+                        //il 42 fa ridere ma è stato calcolato a mano
+                        val scaled = Bitmap.createScaledBitmap(imageBitmap.asAndroidBitmap(), sizePx/2 +42, sizePx, false)
+                        val shadow = object : View.DragShadowBuilder() {
+                            override fun onProvideShadowMetrics(outShadowSize: Point, outShadowTouchPoint: Point) {
+                                outShadowSize.set(scaled.width, scaled.height)
+                                outShadowTouchPoint.set(scaled.width / 2, scaled.height / 2)
+                            }
+
+                            override fun onDrawShadow(canvas: Canvas) {
+                                canvas.drawBitmap(scaled, 0f, 0f, null)
+                            }
+                        }
+                        val clipData = ClipData.newPlainText(card.name, card.name)
+
+                        view.startDragAndDrop(clipData, shadow, card.name, 0)
+                    }
+                )
+            }
+            .dragAndDropTarget(
+                shouldStartDragAndDrop = { event ->
+                    event.mimeTypes().contains(ClipDescription.MIMETYPE_TEXT_PLAIN)
+                },
+                target = remember(card.name) {
+                    object : DragAndDropTarget {
+                        override fun onDrop(event: DragAndDropEvent): Boolean {
+                            val text = (event.toAndroidDragEvent()
+                                .clipData?.getItemAt(0)?.text ?: "") as String
+                            if (text == card.name) return false
+                            model.swapCards(text, card.name)
+                            return true
+                        }
+                    }
+                }
+            ),
+        painter = painterResource(id = imageResId),
+        contentDescription = "Carta Semelion"
+    )
+}
