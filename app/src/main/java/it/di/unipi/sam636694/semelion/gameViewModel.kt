@@ -22,7 +22,7 @@ class SemelionGameViewModel: ViewModel() {
     private val validationQueue = Channel<String>(Channel.BUFFERED)
 
     init {
-        val decks = createCards()
+        val decks = createDecks()
         _uiState.value = GameUIState(
             grid = decks.first,
             uncoverDeck = decks.second
@@ -36,61 +36,64 @@ class SemelionGameViewModel: ViewModel() {
         }
     }
 
-    fun createCards(): Pair<List<CardUIStates>,List<CardUIStates>> {
-        var allCards = mutableListOf<CardUIStates>()
-        val uncoverDeck = mutableListOf<CardUIStates>()
+    fun createDecks(): Pair<List<CardUIStates>,List<CardUIStates>> {
 
-        for (i in 1..4) {
-            val currentHouse = mapHouse(i)
-            for (j in 1..7) {
-                allCards.add(
+       val allCards = createCards(figures = SEMELION_FIGURES,jolly = JOLLY_COLOR)
+
+        //testing filtro solo carte <7
+        val noFiguresDeck = allCards.filter { it.value in 1..7 }.shuffled()
+
+        val specialDeck = allCards.filter { it.value > 7  || it.value == 0}
+        //ne droppo 0 per testing normalmente ne dovrei droppare 10
+        val gridDeck = noFiguresDeck.drop(UNCOVER_DECK_SIZE) + specialDeck
+        val uncoverDeck = noFiguresDeck.take(UNCOVER_DECK_SIZE).map { it.copy(isRevealed = true)  }
+
+        return Pair(gridDeck.shuffled(),uncoverDeck.shuffled())
+
+    }
+
+    fun createCards(figures:List<Pair<Int,String>>,jolly:List<String>): List<CardUIStates>{
+        return buildList {
+
+            for (i in 1..4) {
+                val currentHouse = mapHouse(i)
+                //aggiungi tutto
+                for (j in 1..8) {
+                    add(
+                        CardUIStates(
+                            name = "$j$currentHouse",
+                            value = j,
+                            house = currentHouse,
+                            isRevealed = false
+                        )
+                    )
+                }
+            }
+
+            //aggiungo donne e re
+            figures.forEach{
+                add(
                     CardUIStates(
-                        name = "$j$currentHouse",
-                        value = j,
-                        house = currentHouse,
+                        name= "${it.first}${it.second}",
+                        value = it.first,
+                        house = it.second,
+                        isRevealed = false
+                    )
+                )
+            }
+
+            //aggiungo i jolly
+            jolly.forEach {
+                add(
+                    CardUIStates(
+                        name = "joker_$it",
+                        value = 0,
+                        house = it,
                         isRevealed = false
                     )
                 )
             }
         }
-
-        allCards = allCards.shuffled() as MutableList<CardUIStates>
-
-        //rimuovo 10 carte che non siano figure
-//        for (card in allCards){
-//            if (uncoverDeck.size == 10){
-//                break
-//            }
-//            if (card.value < 8){
-//                uncoverDeck.add(card)
-//            }
-//        }
-
-        var house = "red"
-        //aggiungo jolly
-        allCards.add(
-            CardUIStates(
-                name = "joker_$house",
-                value = 0,
-                house = house,
-                isRevealed = false
-            )
-        )
-
-        house = "black"
-
-        allCards.add(
-            CardUIStates(
-                name = "joker_$house",
-                value = 0,
-                house = house,
-                isRevealed = false
-            )
-        )
-        val gridDeck = allCards - uncoverDeck.toSet()
-
-        return Pair(gridDeck.shuffled(),uncoverDeck.shuffled())
-
     }
 
     fun revealOnGrid(revealedCards: List<String>, state: GameUIState): List<CardUIStates> {
@@ -162,8 +165,7 @@ class SemelionGameViewModel: ViewModel() {
     }
 
     fun validateState(cardId: String){
-        //Log.d("Figure",cardId)
-        //figureRevealed(cardId)
+
         _uiState.update { currentState ->
             val rows = currentState.grid.chunked(7)
             var modifiedState = currentState
@@ -177,24 +179,60 @@ class SemelionGameViewModel: ViewModel() {
             //controlla se la carta rivelata è una figura
             figureRevealed(cardId)
 
-            //cercare jolly sulla griglia
-            //modifiedState = jollyApplier(modifiedState,"joker_black")
-
-            //cercare jolly sulla griglia
-            modifiedState = jollyApplier(modifiedState,"joker_red")
-
-            Log.d("validate","${modifiedState.grid.filter { it.name == "joker_black" }}, \n${modifiedState.grid.filter { it.name == "joker_red" }}")
+            //cercare jolly sulla griglia -> actually vorrei usare uno stato diverso per le invocazioni però non so
+            JOLLY_COLOR.forEach {
+                modifiedState = jollyApplier(modifiedState,"joker_$it")
+                //controllo se il jolly può essere sostituito
+                modifiedState = substituteJolly(modifiedState,"joker_$it")
+            }
 
             //aggiorna azioni
             modifiedState = actionCounter(modifiedState,rows)
-
-
 
             return@update modifiedState
         }
 
     }
 
+    fun swapJolly(state: GameUIState,suit:String): GameUIState{
+        val jolly = findCard(suit)?:return state
+        val correctCard = findCard("${jolly.value}${jolly.house}") ?: return state
+        if (!correctCard.isRevealed || !jolly.isRevealed) return state
+        return state.copy(
+            grid = state.grid.map {
+                when(it.name){
+                    suit -> correctCard.copy()
+                    correctCard.name -> jolly.copy()
+                    else -> it.copy()
+                }
+            }
+        )
+    }
+
+    fun substituteJolly(state : GameUIState,suit: String): GameUIState{
+        val currentState = swapJolly(state,suit)
+        return if (currentState == state) state
+        else replaceCard(currentState,suit)
+    }
+
+    fun replaceCard(state: GameUIState,cardID: String): GameUIState{
+        val card = findCard(cardID) ?: return state
+        if (!card.isRevealed) return state
+        val newUncover = state.uncoverDeck
+        val nextCard = state.uncoverDeck.first()
+        Log.d("replace","${state.uncoverDeck.first()}")
+
+        return state.copy(
+            grid = state.grid.map {
+                when(it.name){
+                    card.name -> nextCard.copy()
+                    else -> it.copy()
+                }
+            },
+            uncoverDeck = newUncover - nextCard,
+            revealedCards = state.revealedCards + nextCard.name
+        )
+    }
 
     fun jollyApplier(state: GameUIState, cardId: String): GameUIState{
         //cerco il jolly
@@ -362,7 +400,6 @@ class SemelionGameViewModel: ViewModel() {
     fun findCard(cardID: String): CardUIStates?{
         return _uiState.value.grid.find { it.name == cardID }
     }
-
     fun calcActions(rows: List<List<CardUIStates>>): Int {
         return 1 + rows.sumOf { row ->
             val revealed = row.filter { it.isRevealed }

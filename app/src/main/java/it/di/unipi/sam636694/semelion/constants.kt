@@ -22,6 +22,9 @@ fun colorHouse(value:String):String{
 
 enum class RowOrder { CRESCENT, DECRESCENT, BOTH }
 
+val JOLLY_COLOR = listOf("black","red")
+val UNCOVER_DECK_SIZE = 10
+val SEMELION_FIGURES = listOf(Pair(10,"D"),Pair(9,"C"),Pair(9,"P"),Pair(9,"F"))
 val cardImageMap = mapOf(
     "1F" to R.drawable.fiori_1,
     "2F" to R.drawable.fiori_2,
