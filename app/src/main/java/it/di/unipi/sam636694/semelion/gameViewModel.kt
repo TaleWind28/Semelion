@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.Locale.getDefault
 import kotlin.collections.chunked
 import kotlin.math.max
 
@@ -114,15 +113,23 @@ class SemelionGameViewModel: ViewModel() {
         if (position % 7 == 0 || position % 7 == 6) return state
 
         val revealedCards = state.revealedCards - cardId
+        //se rivelo il 7 devo terminare il turno
+        var p1Actions = 0
+        var p2Actions = 0
+        if (state.p1Turn) p1Actions = state.p1Actions
+        else p2Actions = state.p2Actions
         return state.copy(
             grid = revealOnGrid(revealedCards, state),
-            revealedCards = revealedCards
+            revealedCards = revealedCards,
+            p1ActionsUsed = p1Actions,
+            p2ActionsUsed = p2Actions
         )
     }
 
     fun swapCards(id1: String, id2: String){
         val card1 = findCard(id1) ?: return
         val card2 = findCard(id2) ?: return
+        if (card1 == card2) return
         val (p1Actions, p2Actions) = increaseUsedActions(_uiState.value)
         _uiState.update { state ->
             state.copy(
@@ -247,49 +254,26 @@ class SemelionGameViewModel: ViewModel() {
         //senza oridnamento predominante il jolly non assume valore
         if (orders.isEmpty() ) return state
 
-        Log.d("applier","orders: $orders")
-        //se ho due ordinamenti con stesso colore non ha senso dare valore al jolly
-//        if (colorHouse(orders.first().first) == colorHouse(orders.last().first) && orders.size==2){
-//            return state.copy(
-//                grid = state.grid.map{ card ->
-//                    when(card.name){
-//                        cardId -> CardUIStates(
-//                            name = jolly.name,
-//                            value = 0,
-//                            house = colorHouse(jolly.house).lowercase(),
-//                            isRevealed = jolly.isRevealed
-//                        )
-//                        else -> card.copy()
-//                    }
-//                }
-//            )
-//        }
-
         //trovo il colore della riga
         var dominantHouse = colorHouse(orders.first().first)
         Log.d("applier",dominantHouse)
-        //per adesso lo ignoro -> tripla d'esempio (F,2,0) (C,0,2) (D,0,2)
+        //per adesso lo ignoro -> tripla d'esempio (F,2,0) (C,0,2) (D,0,2) -> ritestare ma credo funzioni
         // jolly nero domina f
         // jolly rosso ignoro
-        //if (orders.size == 3) return state
         var i = 0
-        //valutare significato
         orders.forEach {
             val house = colorHouse(it.first)
-            listOf("RED","BLACK").forEach{ color ->
-                Log.d("applier","forEach colour, $house:$color")
-                if (cardId.contains(color.lowercase(getDefault())) && house == color) {
+            JOLLY_COLOR.forEach{ color ->
+                if (cardId.contains(color) && house == color) {
                     dominantHouse = house
                     i += 1
                     return@forEach
                 }
             }
         }
-        Log.d("applier","$i")
         //ho due case del colore del jolly -> posso ignorarlo
         //non ho una casa dominante del colore del jolly
         if (i != 1) {
-            Log.d("applier","doppia uscita, i:$i")
             return state.copy(
                 grid = state.grid.map{ card ->
                     when(card.name){
@@ -305,36 +289,8 @@ class SemelionGameViewModel: ViewModel() {
             )
         }
 
-        Log.d("applier",dominantHouse)
         //viene fatto solo per orders.size = 2 ed è corretto
         val jollyOrder = orders.filter { colorHouse(it.first) == dominantHouse}
-        Log.d("applier","jollyorder:${jollyOrder.first().first}")
-//        //orders ha size 2
-//        if (orders.size == 2){
-//            val h1 = colorHouse(orders.first().first)
-//            val h2 = colorHouse(orders.last().first)
-//
-//            //scelgo il colore in base a quello del jolly
-//            if (cardId.contains("red") && h1 == "red"){
-//                dominantHouse = h1
-//            }
-//
-//            else if( cardId.contains("red") && h2 == "red"){
-//                dominantHouse = h2
-//            }
-//
-//            if (cardId.contains("black") && h1 == "black"){
-//                dominantHouse = h1
-//            }
-//            else if( cardId.contains("red") && h2 == "black"){
-//                dominantHouse = h2
-//            }
-//
-//        }
-
-//        //controllo che il jolly sia dello stesso colore della riga
-//        if (dominantHouse == "red" && !cardId.contains("red"))return state
-//        if (dominantHouse == "black" && !cardId.contains("black")) return state
 
         var value = 0
 
@@ -383,7 +339,7 @@ class SemelionGameViewModel: ViewModel() {
             )
         }
 
-        return if (p2Actions - _uiState.value.p2ActionsUsed  <=0){
+        return if (p2Actions - state.p2ActionsUsed  <=0){
             state.copy(
                 p1Actions = p1Actions,
                 p2Actions = p2Actions,
@@ -397,9 +353,11 @@ class SemelionGameViewModel: ViewModel() {
             )
         }
     }
+
     fun findCard(cardID: String): CardUIStates?{
         return _uiState.value.grid.find { it.name == cardID }
     }
+
     fun calcActions(rows: List<List<CardUIStates>>): Int {
         return 1 + rows.sumOf { row ->
             val revealed = row.filter { it.isRevealed }
