@@ -16,6 +16,8 @@ fun colorHouse(value:String):String{
         "D"  -> "red"
         "F" -> "black"
         "P" -> "black"
+        "red" -> "red"
+        "black" -> "black"
         else -> "errorHouse"
     }
 }
