@@ -231,7 +231,7 @@ fun CardRow(
                 ) { kingRevealed ->
                     if (kingRevealed) {
                         FilledTonalIconButton(
-                            onClick = { model.kingRule(rowIndex)},
+                            onClick = { model.kingRule(rowIndex){i,inc -> rowIndex*7 + i + inc} },
                             modifier = Modifier.size(32.dp),
                             colors = IconButtonDefaults.filledTonalIconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -319,7 +319,8 @@ fun CardRow(
                 ) { kingRevealed ->
                     if (kingRevealed) {
                         FilledTonalIconButton(
-                            onClick = { model.kingRule(rowIndex) },
+                            onClick =
+                            { model.kingRule(rowIndex){i, inc -> 7*rowIndex + (6-i) - inc} },
                             modifier = Modifier.size(32.dp),
                             colors = IconButtonDefaults.filledTonalIconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -457,176 +458,176 @@ fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
 
 
 //composable belli di claude
-@Composable
-fun GameRow(
-    rowIndex: Int,
-    rowItems: List<CardUIStates>,
-    model: SemelionGameViewModel,
-    rotation: Float,
-    cardSize: Dp
-) {
-    val rowOrder = rowItems.getRowOrder(rowIndex)
-    val isKingRevealed = model.uiState.value.isKingRevealed
-
-    val rowBackground = if (rotation < 180f )
-        Color(0xFF009688).copy(alpha = 0.15f)
-    else
-        Color(0xFF9C27B0).copy(alpha = 0.08f)
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 2.dp),
-        shape = RoundedCornerShape(12.dp),
-        color = rowBackground,
-        shadowElevation = 2.dp,
-        tonalElevation = 2.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(vertical = 6.dp, horizontal = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            // Freccia sinistra / Label sinistra
-            AnimatedContent(
-                targetState = isKingRevealed,
-                transitionSpec = {
-                    fadeIn(tween(200)) togetherWith fadeOut(tween(200))
-                },
-                label = "left_control"
-            ) { kingRevealed ->
-                if (kingRevealed) {
-                    FilledTonalIconButton(
-                        onClick = { model.kingRule(rowIndex) },
-                        modifier = Modifier.size(32.dp),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                            contentDescription = "Swipa a sx",
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                } else {
-                    RowLabel(rowOrder = rowOrder, showOn = 180f, rotation = rotation, labelWidth = 32.dp)
-                }
-            }
-
-            // Carte della riga
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                rowItems.forEach { card ->
-                    FinalCard(
-                        card = card,
-                        model = model,
-                        size = cardSize
-                    )
-                }
-            }
-
-            // Freccia destra / Label destra
-            AnimatedContent(
-                targetState = isKingRevealed,
-                transitionSpec = {
-                    fadeIn(tween(200)) togetherWith fadeOut(tween(200))
-                },
-                label = "right_control"
-            ) { kingRevealed ->
-                if (kingRevealed) {
-                    FilledTonalIconButton(
-                        onClick = { model.kingRule(rowIndex) },
-                        modifier = Modifier.size(32.dp),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = "Swipa a dx",
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                } else {
-                    RowLabel(rowOrder = rowOrder, showOn = 0f, rotation = rotation, labelWidth = 32.dp)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun RowLabel(rowOrder: RowOrder, showOn: Float,rotation: Float,labelWidth: Dp) {
-    if (rotation == showOn) {
-        Column(
-            modifier = Modifier.width(labelWidth),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            val (arrow, label,color) = when (rowOrder) {
-                RowOrder.CRESCENT ->  Triple("→", "ASC",  Color.Blue)
-                RowOrder.DECRESCENT -> Triple("←", "DESC",  Color.Red)
-                RowOrder.BOTH -> Triple("↔", "BOTH",  Color.Black)
-            }
-
-            Text(text = arrow, fontSize = 20.sp, color = color)
-            Text(text = label, fontSize = 10.sp, color = color, modifier =  Modifier.rotate(rotation))
-        }
-    } else {
-        Spacer(modifier = Modifier.width(labelWidth))
-    }
-}
-
-
-@Composable
-fun niceGrid(state: GameUIState, model: SemelionGameViewModel) {
-    //preparazione misure
-    val configuration = LocalConfiguration.current
-    val screenWidthDp = configuration.screenWidthDp.dp
-    val labelWidth = 32.dp
-    val cardSize = (screenWidthDp - labelWidth*2 ) / 7
-    //griglia di gioco
-    Column(
-        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally),
-
-        ) {
-        //preparazione "misure"
-        val rows = state.grid.chunked(7)
-
-        val attentionModifier = Modifier.border(color = Color.Yellow, width = 4.dp, shape = RoundedCornerShape(8.dp))
-
-        //utility per non duplicare codice
-        fun playerModifier(isActive: Boolean, color: Color): Modifier =
-            if (isActive) attentionModifier.background(color) else Modifier.background(color)
-
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.padding(4.dp)
-        ) {
-
-                listOf(rows[0],rows[1]).forEachIndexed { rowIndex, rowItems ->
-                    GameRow(
-                        rowIndex = rowIndex,
-                        rowItems = rowItems,
-                        model = model,
-                        cardSize = cardSize,
-                        rotation = 180f
-                    )
-                }
-
-                listOf(rows[2],rows[3]).forEachIndexed { rowIndex, rowItems ->
-                    GameRow(
-                        rowIndex = rowIndex,
-                        rowItems = rowItems,
-                        model = model,
-                        cardSize = cardSize,
-                        rotation = 0f
-                    )
-                }
-        }
-    }
-}
+//@Composable
+//fun GameRow(
+//    rowIndex: Int,
+//    rowItems: List<CardUIStates>,
+//    model: SemelionGameViewModel,
+//    rotation: Float,
+//    cardSize: Dp
+//) {
+//    val rowOrder = rowItems.getRowOrder(rowIndex)
+//    val isKingRevealed = model.uiState.value.isKingRevealed
+//
+//    val rowBackground = if (rotation < 180f )
+//        Color(0xFF009688).copy(alpha = 0.15f)
+//    else
+//        Color(0xFF9C27B0).copy(alpha = 0.08f)
+//
+//    Surface(
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .padding(horizontal = 4.dp, vertical = 2.dp),
+//        shape = RoundedCornerShape(12.dp),
+//        color = rowBackground,
+//        shadowElevation = 2.dp,
+//        tonalElevation = 2.dp
+//    ) {
+//        Row(
+//            modifier = Modifier
+//                .padding(vertical = 6.dp, horizontal = 2.dp),
+//            verticalAlignment = Alignment.CenterVertically,
+//            horizontalArrangement = Arrangement.spacedBy(2.dp)
+//        ) {
+//            // Freccia sinistra / Label sinistra
+//            AnimatedContent(
+//                targetState = isKingRevealed,
+//                transitionSpec = {
+//                    fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+//                },
+//                label = "left_control"
+//            ) { kingRevealed ->
+//                if (kingRevealed) {
+//                    FilledTonalIconButton(
+//                        onClick = { model.kingRule(rowIndex) },
+//                        modifier = Modifier.size(32.dp),
+//                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+//                            containerColor = MaterialTheme.colorScheme.primaryContainer
+//                        )
+//                    ) {
+//                        Icon(
+//                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+//                            contentDescription = "Swipa a sx",
+//                            modifier = Modifier.size(18.dp)
+//                        )
+//                    }
+//                } else {
+//                    RowLabel(rowOrder = rowOrder, showOn = 180f, rotation = rotation, labelWidth = 32.dp)
+//                }
+//            }
+//
+//            // Carte della riga
+//            Row(
+//                modifier = Modifier.weight(1f),
+//                horizontalArrangement = Arrangement.Center,
+//                verticalAlignment = Alignment.CenterVertically
+//            ) {
+//                rowItems.forEach { card ->
+//                    FinalCard(
+//                        card = card,
+//                        model = model,
+//                        size = cardSize
+//                    )
+//                }
+//            }
+//
+//            // Freccia destra / Label destra
+//            AnimatedContent(
+//                targetState = isKingRevealed,
+//                transitionSpec = {
+//                    fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+//                },
+//                label = "right_control"
+//            ) { kingRevealed ->
+//                if (kingRevealed) {
+//                    FilledTonalIconButton(
+//                        onClick = { model.kingRule(rowIndex) },
+//                        modifier = Modifier.size(32.dp),
+//                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+//                            containerColor = MaterialTheme.colorScheme.primaryContainer
+//                        )
+//                    ) {
+//                        Icon(
+//                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+//                            contentDescription = "Swipa a dx",
+//                            modifier = Modifier.size(18.dp)
+//                        )
+//                    }
+//                } else {
+//                    RowLabel(rowOrder = rowOrder, showOn = 0f, rotation = rotation, labelWidth = 32.dp)
+//                }
+//            }
+//        }
+//    }
+//}
+//
+//@Composable
+//fun RowLabel(rowOrder: RowOrder, showOn: Float,rotation: Float,labelWidth: Dp) {
+//    if (rotation == showOn) {
+//        Column(
+//            modifier = Modifier.width(labelWidth),
+//            horizontalAlignment = Alignment.CenterHorizontally
+//        ) {
+//            val (arrow, label,color) = when (rowOrder) {
+//                RowOrder.CRESCENT ->  Triple("→", "ASC",  Color.Blue)
+//                RowOrder.DECRESCENT -> Triple("←", "DESC",  Color.Red)
+//                RowOrder.BOTH -> Triple("↔", "BOTH",  Color.Black)
+//            }
+//
+//            Text(text = arrow, fontSize = 20.sp, color = color)
+//            Text(text = label, fontSize = 10.sp, color = color, modifier =  Modifier.rotate(rotation))
+//        }
+//    } else {
+//        Spacer(modifier = Modifier.width(labelWidth))
+//    }
+//}
+//
+//
+//@Composable
+//fun niceGrid(state: GameUIState, model: SemelionGameViewModel) {
+//    //preparazione misure
+//    val configuration = LocalConfiguration.current
+//    val screenWidthDp = configuration.screenWidthDp.dp
+//    val labelWidth = 32.dp
+//    val cardSize = (screenWidthDp - labelWidth*2 ) / 7
+//    //griglia di gioco
+//    Column(
+//        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally),
+//
+//        ) {
+//        //preparazione "misure"
+//        val rows = state.grid.chunked(7)
+//
+//        val attentionModifier = Modifier.border(color = Color.Yellow, width = 4.dp, shape = RoundedCornerShape(8.dp))
+//
+//        //utility per non duplicare codice
+//        fun playerModifier(isActive: Boolean, color: Color): Modifier =
+//            if (isActive) attentionModifier.background(color) else Modifier.background(color)
+//
+//        Column(
+//            verticalArrangement = Arrangement.spacedBy(4.dp),
+//            modifier = Modifier.padding(4.dp)
+//        ) {
+//
+//                listOf(rows[0],rows[1]).forEachIndexed { rowIndex, rowItems ->
+//                    GameRow(
+//                        rowIndex = rowIndex,
+//                        rowItems = rowItems,
+//                        model = model,
+//                        cardSize = cardSize,
+//                        rotation = 180f
+//                    )
+//                }
+//
+//                listOf(rows[2],rows[3]).forEachIndexed { rowIndex, rowItems ->
+//                    GameRow(
+//                        rowIndex = rowIndex,
+//                        rowItems = rowItems,
+//                        model = model,
+//                        cardSize = cardSize,
+//                        rotation = 0f
+//                    )
+//                }
+//        }
+//    }
+//}

@@ -355,18 +355,17 @@ class SemelionGameViewModel: ViewModel() {
                 }.grid,
                 isQueenRevealed = false
             )
-
-
         }
         validationQueue.trySend("queen Landing")
     }
 
-    fun kingRule(rowId: Int){
+    fun kingRule(rowId: Int,direction: (Int,Int) -> Int){
             _uiState.update { state ->
-                val position = rowId*7
                 state.copy(
                     grid = (0 until 6).fold(state){ acc, i ->
-                        figureSwap(findCard(acc.grid[position + i].name)?.name ?: "none",findCard(acc.grid[position + i + 1].name)?.name?: "none",acc)
+                        val id1 = findCard(acc.grid[direction(i,0)].name)?.name ?: "none"
+                        val id2 = findCard(acc.grid[direction(i,1)].name)?.name?: "none"
+                        figureSwap(id1,id2,acc)
                     }.grid,
                     isKingRevealed = false
                 )
