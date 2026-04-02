@@ -62,6 +62,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.FilledTonalIconButton
@@ -235,7 +236,6 @@ fun CardRow(
                             colors = IconButtonDefaults.filledTonalIconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
                             )
-
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
@@ -247,8 +247,68 @@ fun CardRow(
                         RowLabel(rowOrder = rowOrder, showOn = 180f)
                     }
                 }
-                rowItems.forEach { card ->
-                    FinalCard(card = card, model = model, size = cardSize)
+                rowItems.forEachIndexed { itemIndex, card ->
+                    Column() {
+                        if (rowIndex == 0){
+                            AnimatedContent(
+                                targetState = model.uiState.value.isQueenRevealed,
+                                transitionSpec = {
+                                    fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+                                },
+                                label = "Upper_control"
+                            ) { queenRevealed ->
+                                if (queenRevealed) {
+                                    FilledTonalIconButton(
+                                        onClick = { model.queenWipe(itemIndex){ i, inc ->  itemIndex + 7*i + inc } } ,
+                                        modifier = Modifier.size(32.dp),
+                                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                                        )
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.outline_arrow_drop_up_24),
+                                            contentDescription = "Swipa a dx",
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                } else {
+                                    RowLabel(rowOrder = rowOrder, showOn = 0f)
+                                }
+                            }
+                        }
+
+                        FinalCard(card = card, model = model, size = cardSize)
+                        if (rowIndex == 3){
+                            AnimatedContent(
+                                targetState = model.uiState.value.isQueenRevealed,
+                                transitionSpec = {
+                                    fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+                                },
+                                label = "Upper_control"
+                            ) { queenRevealed ->
+                                if (queenRevealed) {
+                                    FilledTonalIconButton(
+                                        onClick = { model.queenWipe(itemIndex){ i, inc ->  itemIndex + 7*(3-i) - inc } },
+                                        modifier = Modifier.size(32.dp),
+                                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                                        )
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.outline_arrow_drop_down_24),
+                                            contentDescription = "Swipa a dx",
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                } else {
+
+                                }
+                            }
+                        }
+                    }
+
+
+
                 }
                 AnimatedContent(
                     targetState = model.uiState.value.isKingRevealed,

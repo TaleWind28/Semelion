@@ -18,7 +18,7 @@ class SemelionGameViewModel: ViewModel() {
     private val _uiState = MutableStateFlow(GameUIState())
     val uiState = _uiState.asStateFlow()
     // ✨ 1: Define the queue that holds String IDs
-    public val validationQueue = Channel<String>(Channel.BUFFERED)
+    val validationQueue = Channel<String>(Channel.BUFFERED)
 
     init {
         val decks = createDecks()
@@ -37,14 +37,15 @@ class SemelionGameViewModel: ViewModel() {
 
     fun createDecks(): Pair<List<CardUIStates>,List<CardUIStates>> {
 
-       val allCards = createCards(figures = SEMELION_FIGURES,jolly = JOLLY_COLOR)
+        val allCards = createCards(figures = SEMELION_FIGURES,jolly = JOLLY_COLOR)
 
         //testing filtro solo carte <7
         val noFiguresDeck = allCards.filter { it.value in 1..7 }.shuffled()
 
         val specialDeck = allCards.filter { it.value > 7  || it.value == 0}
-        //ne droppo 0 per testing normalmente ne dovrei droppare 10
+
         val gridDeck = noFiguresDeck.drop(UNCOVER_DECK_SIZE) + specialDeck
+
         val uncoverDeck = noFiguresDeck.take(UNCOVER_DECK_SIZE).map { it.copy(isRevealed = true)  }
 
         return Pair(gridDeck.shuffled(),uncoverDeck.shuffled())
@@ -141,7 +142,6 @@ class SemelionGameViewModel: ViewModel() {
         }
 
         validationQueue.trySend(card1.name)
-        validationQueue.trySend(card2.name)
     }
 
     fun figureSwap(id1:String,id2:String,state: GameUIState): GameUIState{
@@ -182,8 +182,7 @@ class SemelionGameViewModel: ViewModel() {
         validationQueue.trySend(cardId)
     }
 
-    suspend fun validateState(cardId: String){
-
+     fun validateState(cardId: String){
         _uiState.update { currentState ->
             val rows = currentState.grid.chunked(7)
             var modifiedState = currentState
@@ -286,7 +285,7 @@ class SemelionGameViewModel: ViewModel() {
                             name = jolly.name,
                             value = 0,
                             house = colorHouse(jolly.house).lowercase(),
-                            isRevealed = jolly.isRevealed
+                            isRevealed = true
                         )
                         else -> card.copy()
                     }
@@ -312,7 +311,7 @@ class SemelionGameViewModel: ViewModel() {
                         name = jolly.name,
                         value = value,
                         house = jollyOrder.first().first,
-                        isRevealed = jolly.isRevealed
+                        isRevealed = true
                     )
                     else -> card.copy()
                 }
@@ -320,7 +319,7 @@ class SemelionGameViewModel: ViewModel() {
         )
     }
 
-    suspend fun figureRevealed(cardId: String, state: GameUIState): GameUIState{
+     fun figureRevealed(cardId: String, state: GameUIState): GameUIState{
         val card = findCard(cardId) ?: return state
         if (card.value < 8) return state
 
@@ -344,9 +343,22 @@ class SemelionGameViewModel: ViewModel() {
         return modifiedState
     }
 
-    fun queenWipe(columnId: Int,state: GameUIState = _uiState.value): GameUIState{
+    fun queenWipe(columnId: Int, direction: (Int,Int) -> Int){
+        Log.d("Queen","${columnId+7*3}")
+        //fai da riga 0 a rig
+        _uiState.update { state ->
+            state.copy(
+                grid = (0 until 3).fold(state){acc, i ->
+                    val id1 = findCard(acc.grid[direction(i,0)].name)?.name ?: "none"
+                    val id2 = findCard(acc.grid[direction(i,7)].name)?.name ?: "none"
+                    figureSwap(id1 = id1,id2 = id2,state = acc)
+                }.grid,
+                isQueenRevealed = false
+            )
 
-        return state
+
+        }
+        validationQueue.trySend("queen Landing")
     }
 
     fun kingRule(rowId: Int){
@@ -362,7 +374,7 @@ class SemelionGameViewModel: ViewModel() {
         validationQueue.trySend("kings cross")
     }
 
-    suspend fun jackSwap(cardId: String, state: GameUIState): GameUIState {
+     fun jackSwap(cardId: String, state: GameUIState): GameUIState {
         val swapCount = state.uncoverDeck.first().value - 1
         val jackHouse = findCard(cardId)?.house ?: return state
 
