@@ -17,5 +17,7 @@ data class GameUIState (
     val incorrectSevenReveled: Boolean = false,
     val p1Turn: Boolean = true,
     val isLoading: Boolean = false,
-    val revealedCards: List<String> = emptyList()
+    val revealedCards: List<String> = emptyList(),
+    val isQueenRevealed: Boolean = false,
+    val isKingRevealed: Boolean = false
 )

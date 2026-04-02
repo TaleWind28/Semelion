@@ -8,6 +8,12 @@ import android.graphics.Point
 import android.util.Log
 import android.view.View
 import androidx.annotation.Size
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -52,8 +58,18 @@ import androidx.compose.foundation.draganddrop.dragAndDropSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.draganddrop.DragAndDropTransferData
 import androidx.compose.ui.draw.rotate
@@ -83,13 +99,12 @@ fun SemelionScreen(
         contentAlignment = Alignment.Center
     ) {
         Column {
-            val turnString = if (state.p1Turn) "Turno del giocatore 1" else "Turno del giocatore 2"
-            Text(text = turnString)
             Text(
                 text = "il giocatore 2 ha: ${state.p2Actions - state.p2ActionsUsed} azioni Rimanenti",
                 modifier = Modifier.align(Alignment.CenterHorizontally).rotate(180f)
             )
 
+            //niceGrid(state= state, model = viewModel)
             FinalGrid(state = state, model = viewModel)
 
             Text(
@@ -112,34 +127,58 @@ fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
     Column(
         modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally),
 
-    ) {
+        ) {
         //preparazione "misure"
         val rows = state.grid.chunked(7)
 
-        val attentionModifier = Modifier.border(color = Color.Yellow, width = 4.dp, shape = RoundedCornerShape(8.dp))
+        val attentionModifier = Modifier.border(
+            color = Color(0xFF3BFF7C),
+            width = 6.dp,
+            shape = RoundedCornerShape(8.dp)
+        )
 
         //utility per non duplicare codice
-        fun playerModifier(isActive: Boolean, color: Color): Modifier =
-            if (isActive) attentionModifier.background(color) else Modifier.background(color)
+        fun playerModifier(isActive: Boolean): Modifier =
+            if (isActive) attentionModifier else Modifier
+
+        val playerConfigs = listOf(
+            Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFF009688), 180f)),
+            Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFF9C27B0), 0f))
+        )
 
         Column(
             modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally)
         ) {
-            Box(modifier = playerModifier(!state.p1Turn, Color.Red)) {
-                CardRows(rows = listOf(rows[0], rows[1]), model = model, rotation = 180f)
-            }
+            playerConfigs.forEachIndexed { index, (isActive, playerRows, style) ->
+                if (index > 0) Spacer(modifier = Modifier.size(8.dp))
 
-            Spacer(modifier = Modifier.size(2.dp))
-
-            Box(modifier = playerModifier(state.p1Turn, Color.Green)) {
-                CardRows(rows = listOf(rows[2], rows[3]), model = model, rotation = 0f)
+                Box(modifier = playerModifier(isActive)) {
+                    Column {
+                        playerRows.forEachIndexed { rowIndex, rowItems ->
+                            CardRow(
+                                rowIndex = rowIndex + (index * 2),
+                                rowItems = rowItems,
+                                model = model,
+                                rowBackground = style.first.copy(alpha = if (index == 0) 0.15f else 0.08f),
+                                rotation = style.second
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 }
 
+
 @Composable
-fun CardRows(rows:List<List<CardUIStates>>,model: SemelionGameViewModel,rotation: Float){
+fun CardRow(
+    rowIndex: Int,
+    rowItems: List<CardUIStates>,
+    model: SemelionGameViewModel,
+    rowBackground: Color,
+    rotation: Float
+){
     //preparazione misure
     val configuration = LocalConfiguration.current
     val screenWidthDp = configuration.screenWidthDp.dp
@@ -168,28 +207,76 @@ fun CardRows(rows:List<List<CardUIStates>>,model: SemelionGameViewModel,rotation
         }
     }
 
-
-    Column{
-        rows.forEachIndexed { rowIndex, rowItems ->
-            val rowOrder = rowItems.getRowOrder(rowIndex)
-
+    val rowOrder = rowItems.getRowOrder(rowIndex)
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = rowBackground,
+        shadowElevation = 2.dp,
+        tonalElevation = 2.dp
+    ){
             Row(
                 modifier = Modifier.wrapContentWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ){
+                AnimatedContent(
+                    targetState = model.uiState.value.isKingRevealed,
+                    transitionSpec = {
+                        fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+                    },
+                    label = "left_control"
+                ) { kingRevealed ->
+                    if (kingRevealed) {
+                        FilledTonalIconButton(
+                            onClick = { model.kingRule(rowIndex)},
+                            modifier = Modifier.size(32.dp),
+                            colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            )
 
-                RowLabel(rowOrder = rowOrder, showOn = 180f)
-
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                contentDescription = "Swipa a sx",
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    } else {
+                        RowLabel(rowOrder = rowOrder, showOn = 180f)
+                    }
+                }
                 rowItems.forEach { card ->
                     FinalCard(card = card, model = model, size = cardSize)
                 }
-
-                RowLabel(rowOrder = rowOrder, showOn = 0f)
-
+                AnimatedContent(
+                    targetState = model.uiState.value.isKingRevealed,
+                    transitionSpec = {
+                        fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+                    },
+                    label = "left_control"
+                ) { kingRevealed ->
+                    if (kingRevealed) {
+                        FilledTonalIconButton(
+                            onClick = { model.kingRule(rowIndex) },
+                            modifier = Modifier.size(32.dp),
+                            colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = "Swipa a dx",
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    } else {
+                        RowLabel(rowOrder = rowOrder, showOn = 0f)
+                    }
+                }
             }
         }
-    }
-
 }
 
 
@@ -261,28 +348,30 @@ fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
         modifier = Modifier
             .size(size)
                 .pointerInput(card.name, card.isRevealed) {
-                detectTapGestures(
-                    onTap = {
-                        if (!card.isRevealed) model.cardClicked(card.name)
-                    },
-                    onLongPress = {
-                        //il 42 fa ridere ma è stato calcolato a mano
-                        val scaled = Bitmap.createScaledBitmap(imageBitmap.asAndroidBitmap(), sizePx/2 +42, sizePx, false)
-                        val shadow = object : View.DragShadowBuilder() {
-                            override fun onProvideShadowMetrics(outShadowSize: Point, outShadowTouchPoint: Point) {
-                                outShadowSize.set(scaled.width, scaled.height)
-                                outShadowTouchPoint.set(scaled.width / 2, scaled.height / 2)
-                            }
+                    if (!model.uiState.value.isLoading){
+                        detectTapGestures(
+                            onTap = {
+                                if (!card.isRevealed) model.cardClicked(card.name)
+                            },
+                            onLongPress = {
+                                //il 42 fa ridere ma è stato calcolato a mano
+                                val scaled = Bitmap.createScaledBitmap(imageBitmap.asAndroidBitmap(), sizePx/2 +42, sizePx, false)
+                                val shadow = object : View.DragShadowBuilder() {
+                                    override fun onProvideShadowMetrics(outShadowSize: Point, outShadowTouchPoint: Point) {
+                                        outShadowSize.set(scaled.width, scaled.height)
+                                        outShadowTouchPoint.set(scaled.width / 2, scaled.height / 2)
+                                    }
 
-                            override fun onDrawShadow(canvas: Canvas) {
-                                canvas.drawBitmap(scaled, 0f, 0f, null)
-                            }
-                        }
-                        val clipData = ClipData.newPlainText(card.name, card.name)
+                                    override fun onDrawShadow(canvas: Canvas) {
+                                        canvas.drawBitmap(scaled, 0f, 0f, null)
+                                    }
+                                }
+                                val clipData = ClipData.newPlainText(card.name, card.name)
 
-                        view.startDragAndDrop(clipData, shadow, card.name, 0)
+                                view.startDragAndDrop(clipData, shadow, card.name, 0)
+                            }
+                        )
                     }
-                )
             }
             .dragAndDropTarget(
                 shouldStartDragAndDrop = { event ->
@@ -303,4 +392,181 @@ fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
         painter = painterResource(id = imageResId),
         contentDescription = "Carta Semelion"
     )
+}
+
+
+
+//composable belli di claude
+@Composable
+fun GameRow(
+    rowIndex: Int,
+    rowItems: List<CardUIStates>,
+    model: SemelionGameViewModel,
+    rotation: Float,
+    cardSize: Dp
+) {
+    val rowOrder = rowItems.getRowOrder(rowIndex)
+    val isKingRevealed = model.uiState.value.isKingRevealed
+
+    val rowBackground = if (rotation < 180f )
+        Color(0xFF009688).copy(alpha = 0.15f)
+    else
+        Color(0xFF9C27B0).copy(alpha = 0.08f)
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = rowBackground,
+        shadowElevation = 2.dp,
+        tonalElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(vertical = 6.dp, horizontal = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            // Freccia sinistra / Label sinistra
+            AnimatedContent(
+                targetState = isKingRevealed,
+                transitionSpec = {
+                    fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+                },
+                label = "left_control"
+            ) { kingRevealed ->
+                if (kingRevealed) {
+                    FilledTonalIconButton(
+                        onClick = { model.kingRule(rowIndex) },
+                        modifier = Modifier.size(32.dp),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                            contentDescription = "Swipa a sx",
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                } else {
+                    RowLabel(rowOrder = rowOrder, showOn = 180f, rotation = rotation, labelWidth = 32.dp)
+                }
+            }
+
+            // Carte della riga
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                rowItems.forEach { card ->
+                    FinalCard(
+                        card = card,
+                        model = model,
+                        size = cardSize
+                    )
+                }
+            }
+
+            // Freccia destra / Label destra
+            AnimatedContent(
+                targetState = isKingRevealed,
+                transitionSpec = {
+                    fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+                },
+                label = "right_control"
+            ) { kingRevealed ->
+                if (kingRevealed) {
+                    FilledTonalIconButton(
+                        onClick = { model.kingRule(rowIndex) },
+                        modifier = Modifier.size(32.dp),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "Swipa a dx",
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                } else {
+                    RowLabel(rowOrder = rowOrder, showOn = 0f, rotation = rotation, labelWidth = 32.dp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RowLabel(rowOrder: RowOrder, showOn: Float,rotation: Float,labelWidth: Dp) {
+    if (rotation == showOn) {
+        Column(
+            modifier = Modifier.width(labelWidth),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            val (arrow, label,color) = when (rowOrder) {
+                RowOrder.CRESCENT ->  Triple("→", "ASC",  Color.Blue)
+                RowOrder.DECRESCENT -> Triple("←", "DESC",  Color.Red)
+                RowOrder.BOTH -> Triple("↔", "BOTH",  Color.Black)
+            }
+
+            Text(text = arrow, fontSize = 20.sp, color = color)
+            Text(text = label, fontSize = 10.sp, color = color, modifier =  Modifier.rotate(rotation))
+        }
+    } else {
+        Spacer(modifier = Modifier.width(labelWidth))
+    }
+}
+
+
+@Composable
+fun niceGrid(state: GameUIState, model: SemelionGameViewModel) {
+    //preparazione misure
+    val configuration = LocalConfiguration.current
+    val screenWidthDp = configuration.screenWidthDp.dp
+    val labelWidth = 32.dp
+    val cardSize = (screenWidthDp - labelWidth*2 ) / 7
+    //griglia di gioco
+    Column(
+        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally),
+
+        ) {
+        //preparazione "misure"
+        val rows = state.grid.chunked(7)
+
+        val attentionModifier = Modifier.border(color = Color.Yellow, width = 4.dp, shape = RoundedCornerShape(8.dp))
+
+        //utility per non duplicare codice
+        fun playerModifier(isActive: Boolean, color: Color): Modifier =
+            if (isActive) attentionModifier.background(color) else Modifier.background(color)
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(4.dp)
+        ) {
+
+                listOf(rows[0],rows[1]).forEachIndexed { rowIndex, rowItems ->
+                    GameRow(
+                        rowIndex = rowIndex,
+                        rowItems = rowItems,
+                        model = model,
+                        cardSize = cardSize,
+                        rotation = 180f
+                    )
+                }
+
+                listOf(rows[2],rows[3]).forEachIndexed { rowIndex, rowItems ->
+                    GameRow(
+                        rowIndex = rowIndex,
+                        rowItems = rowItems,
+                        model = model,
+                        cardSize = cardSize,
+                        rotation = 0f
+                    )
+                }
+        }
+    }
 }

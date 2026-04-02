@@ -18,7 +18,7 @@ class SemelionGameViewModel: ViewModel() {
     private val _uiState = MutableStateFlow(GameUIState())
     val uiState = _uiState.asStateFlow()
     // ✨ 1: Define the queue that holds String IDs
-    private val validationQueue = Channel<String>(Channel.BUFFERED)
+    public val validationQueue = Channel<String>(Channel.BUFFERED)
 
     init {
         val decks = createDecks()
@@ -29,7 +29,7 @@ class SemelionGameViewModel: ViewModel() {
 
         viewModelScope.launch {
             for (cardId in validationQueue){
-                delay(300)
+                delay(200)
                 validateState(cardId)
             }
         }
@@ -187,22 +187,23 @@ class SemelionGameViewModel: ViewModel() {
         _uiState.update { currentState ->
             val rows = currentState.grid.chunked(7)
             var modifiedState = currentState
+            val card = findCard(cardId) ?: return
 
-            //controlla se la carta rivelata è una figura
-            modifiedState = figureRevealed(cardId,modifiedState)
+            if (card.isRevealed){
+                //controlla se la carta rivelata è una figura
+                modifiedState = figureRevealed(cardId,modifiedState)
+            }
+
+            Log.d("validate","${modifiedState.isQueenRevealed}")
 
             //cercare jolly sulla griglia -> actually vorrei usare uno stato diverso per le invocazioni però non so
+
             JOLLY_COLOR.forEach {
                 modifiedState = jollyApplier(modifiedState,"joker_$it")
                 //controllo se il jolly può essere sostituito
                 modifiedState = substituteJolly(modifiedState,"joker_$it")
             }
 
-//            rows.forEach { row ->
-//                row.forEach { card ->
-//                    modifiedState = coverCard(card.name, modifiedState)
-//                }
-//            }
             //controllo se devo coprire delle carte
             modifiedState = rows.flatten().fold(modifiedState){state, card ->
                 coverCard(card.name,state)
@@ -219,6 +220,7 @@ class SemelionGameViewModel: ViewModel() {
     fun swapJolly(state: GameUIState,suit:String): GameUIState{
         val jolly = findCard(suit)?:return state
         val correctCard = findCard("${jolly.value}${jolly.house}") ?: return state
+        Log.d("jolly","carta corretta:${correctCard.name},jolly: $jolly")
         if (!correctCard.isRevealed || !jolly.isRevealed) return state
 
         return state.copy(
@@ -247,7 +249,7 @@ class SemelionGameViewModel: ViewModel() {
     fun jollyApplier(state: GameUIState, cardId: String): GameUIState{
         //cerco il jolly
         val jolly = findCard(cardId)?.copy() ?: return state
-
+        if (!jolly.isRevealed) return state
         //posizione in griglia
         val pos = state.grid.indexOfFirst { it == jolly }
         //il diviso funge da modulo perchè sto usando gli interi
@@ -325,74 +327,61 @@ class SemelionGameViewModel: ViewModel() {
         var modifiedState = state
 
         when{
-            cardId.contains("8") -> //circular swap
-                modifiedState = jackSwap(cardId,state)
+            cardId.contains("8") ->{ //circular swap
+                modifiedState = jackSwap(cardId,state);Log.d("Figure","jack")}
+
             cardId.contains("9") -> //swipe column
-                modifiedState = queenWipe(cardId,state)
+                modifiedState = modifiedState.copy(
+                    isQueenRevealed = true
+                )
             cardId.contains("10") -> //swipe row
-                modifiedState = kingRule(cardId,state)
+                modifiedState = modifiedState.copy(
+                    isKingRevealed = true
+                )
         }
 
-        return replaceCard(modifiedState,cardId)
-
-    }
-
-    suspend fun jackSwap(cardId: String, state: GameUIState): GameUIState{
-        //numero di swap da fare
-        val swapEnd = state.uncoverDeck.take(1).first().value -1
-        //swapStartId
-        var ssId = cardId
-        val jackHouse = findCard(cardId)?.house ?: return state
-        var oldPos = state.grid.indexOfFirst { it.name == cardId }
-        var nextPosition: Int
-        var modifiedState = state
-
-        Log.d("jackSwap","numero di swap:$swapEnd")
-
-        for (i in 1..swapEnd){
-            //genero la prossima posizione escludendo posizioni con carte non appartenenti al colore del jack
-            nextPosition = (0 ..27).filter {
-                it !=oldPos && colorHouse(state.grid[it].house) == colorHouse(jackHouse)
-            }.random()
-
-            //prossima carta
-            val next = modifiedState.grid[nextPosition]
-            Log.d("jackSwap","from:$oldPos card:$ssId,to:$nextPosition, nextCard:${next.name}")
-            //parto da cardId
-            modifiedState = figureSwap(ssId,next.name,modifiedState)
-
-            //reset del ciclo
-            ssId = next.name
-            oldPos = nextPosition
-        }
-
+        modifiedState = replaceCard(modifiedState,cardId)
         return modifiedState
     }
 
-    fun queenWipe(cardID: String,state: GameUIState): GameUIState{
+    fun queenWipe(columnId: Int,state: GameUIState = _uiState.value): GameUIState{
+
         return state
     }
 
-    fun kingRule(cardID: String,state: GameUIState): GameUIState{
-        return state
+    fun kingRule(rowId: Int){
+            _uiState.update { state ->
+                val position = rowId*7
+                state.copy(
+                    grid = (0 until 6).fold(state){ acc, i ->
+                        figureSwap(findCard(acc.grid[position + i].name)?.name ?: "none",findCard(acc.grid[position + i + 1].name)?.name?: "none",acc)
+                    }.grid,
+                    isKingRevealed = false
+                )
+            }
+        validationQueue.trySend("kings cross")
     }
-//    suspend fun jackSwap(cardId: String, state: GameUIState): GameUIState {
-//        val swapCount = state.uncoverDeck.first().value - 1
-//        Log.d("jackSwap", "numero di swap: $swapCount")
-//
-//        return (1..swapCount).fold(cardId to state) { (currentId, currentState), _ ->
-//            val currentPos = currentState.grid.indexOfFirst { it.name == currentId }
-//            val nextPosition = (0..27)
-//                .filter { it != currentPos }
-//                .random()
-//            val nextCard = currentState.grid[nextPosition]
-//
-//            Log.d("jackSwap", "from: $currentPos card: $currentId, to: $nextPosition, nextCard: ${nextCard.name}")
-//
-//            delay(200)
-//            nextCard.name to figureSwap(currentId, nextCard.name, currentState)
-//        }.second
-//    }
+
+    suspend fun jackSwap(cardId: String, state: GameUIState): GameUIState {
+        val swapCount = state.uncoverDeck.first().value - 1
+        val jackHouse = findCard(cardId)?.house ?: return state
+
+        Log.d("jackSwap", "numero di swap: $swapCount")
+
+        return (1..swapCount).fold(cardId to state) { (currentId, currentState), _ ->
+            val currentPos = currentState.grid.indexOfFirst { it.name == currentId }
+            val nextPosition = (0..27)
+                .filter {
+                    it !=currentPos && colorHouse(state.grid[it].house) == colorHouse(jackHouse)
+                }
+                .random()
+            val nextCard = currentState.grid[nextPosition]
+
+            Log.d("jackSwap", "from: $currentPos card: $currentId, to: $nextPosition, nextCard: ${nextCard.name}")
+
+            nextCard.name to figureSwap(currentId, nextCard.name, currentState)
+        }.second
+    }
 
     fun replaceCard(state: GameUIState,cardID: String): GameUIState{
         val card = findCard(cardID) ?: return state
@@ -411,6 +400,7 @@ class SemelionGameViewModel: ViewModel() {
             uncoverDeck = newUncover - nextCard,
             revealedCards = state.revealedCards + nextCard.name
         )
+
     }
 
     fun actionCounter(state: GameUIState,rows: List<List<CardUIStates>>): GameUIState{
