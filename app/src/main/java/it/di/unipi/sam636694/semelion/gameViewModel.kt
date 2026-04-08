@@ -327,7 +327,7 @@ class SemelionGameViewModel: ViewModel() {
 
         when{
             cardId.contains("8") ->{ //circular swap
-                modifiedState = jackSwap(cardId,state);Log.d("Figure","jack")}
+                modifiedState = jackSwap(cardId,modifiedState);Log.d("Figure","jack")}
 
             cardId.contains("9") -> //swipe column
                 modifiedState = modifiedState.copy(
@@ -359,7 +359,7 @@ class SemelionGameViewModel: ViewModel() {
         validationQueue.trySend("queen Landing")
     }
 
-    fun kingRule(rowId: Int,direction: (Int,Int) -> Int){
+    fun kingRule(direction: (Int,Int) -> Int){
             _uiState.update { state ->
                 state.copy(
                     grid = (0 until 6).fold(state){ acc, i ->
