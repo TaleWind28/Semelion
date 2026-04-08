@@ -230,7 +230,7 @@ fun CardRow(
                 ) { kingRevealed ->
                     if (kingRevealed) {
                         FilledTonalIconButton(
-                            onClick = { model.kingRule(rowIndex){i,inc -> rowIndex*7 + i + inc} },
+                            onClick = { model.kingRule{i:Int,inc:Int -> rowIndex*7 + i + inc} },
                             modifier = Modifier.size(32.dp),
                             colors = IconButtonDefaults.filledTonalIconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -319,7 +319,7 @@ fun CardRow(
                     if (kingRevealed) {
                         FilledTonalIconButton(
                             onClick =
-                            { model.kingRule(rowIndex){i, inc -> 7*rowIndex + (6-i) - inc} },
+                            { model.kingRule{i:Int, inc:Int -> 7*rowIndex + (6-i) - inc} },
                             modifier = Modifier.size(32.dp),
                             colors = IconButtonDefaults.filledTonalIconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
