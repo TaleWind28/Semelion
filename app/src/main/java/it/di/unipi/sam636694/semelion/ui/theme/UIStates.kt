@@ -18,6 +18,26 @@ data class GameUIState (
     val p1Turn: Boolean = true,
     val isLoading: Boolean = false,
     val revealedCards: List<String> = emptyList(),
-    val isQueenRevealed: Boolean = false,
-    val isKingRevealed: Boolean = false
+    val phase: GamePhase = GamePhase.PlayerTurn,
+    val lastReplacedCard : String? = null
 )
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GamePhase — descrive in quale fase si trova il gioco.
+// È un dato puro: nessuna logica, nessun riferimento al ViewModel.
+// ─────────────────────────────────────────────────────────────────────────────
+sealed class GamePhase {
+    /** Il giocatore corrente può rivelare carte e fare swap. */
+    object PlayerTurn   : GamePhase()
+
+    /** È stata rivelata una Regina: attesa della scelta di direzione. */
+    object QueenPending : GamePhase()
+
+    /** È stato rivelato un Re: attesa della scelta di direzione. */
+    object KingPending  : GamePhase()
+
+    /** La partita è terminata. */
+    object GameOver     : GamePhase()
+
+    object Validation : GamePhase()
+}

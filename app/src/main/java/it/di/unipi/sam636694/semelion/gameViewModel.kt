@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import it.di.unipi.sam636694.semelion.ui.theme.CardUIStates
+import it.di.unipi.sam636694.semelion.ui.theme.GamePhase
 import it.di.unipi.sam636694.semelion.ui.theme.GameUIState
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -11,27 +12,128 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import kotlin.collections.chunked
 import kotlin.math.max
 
 class SemelionGameViewModel: ViewModel() {
     private val _uiState = MutableStateFlow(GameUIState())
     val uiState = _uiState.asStateFlow()
-    // ✨ 1: Define the queue that holds String IDs
     val validationQueue = Channel<String>(Channel.BUFFERED)
 
     init {
         val decks = createDecks()
         _uiState.value = GameUIState(
             grid = decks.first,
-            uncoverDeck = decks.second
+            uncoverDeck = decks.second,
+            phase = GamePhase.PlayerTurn
         )
 
         viewModelScope.launch {
             for (cardId in validationQueue){
                 delay(200)
-                validateState(cardId)
+                validateState(cardId,_uiState.value)
             }
+        }
+    }
+
+    fun processIntent(intent: GameIntent){
+        Log.d("MVI", "Intent: $intent | Phase: ${_uiState.value.phase}")
+        when (intent) {
+            is GameIntent.CardClicked         -> handleCardClicked(intent.cardId)
+            is GameIntent.SwapCards           -> handleSwapCards(intent.id1, intent.id2)
+            is GameIntent.QueenDirectionChosen -> handleQueenDirection(intent.direction)
+            is GameIntent.KingDirectionChosen  -> handleKingDirection(intent.direction)
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // HANDLER PRIVATI — uno per Intent, guardia sulla fase all'inizio
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private fun handleCardClicked(cardId: String) {
+        if (_uiState.value.phase !is GamePhase.PlayerTurn) return
+
+        val needsDelay = _uiState.value.grid
+            .find { it.name == cardId }
+            ?.let { it.value >= 8 || it.value == 7 } ?: false
+
+        _uiState.update { state ->
+            val revealedCards = state.revealedCards + cardId
+            val (p1Actions, p2Actions) = increaseUsedActions(state)
+            state.copy(
+                grid          = revealOnGrid(revealedCards, state),
+                revealedCards = revealedCards,
+                p1ActionsUsed = p1Actions,
+                p2ActionsUsed = p2Actions,
+                phase = GamePhase.Validation
+            )
+        }
+
+        viewModelScope.launch {
+            if (needsDelay) delay(300)
+            _uiState.update { validateState(cardId,it) }
+        }
+
+    }
+
+    private fun handleSwapCards(id1: String, id2: String) {
+        if (_uiState.value.phase !is GamePhase.PlayerTurn) return
+        val card1 = findCard(id1) ?: return
+        val card2 = findCard(id2) ?: return
+        val (p1Actions, p2Actions) = increaseUsedActions(_uiState.value)
+        _uiState.update { state ->
+            state.copy(
+                grid = state.grid.map { card ->
+                    when (card.name) {
+                        id1  -> card2.copy()
+                        id2  -> card1.copy()
+                        else -> card.copy()
+                    }
+                },
+                p1ActionsUsed = p1Actions,
+                p2ActionsUsed = p2Actions
+            )
+        }
+        viewModelScope.launch {
+            yield()
+            _uiState.update { validateState(card1.name,it) }
+        }
+    }
+
+    private fun handleQueenDirection(direction: (Int, Int) -> Int) {
+        if (_uiState.value.phase !is GamePhase.QueenPending) return
+        _uiState.update { state ->
+            state.copy(
+                grid = (0 until 3).fold(state) { acc, i ->
+                    val id1 = findCard(acc.grid[direction(i, 0)].name)?.name ?: "none"
+                    val id2 = findCard(acc.grid[direction(i, 7)].name)?.name ?: "none"
+                    figureSwap(id1, id2, acc)
+                }.grid,
+                phase = GamePhase.Validation          // transizione dentro lo stato
+            )
+        }
+        viewModelScope.launch {
+            yield()
+            _uiState.update { validateState(it.lastReplacedCard?: "queen Landing",it) }
+        }
+    }
+
+    private fun handleKingDirection(direction: (Int, Int) -> Int) {
+        if (_uiState.value.phase !is GamePhase.KingPending) return
+        _uiState.update { state ->
+            state.copy(
+                grid = (0 until 6).fold(state) { acc, i ->
+                    val id1 = findCard(acc.grid[direction(i, 0)].name)?.name ?: "none"
+                    val id2 = findCard(acc.grid[direction(i, 1)].name)?.name ?: "none"
+                    figureSwap(id1, id2, acc)
+                }.grid,
+                phase = GamePhase.Validation          // transizione dentro lo stato
+            )
+        }
+        viewModelScope.launch {
+            yield()
+            _uiState.update { validateState(it.lastReplacedCard?: "king's cross",it) }
         }
     }
 
@@ -122,28 +224,6 @@ class SemelionGameViewModel: ViewModel() {
         )
     }
 
-    fun swapCards(id1: String, id2: String){
-        val card1 = findCard(id1) ?: return
-        val card2 = findCard(id2) ?: return
-
-        val (p1Actions, p2Actions) = increaseUsedActions(_uiState.value)
-        _uiState.update { state ->
-            state.copy(
-                grid =  state.grid.map{ card ->
-                    when(card.name){
-                        id1 -> card2.copy()
-                        id2 -> card1.copy()
-                        else -> card.copy()
-                    }
-                },
-                p1ActionsUsed = p1Actions,
-                p2ActionsUsed = p2Actions
-            )
-        }
-
-        validationQueue.trySend(card1.name)
-    }
-
     fun figureSwap(id1:String,id2:String,state: GameUIState): GameUIState{
         val card1 = findCard(id1) ?: return state
         val card2 = findCard(id2) ?: return state
@@ -168,32 +248,20 @@ class SemelionGameViewModel: ViewModel() {
         }
     }
 
-    fun cardClicked(cardId: String){
-         _uiState.update { state ->
-            val revealedCards = state.revealedCards + cardId
-            val (p1Actions, p2Actions) = increaseUsedActions(state)
-            state.copy(
-                grid = revealOnGrid(revealedCards, state),
-                revealedCards = revealedCards,
-                p1ActionsUsed = p1Actions,
-                p2ActionsUsed = p2Actions
-            )
-        }
-        validationQueue.trySend(cardId)
-    }
+     fun validateState(cardId: String,state: GameUIState): GameUIState{
 
-     fun validateState(cardId: String){
-        _uiState.update { currentState ->
-            val rows = currentState.grid.chunked(7)
-            var modifiedState = currentState
-            val card = findCard(cardId) ?: return
+            val rows = state.grid.chunked(7)
+            val card = findCard(cardId) ?: return state
+            var modifiedState = state
 
             if (card.isRevealed){
                 //controlla se la carta rivelata è una figura
                 modifiedState = figureRevealed(cardId,modifiedState)
-            }
 
-            Log.d("validate","${modifiedState.isQueenRevealed}")
+                if (modifiedState.phase !is GamePhase.Validation){
+                    return modifiedState
+                }
+            }
 
             //cercare jolly sulla griglia -> actually vorrei usare uno stato diverso per le invocazioni però non so
 
@@ -209,11 +277,15 @@ class SemelionGameViewModel: ViewModel() {
             }
 
             //aggiorna azioni
-            modifiedState = actionCounter(modifiedState,rows)
+         modifiedState = actionCounter(modifiedState,rows)
+         return if (modifiedState.phase == GamePhase.Validation) {
 
-            return@update modifiedState
-        }
-
+             modifiedState.copy(
+                 phase = GamePhase.PlayerTurn
+             )
+         } else {
+             modifiedState  // mantiene QueenPending o KingPending
+         }
     }
 
     fun swapJolly(state: GameUIState,suit:String): GameUIState{
@@ -262,8 +334,6 @@ class SemelionGameViewModel: ViewModel() {
         var dominantHouse = colorHouse(orders.first().first)
 
         //per adesso lo ignoro -> tripla d'esempio (F,2,0) (C,0,2) (D,0,2) -> ritestare ma credo funzioni
-        // jolly nero domina f
-        // jolly rosso ignoro
         var i = 0
         orders.forEach {
             val house = colorHouse(it.first)
@@ -331,46 +401,18 @@ class SemelionGameViewModel: ViewModel() {
 
             cardId.contains("9") -> //swipe column
                 modifiedState = modifiedState.copy(
-                    isQueenRevealed = true
+                    phase = GamePhase.QueenPending
+                    //isQueenRevealed = true
                 )
             cardId.contains("10") -> //swipe row
                 modifiedState = modifiedState.copy(
-                    isKingRevealed = true
+                    phase = GamePhase.KingPending
+                    //isKingRevealed = true
                 )
         }
 
         modifiedState = replaceCard(modifiedState,cardId)
         return modifiedState
-    }
-
-    fun queenWipe(columnId: Int, direction: (Int,Int) -> Int){
-        Log.d("Queen","${columnId+7*3}")
-        //fai da riga 0 a rig
-        _uiState.update { state ->
-            state.copy(
-                grid = (0 until 3).fold(state){acc, i ->
-                    val id1 = findCard(acc.grid[direction(i,0)].name)?.name ?: "none"
-                    val id2 = findCard(acc.grid[direction(i,7)].name)?.name ?: "none"
-                    figureSwap(id1 = id1,id2 = id2,state = acc)
-                }.grid,
-                isQueenRevealed = false
-            )
-        }
-        validationQueue.trySend("queen Landing")
-    }
-
-    fun kingRule(direction: (Int,Int) -> Int){
-            _uiState.update { state ->
-                state.copy(
-                    grid = (0 until 6).fold(state){ acc, i ->
-                        val id1 = findCard(acc.grid[direction(i,0)].name)?.name ?: "none"
-                        val id2 = findCard(acc.grid[direction(i,1)].name)?.name?: "none"
-                        figureSwap(id1,id2,acc)
-                    }.grid,
-                    isKingRevealed = false
-                )
-            }
-        validationQueue.trySend("kings cross")
     }
 
      fun jackSwap(cardId: String, state: GameUIState): GameUIState {
@@ -399,7 +441,7 @@ class SemelionGameViewModel: ViewModel() {
         if (!card.isRevealed) return state
         val newUncover = state.uncoverDeck
         val nextCard = state.uncoverDeck.first()
-        Log.d("replaceJack","${state.uncoverDeck.first()}")
+//        Log.d("replaceJack","${state.uncoverDeck.first()}")
 
         return state.copy(
             grid = state.grid.map {
@@ -409,7 +451,8 @@ class SemelionGameViewModel: ViewModel() {
                 }
             },
             uncoverDeck = newUncover - nextCard,
-            revealedCards = state.revealedCards + nextCard.name
+            revealedCards = state.revealedCards + nextCard.name,
+            lastReplacedCard = nextCard.name
         )
 
     }

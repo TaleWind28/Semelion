@@ -7,18 +7,17 @@ import android.graphics.Canvas
 import android.graphics.Point
 import android.util.Log
 import android.view.View
-import androidx.annotation.Size
+
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
+
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.draganddrop.dragAndDropSource
+
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -49,44 +48,29 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import it.di.unipi.sam636694.semelion.ui.theme.CardUIStates
 import it.di.unipi.sam636694.semelion.ui.theme.GameUIState
-import androidx.compose.foundation.draganddrop.dragAndDropSource
 
-
-
-
-import androidx.compose.foundation.draganddrop.dragAndDropSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.draganddrop.DragAndDropTransferData
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.imageResource
-
-
-import it.di.unipi.sam636694.semelion.R
+import it.di.unipi.sam636694.semelion.ui.theme.GamePhase
+import androidx.core.graphics.scale
 
 
 @Composable
@@ -160,7 +144,8 @@ fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
                                 rowItems = rowItems,
                                 model = model,
                                 rowBackground = style.first.copy(alpha = if (index == 0) 0.15f else 0.08f),
-                                rotation = style.second
+                                rotation = style.second,
+                                phase = model.uiState.value.phase
                             )
                         }
                     }
@@ -177,7 +162,8 @@ fun CardRow(
     rowItems: List<CardUIStates>,
     model: SemelionGameViewModel,
     rowBackground: Color,
-    rotation: Float
+    rotation: Float,
+    phase: GamePhase
 ){
     //preparazione misure
     val configuration = LocalConfiguration.current
@@ -222,7 +208,7 @@ fun CardRow(
                 verticalAlignment = Alignment.CenterVertically
             ){
                 AnimatedContent(
-                    targetState = model.uiState.value.isKingRevealed,
+                    targetState = phase is GamePhase.KingPending,
                     transitionSpec = {
                         fadeIn(tween(200)) togetherWith fadeOut(tween(200))
                     },
@@ -230,7 +216,7 @@ fun CardRow(
                 ) { kingRevealed ->
                     if (kingRevealed) {
                         FilledTonalIconButton(
-                            onClick = { model.kingRule{i:Int,inc:Int -> rowIndex*7 + i + inc} },
+                            onClick = { model.processIntent(GameIntent.KingDirectionChosen{ i:Int, inc:Int -> rowIndex*7 + i + inc}) },
                             modifier = Modifier.size(32.dp),
                             colors = IconButtonDefaults.filledTonalIconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -250,7 +236,7 @@ fun CardRow(
                     Column() {
                         if (rowIndex == 0){
                             AnimatedContent(
-                                targetState = model.uiState.value.isQueenRevealed,
+                                targetState = phase is GamePhase.QueenPending,
                                 transitionSpec = {
                                     fadeIn(tween(200)) togetherWith fadeOut(tween(200))
                                 },
@@ -258,7 +244,7 @@ fun CardRow(
                             ) { queenRevealed ->
                                 if (queenRevealed) {
                                     FilledTonalIconButton(
-                                        onClick = { model.queenWipe(itemIndex){ i, inc ->  itemIndex + 7*i + inc } } ,
+                                        onClick = { model.processIntent(GameIntent.QueenDirectionChosen{ i, inc ->  itemIndex + 7*i + inc } )} ,
                                         modifier = Modifier.size(32.dp),
                                         colors = IconButtonDefaults.filledTonalIconButtonColors(
                                             containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -279,7 +265,7 @@ fun CardRow(
                         FinalCard(card = card, model = model, size = cardSize)
                         if (rowIndex == 3){
                             AnimatedContent(
-                                targetState = model.uiState.value.isQueenRevealed,
+                                targetState = phase is GamePhase.QueenPending,
                                 transitionSpec = {
                                     fadeIn(tween(200)) togetherWith fadeOut(tween(200))
                                 },
@@ -287,7 +273,7 @@ fun CardRow(
                             ) { queenRevealed ->
                                 if (queenRevealed) {
                                     FilledTonalIconButton(
-                                        onClick = { model.queenWipe(itemIndex){ i, inc ->  itemIndex + 7*(3-i) - inc } },
+                                        onClick = { model.processIntent(GameIntent.QueenDirectionChosen{ i, inc ->  itemIndex + 7*(3-i) - inc }) },
                                         modifier = Modifier.size(32.dp),
                                         colors = IconButtonDefaults.filledTonalIconButtonColors(
                                             containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -309,8 +295,9 @@ fun CardRow(
 
 
                 }
+
                 AnimatedContent(
-                    targetState = model.uiState.value.isKingRevealed,
+                    targetState = phase is GamePhase.KingPending,
                     transitionSpec = {
                         fadeIn(tween(200)) togetherWith fadeOut(tween(200))
                     },
@@ -319,7 +306,7 @@ fun CardRow(
                     if (kingRevealed) {
                         FilledTonalIconButton(
                             onClick =
-                            { model.kingRule{i:Int, inc:Int -> 7*rowIndex + (6-i) - inc} },
+                            { model.processIntent(GameIntent.KingDirectionChosen{ i:Int, inc:Int -> 7*rowIndex + (6-i) - inc}) },
                             modifier = Modifier.size(32.dp),
                             colors = IconButtonDefaults.filledTonalIconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -337,52 +324,6 @@ fun CardRow(
                 }
             }
         }
-}
-
-
-@Composable
-fun DraggableCard(card: CardUIStates, model:SemelionGameViewModel, size: Dp){
-    val imageResId = if (card.isRevealed) (cardImageMap[card.name])?: R.drawable.purple_back else R.drawable.purple_back
-    //ancora poco soddisfacente ma può portare gioie
-    val interactionModifier = if (card.isRevealed)
-        Modifier
-            .dragAndDropSource(
-                transferData = {
-                    return@dragAndDropSource DragAndDropTransferData(
-                        clipData = ClipData.newPlainText(card.name, card.name)
-                    )
-                }
-            )
-    else
-        Modifier
-            .clickable{
-                model.cardClicked(card.name)
-            }
-
-
-    Image(
-        modifier = interactionModifier.size(size).dragAndDropTarget(
-            shouldStartDragAndDrop = { event ->
-                event.mimeTypes()
-                    .contains(ClipDescription.MIMETYPE_TEXT_PLAIN)
-            },
-            target = remember(card.name) {
-                object : DragAndDropTarget {
-                    override fun onDrop(event: DragAndDropEvent): Boolean {
-                        val text = (event.toAndroidDragEvent()
-                            .clipData?.getItemAt(0)?.text ?: "") as String
-                        if (text == card.name) return false
-                        model.swapCards(text, card.name)
-                        return true
-                    }
-                }
-            }
-        ),
-        painter = painterResource(id = imageResId),
-        contentDescription = "Carta Semelion"
-    )
-
-
 }
 
 @Composable
@@ -408,14 +349,14 @@ fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
         modifier = Modifier
             .size(size)
                 .pointerInput(card.name, card.isRevealed) {
-                    if (!model.uiState.value.isLoading){
+
                         detectTapGestures(
                             onTap = {
-                                if (!card.isRevealed) model.cardClicked(card.name)
+                                if (!card.isRevealed) model.processIntent(GameIntent.CardClicked(cardId = card.name))
                             },
                             onLongPress = {
                                 //il 42 fa ridere ma è stato calcolato a mano
-                                val scaled = Bitmap.createScaledBitmap(imageBitmap.asAndroidBitmap(), sizePx/2 +42, sizePx, false)
+                                val scaled = imageBitmap.asAndroidBitmap().scale(sizePx / 2 + 42, sizePx, false)
                                 val shadow = object : View.DragShadowBuilder() {
                                     override fun onProvideShadowMetrics(outShadowSize: Point, outShadowTouchPoint: Point) {
                                         outShadowSize.set(scaled.width, scaled.height)
@@ -431,7 +372,7 @@ fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
                                 view.startDragAndDrop(clipData, shadow, card.name, 0)
                             }
                         )
-                    }
+
             }
             .dragAndDropTarget(
                 shouldStartDragAndDrop = { event ->
@@ -443,7 +384,7 @@ fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
                             val text = (event.toAndroidDragEvent()
                                 .clipData?.getItemAt(0)?.text ?: "") as String
                             if (text == card.name) return false
-                            model.swapCards(text, card.name)
+                            model.processIntent(GameIntent.SwapCards(text,card.name))
                             return true
                         }
                     }
