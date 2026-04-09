@@ -1,8 +1,8 @@
 package it.di.unipi.sam636694.semelion
 
+import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipDescription
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Point
 import android.util.Log
@@ -65,7 +65,6 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.imageResource
@@ -156,6 +155,7 @@ fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
 }
 
 
+@SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun CardRow(
     rowIndex: Int,
@@ -233,7 +233,7 @@ fun CardRow(
                     }
                 }
                 rowItems.forEachIndexed { itemIndex, card ->
-                    Column() {
+                    Column{
                         if (rowIndex == 0){
                             AnimatedContent(
                                 targetState = phase is GamePhase.QueenPending,
@@ -329,7 +329,6 @@ fun CardRow(
 @Composable
 fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
     //context densità e size in pixel
-    val context = LocalContext.current
     val density = LocalDensity.current
     val sizePx = with(density) { size.toPx().toInt()}
     Log.d("final","$sizePx")
@@ -341,9 +340,8 @@ fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
 
     val view = LocalView.current
 
-    val imageBitmap = remember(imageResId) {
-        ImageBitmap.imageResource(context.resources, imageResId)
-    }
+    val imageBitmap = ImageBitmap.imageResource(id = imageResId)
+
 
     Image(
         modifier = Modifier
