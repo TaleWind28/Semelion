@@ -7,17 +7,13 @@ import android.graphics.Canvas
 import android.graphics.Point
 import android.util.Log
 import android.view.View
-
 import androidx.compose.animation.AnimatedContent
-
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
-
 import androidx.compose.foundation.border
-
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -36,7 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draganddrop.DragAndDropEvent
 import androidx.compose.ui.draganddrop.DragAndDropTarget
-
 import androidx.compose.ui.draganddrop.mimeTypes
 import androidx.compose.ui.draganddrop.toAndroidDragEvent
 import androidx.compose.ui.graphics.Color
@@ -48,7 +43,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import it.di.unipi.sam636694.semelion.ui.theme.CardUIStates
 import it.di.unipi.sam636694.semelion.ui.theme.GameUIState
-
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -71,13 +65,13 @@ import androidx.compose.ui.res.imageResource
 import it.di.unipi.sam636694.semelion.ui.theme.GamePhase
 import androidx.core.graphics.scale
 
-
 @Composable
 fun SemelionScreen(
     modifier: Modifier = Modifier,
     viewModel: SemelionGameViewModel = viewModel()
 ){
     val state by viewModel.uiState.collectAsState()
+
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -88,7 +82,6 @@ fun SemelionScreen(
                 modifier = Modifier.align(Alignment.CenterHorizontally).rotate(180f)
             )
 
-            //niceGrid(state= state, model = viewModel)
             FinalGrid(state = state, model = viewModel)
 
             Text(
@@ -99,16 +92,11 @@ fun SemelionScreen(
     }
 }
 
-
-
-
-
-
 @Composable
 fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
     //griglia di gioco
     Column(
-        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally),
+        modifier = Modifier.fillMaxWidth(),
 
         ) {
         //preparazione "misure"
@@ -130,7 +118,7 @@ fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
         )
 
         Column(
-            modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally)
+            modifier = Modifier.fillMaxWidth()
         ) {
             playerConfigs.forEachIndexed { index, (isActive, playerRows, style) ->
                 if (index > 0) Spacer(modifier = Modifier.size(8.dp))
@@ -157,14 +145,7 @@ fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun CardRow(
-    rowIndex: Int,
-    rowItems: List<CardUIStates>,
-    model: SemelionGameViewModel,
-    rowBackground: Color,
-    rotation: Float,
-    phase: GamePhase
-){
+fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameViewModel, rowBackground: Color, rotation: Float, phase: GamePhase){
     //preparazione misure
     val configuration = LocalConfiguration.current
     val screenWidthDp = configuration.screenWidthDp.dp

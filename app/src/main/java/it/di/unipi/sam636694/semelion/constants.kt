@@ -25,6 +25,8 @@ fun colorHouse(value:String):String{
 enum class RowOrder { CRESCENT, DECRESCENT, BOTH }
 
 val JOLLY_COLOR = listOf("black","red")
+
+const val DELAY_TIME: Long = 300
 const val UNCOVER_DECK_SIZE = 8
 val SEMELION_FIGURES = listOf(
     Pair(10,"D"),
