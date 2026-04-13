@@ -57,6 +57,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -66,6 +67,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.imageResource
 import it.di.unipi.sam636694.semelion.ui.theme.GamePhase
 import androidx.core.graphics.scale
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -333,7 +335,7 @@ fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
 
     val imageBitmap = ImageBitmap.imageResource(id = imageResId)
 
-
+    val scope = rememberCoroutineScope()
     Image(
         modifier = Modifier
             .size(size)
@@ -341,9 +343,26 @@ fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
 
                         detectTapGestures(
                             onTap = {
+//                                scope.launch {
+//                                    SnackBarController.sendEvent(
+//                                        event = SnackBarEvent(
+//                                            message = "Premuta la carta ${card.name}"
+//                                        )
+//                                    )
+//                                }
                                 if (!card.isRevealed) model.processIntent(GameIntent.CardClicked(cardId = card.name))
                             },
                             onLongPress = {
+                                if (model.uiState.value.phase !is  GamePhase.PlayerTurn){
+                                    scope.launch {
+                                        SnackBarController.sendEvent(
+                                            event = SnackBarEvent(
+                                                message = "Risolvi Prima l'effetto della figura"
+                                            )
+                                        )
+                                    }
+                                    return@detectTapGestures
+                                }
                                 //il 42 fa ridere ma è stato calcolato a mano
                                 val scaled = imageBitmap.asAndroidBitmap().scale(sizePx / 2 + 42, sizePx, false)
                                 val shadow = object : View.DragShadowBuilder() {

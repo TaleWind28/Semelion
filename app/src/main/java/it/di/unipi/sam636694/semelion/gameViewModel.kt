@@ -47,7 +47,16 @@ class SemelionGameViewModel: ViewModel() {
     }
 
     private fun handleCardClicked(cardId: String) {
-        if (_uiState.value.phase !is GamePhase.PlayerTurn) return
+        if (_uiState.value.phase !is GamePhase.PlayerTurn) {
+            viewModelScope.launch {
+                SnackBarController.sendEvent(
+                    event = SnackBarEvent(
+                        message = "Risolvi prima l'effetto della figura"
+                    )
+                )
+            }
+            return
+        }
 
         val needsDelay = _uiState.value.grid
             .find { it.name == cardId }
@@ -73,10 +82,30 @@ class SemelionGameViewModel: ViewModel() {
     }
 
     private fun handleSwapCards(id1: String, id2: String) {
-        if (_uiState.value.phase !is GamePhase.PlayerTurn) return
+        if (_uiState.value.phase !is GamePhase.PlayerTurn){
+            viewModelScope.launch {
+                SnackBarController.sendEvent(
+                    event = SnackBarEvent(
+                        message = "Risolvi prima l'effetto della figura"
+                    )
+                )
+            }
+            return
+        }
 
         val card1 = findCard(id1, _uiState.value) ?: return
         val card2 = findCard(id2, _uiState.value) ?: return
+        val message = canSwap(card1,card2,_uiState.value)
+        if (message != null){
+            viewModelScope.launch {
+                SnackBarController.sendEvent(
+                    event = SnackBarEvent(
+                        message = message
+                    )
+                )
+            }
+            return
+        }
 
         val (p1Actions, p2Actions) = increaseUsedActions(_uiState.value)
 
@@ -96,8 +125,7 @@ class SemelionGameViewModel: ViewModel() {
         }
 
         viewModelScope.launch {
-            val needsDelay =
-                _uiState.value.grid.any { it.name in listOf(id1, id2) && it.value >= 7 }
+            val needsDelay = _uiState.value.grid.any { it.name in listOf(id1, id2) && it.value >= 7 }
             if (!needsDelay) delay(DELAY_TIME)
             _uiState.update { validateState(id1, it) }
         }
@@ -145,6 +173,67 @@ class SemelionGameViewModel: ViewModel() {
             if (needsDelay) delay(DELAY_TIME)
             _uiState.update { validateState(it.lastReplacedCard ?: "king's cross", it) }
         }
+    }
+
+    fun canSwap(card1: CardUIStates,card2: CardUIStates,state: GameUIState): String?{
+        val row = state.grid.chunked(7)
+        val rows = Pair(row[0] + row[1],row[2] + row[3])
+        //controllo posizionale sui valori
+        val f1 = {rid:Int,pos:Int -> 7*(rid+1)-pos}
+        val f2 = {rid:Int,pos:Int -> pos+1-(7*rid)}
+        val positions = Pair(state.grid.indexOfFirst { it.name== card1.name },state.grid.indexOfFirst { it.name== card2.name })
+        val rids = Pair(positions.first/7,positions.second/7)
+
+        fun valueControl(rowId:Int,globalPosition:Int,value:Int): Boolean{
+            return when (value) {
+                f1(rowId,globalPosition) -> true
+                f2(rowId,globalPosition) -> true
+                else -> false
+            }
+        }
+
+        fun fairnessControl(card1: CardUIStates,card2: CardUIStates,playerTurn: Boolean):Boolean{
+            return when{
+                //turno di p2 carte nelle sue righe
+                !playerTurn && rows.first.find { it.name == card1.name } != null && rows.first.find { it.name == card2.name } != null ->  true
+                //turno di p1 con carte solo sue
+                playerTurn && rows.second.find { it.name == card1.name } != null && rows.second.find { it.name == card2.name } != null ->  true
+                //il controllo su second o first è indifferente in quanto avere un null in uno dei find implica la presenza dell'altra carta nelle righe dell'oppo
+                rows.second.find { it.name == card1.name } != null && rows.second.find { it.name == card2.name } == null ->  true
+                rows.second.find { it.name == card1.name } == null && rows.second.find { it.name == card2.name } != null ->  true
+                else -> false
+            }
+        }
+
+        fun errorMessage(positionValid: Boolean,fairness: Boolean):String?{
+            return if (!positionValid && !fairness){
+                "Lo scambio deve consentire ad almeno una carta di essere in posizione corretta e rispettare le regole di correttezza!"
+            }
+            else if (!positionValid){
+                 "Lo scambio deve consentire ad almeno una carta di essere in posizione corretta!"
+
+            }else if(!fairness) {
+                "Lo scambio deve seguire le regole di correttezza"
+            }
+            else{
+                null
+            }
+        }
+
+        val c2SwapValid =  valueControl(rowId= rids.first,globalPosition= positions.first, value= card2.value) || !card2.isRevealed || card2.name.contains("joker")
+
+        val c1SwapValid = valueControl(rowId= rids.second,globalPosition= positions.second,value= card1.value) || !card1.isRevealed || card1.name.contains("joker")
+
+        val positionValid = when{
+            !card1.isRevealed && !card2.isRevealed -> true
+            !card1.isRevealed -> c2SwapValid
+            !card2.isRevealed -> c1SwapValid
+            else -> c1SwapValid || c2SwapValid
+        }
+
+        val fairness = fairnessControl(card1,card2,state.p1Turn)
+
+        return  errorMessage(positionValid,fairness)
     }
 
     fun validateState(cardId: String, state: GameUIState): GameUIState {
