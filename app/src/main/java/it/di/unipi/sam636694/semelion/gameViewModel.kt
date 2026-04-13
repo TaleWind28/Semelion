@@ -29,20 +29,20 @@ class SemelionGameViewModel: ViewModel() {
         )
 
         viewModelScope.launch {
-            for (cardId in validationQueue){
+            for (cardId in validationQueue) {
                 delay(200)
-                validateState(cardId,_uiState.value)
+                validateState(cardId, _uiState.value)
             }
         }
     }
 
-    fun processIntent(intent: GameIntent){
+    fun processIntent(intent: GameIntent) {
         Log.d("MVI", "Intent: $intent | Phase: ${_uiState.value.phase}")
         when (intent) {
-            is GameIntent.CardClicked         -> handleCardClicked(intent.cardId)
-            is GameIntent.SwapCards           -> handleSwapCards(intent.id1, intent.id2)
+            is GameIntent.CardClicked -> handleCardClicked(intent.cardId)
+            is GameIntent.SwapCards -> handleSwapCards(intent.id1, intent.id2)
             is GameIntent.QueenDirectionChosen -> handleQueenDirection(intent.direction)
-            is GameIntent.KingDirectionChosen  -> handleKingDirection(intent.direction)
+            is GameIntent.KingDirectionChosen -> handleKingDirection(intent.direction)
         }
     }
 
@@ -57,7 +57,7 @@ class SemelionGameViewModel: ViewModel() {
             val revealedCards = state.revealedCards + cardId
             val (p1Actions, p2Actions) = increaseUsedActions(state)
             state.copy(
-                grid          = revealOnGrid(revealedCards, state),
+                grid = revealOnGrid(revealedCards, state),
                 revealedCards = revealedCards,
                 p1ActionsUsed = p1Actions,
                 p2ActionsUsed = p2Actions,
@@ -67,7 +67,7 @@ class SemelionGameViewModel: ViewModel() {
 
         viewModelScope.launch {
             if (needsDelay) delay(300)
-            _uiState.update { validateState(cardId,it) }
+            _uiState.update { validateState(cardId, it) }
         }
 
     }
@@ -75,8 +75,8 @@ class SemelionGameViewModel: ViewModel() {
     private fun handleSwapCards(id1: String, id2: String) {
         if (_uiState.value.phase !is GamePhase.PlayerTurn) return
 
-        val card1 = findCard(id1,_uiState.value) ?: return
-        val card2 = findCard(id2,_uiState.value) ?: return
+        val card1 = findCard(id1, _uiState.value) ?: return
+        val card2 = findCard(id2, _uiState.value) ?: return
 
         val (p1Actions, p2Actions) = increaseUsedActions(_uiState.value)
 
@@ -84,8 +84,8 @@ class SemelionGameViewModel: ViewModel() {
             it.copy(
                 grid = it.grid.map { card ->
                     when (card.name) {
-                        id1  -> card2.copy()
-                        id2  -> card1.copy()
+                        id1 -> card2.copy()
+                        id2 -> card1.copy()
                         else -> card.copy()
                     }
                 },
@@ -96,9 +96,10 @@ class SemelionGameViewModel: ViewModel() {
         }
 
         viewModelScope.launch {
-            val needsDelay = _uiState.value.grid.any { it.name in listOf(id1,id2) && it.value >= 7 }
+            val needsDelay =
+                _uiState.value.grid.any { it.name in listOf(id1, id2) && it.value >= 7 }
             if (!needsDelay) delay(DELAY_TIME)
-            _uiState.update { validateState(id1,it) }
+            _uiState.update { validateState(id1, it) }
         }
     }
 
@@ -108,8 +109,8 @@ class SemelionGameViewModel: ViewModel() {
         _uiState.update { state ->
             state.copy(
                 grid = (0 until 3).fold(state) { acc, i ->
-                    val id1 = findCard(acc.grid[direction(i, 0)].name,state)?.name ?: "none"
-                    val id2 = findCard(acc.grid[direction(i, 7)].name,state)?.name ?: "none"
+                    val id1 = findCard(acc.grid[direction(i, 0)].name, state)?.name ?: "none"
+                    val id2 = findCard(acc.grid[direction(i, 7)].name, state)?.name ?: "none"
                     figureSwap(id1, id2, acc)
                 }.grid,
                 phase = GamePhase.Validation          // transizione dentro lo stato
@@ -121,7 +122,7 @@ class SemelionGameViewModel: ViewModel() {
                 .find { it.name == _uiState.value.lastReplacedCard }
                 ?.let { it.value >= 7 } ?: false
             if (needsDelay) delay(DELAY_TIME)
-            _uiState.update { validateState(it.lastReplacedCard?: "queen Landing",it)}
+            _uiState.update { validateState(it.lastReplacedCard ?: "queen Landing", it) }
         }
     }
 
@@ -130,8 +131,8 @@ class SemelionGameViewModel: ViewModel() {
         _uiState.update { state ->
             state.copy(
                 grid = (0 until 6).fold(state) { acc, i ->
-                    val id1 = findCard(acc.grid[direction(i, 0)].name,state)?.name ?: "none"
-                    val id2 = findCard(acc.grid[direction(i, 1)].name,state)?.name ?: "none"
+                    val id1 = findCard(acc.grid[direction(i, 0)].name, state)?.name ?: "none"
+                    val id2 = findCard(acc.grid[direction(i, 1)].name, state)?.name ?: "none"
                     figureSwap(id1, id2, acc)
                 }.grid,
                 phase = GamePhase.Validation          // transizione dentro lo stato
@@ -142,40 +143,47 @@ class SemelionGameViewModel: ViewModel() {
                 .find { it.name == _uiState.value.lastReplacedCard }
                 ?.let { it.value >= 7 } ?: false
             if (needsDelay) delay(DELAY_TIME)
-            _uiState.update { validateState(it.lastReplacedCard ?: "king's cross",it) }
+            _uiState.update { validateState(it.lastReplacedCard ?: "king's cross", it) }
         }
     }
 
-    fun validateState(cardId: String,state: GameUIState): GameUIState{
-        Log.d("Validate",cardId)
-        val card = findCard(cardId,state) ?: return state
+    fun validateState(cardId: String, state: GameUIState): GameUIState {
+        Log.d("Validate", cardId)
+        val card = findCard(cardId, state) ?: return state
         var modifiedState = state
 
-        if (card.isRevealed){
+        if (card.isRevealed) {
             //controlla se la carta rivelata
             // è una figura
-            modifiedState = figureRevealed(cardId,modifiedState)
-
-            if (modifiedState.phase !is GamePhase.Validation){
-                return modifiedState
-            }
+            modifiedState = figureRevealed(cardId, modifiedState)
         }
 
         //cercare jolly sulla griglia -> actually vorrei usare uno stato diverso per le invocazioni però non so
         JOLLY_COLOR.forEach {
-            modifiedState = jollyApplier(modifiedState,"joker_$it")
-            Log.d("jolly","${findCard("joker_$it",modifiedState)?.name}:${findCard("joker_$it",modifiedState)?.value}")
+            modifiedState = jollyApplier(modifiedState, "joker_$it")
+            Log.d(
+                "jolly",
+                "${findCard("joker_$it", modifiedState)?.name}:${
+                    findCard(
+                        "joker_$it",
+                        modifiedState
+                    )?.value
+                }"
+            )
             //controllo se il jolly può essere sostituito
-            modifiedState = substituteJolly(modifiedState,"joker_$it")
+            modifiedState = substituteJolly(modifiedState, "joker_$it")
         }
 
         //controllo se devo coprire delle carte
-        modifiedState = modifiedState.grid.chunked(7).flatten().fold(modifiedState){state, card ->
-            coverCard(card.name,state)
+        modifiedState = modifiedState.grid.chunked(7).flatten().fold(modifiedState) { state, card ->
+            coverCard(card.name, state)
         }
 
         //aggiorna azioni
-        modifiedState = actionCounter(modifiedState,modifiedState.grid.chunked(7))
+        modifiedState = actionCounter(modifiedState, modifiedState.grid.chunked(7))
+
+        modifiedState = findWinner(modifiedState)
+        Log.d("validate","fase: ${modifiedState.phase}")
 
         return if (modifiedState.phase == GamePhase.Validation) {
             modifiedState.copy(
@@ -187,24 +195,24 @@ class SemelionGameViewModel: ViewModel() {
     }
 
     //funzioni di utility
-    fun createDecks(): Pair<List<CardUIStates>,List<CardUIStates>> {
+    fun createDecks(): Pair<List<CardUIStates>, List<CardUIStates>> {
 
-        val allCards = createCards(figures = SEMELION_FIGURES,jolly = JOLLY_COLOR)
+        val allCards = createCards(figures = SEMELION_FIGURES, jolly = JOLLY_COLOR)
 
         //testing filtro solo carte <7
         val noFiguresDeck = allCards.filter { it.value in 1..7 }.shuffled()
 
-        val specialDeck = allCards.filter { it.value > 7  || it.value == 0}
+        val specialDeck = allCards.filter { it.value > 7 || it.value == 0 }
 
         val gridDeck = noFiguresDeck.drop(UNCOVER_DECK_SIZE) + specialDeck
 
-        val uncoverDeck = noFiguresDeck.take(UNCOVER_DECK_SIZE).map { it.copy(isRevealed = true)  }
+        val uncoverDeck = noFiguresDeck.take(UNCOVER_DECK_SIZE).map { it.copy(isRevealed = true) }
 
-        return Pair(gridDeck.shuffled(),uncoverDeck.shuffled())
+        return Pair(gridDeck.shuffled(), uncoverDeck.shuffled())
 
     }
 
-    fun createCards(figures:List<Pair<Int,String>>,jolly:List<String>): List<CardUIStates>{
+    fun createCards(figures: List<Pair<Int, String>>, jolly: List<String>): List<CardUIStates> {
         return buildList {
 
             for (i in 1..4) {
@@ -223,10 +231,10 @@ class SemelionGameViewModel: ViewModel() {
             }
 
             //aggiungo jack, donne e re
-            figures.forEach{
+            figures.forEach {
                 add(
                     CardUIStates(
-                        name= "${it.first}${it.second}",
+                        name = "${it.first}${it.second}",
                         value = it.first,
                         house = it.second,
                         isRevealed = false
@@ -256,8 +264,8 @@ class SemelionGameViewModel: ViewModel() {
         }
     }
 
-    fun coverCard(cardId: String, state: GameUIState): GameUIState{
-        val selectedCard = findCard(cardId,state) ?: return state
+    fun coverCard(cardId: String, state: GameUIState): GameUIState {
+        val selectedCard = findCard(cardId, state) ?: return state
 
         if (selectedCard.value != 7 || !selectedCard.isRevealed) return state
 
@@ -274,13 +282,13 @@ class SemelionGameViewModel: ViewModel() {
         )
     }
 
-    fun figureSwap(id1:String,id2:String,state: GameUIState): GameUIState{
-        val card1 = findCard(id1,state) ?: return state
-        val card2 = findCard(id2,state) ?: return state
+    fun figureSwap(id1: String, id2: String, state: GameUIState): GameUIState {
+        val card1 = findCard(id1, state) ?: return state
+        val card2 = findCard(id2, state) ?: return state
 
         return state.copy(
-            grid =  state.grid.map{ card ->
-                when(card.name){
+            grid = state.grid.map { card ->
+                when (card.name) {
                     id1 -> card2.copy()
                     id2 -> card1.copy()
                     else -> card.copy()
@@ -290,8 +298,8 @@ class SemelionGameViewModel: ViewModel() {
 
     }
 
-    fun increaseUsedActions(state: GameUIState): Pair<Int, Int>{
-        return if (state.p1Turn){
+    fun increaseUsedActions(state: GameUIState): Pair<Int, Int> {
+        return if (state.p1Turn) {
             Pair(state.p1ActionsUsed + 1, state.p2ActionsUsed)
         } else {
             Pair(state.p1ActionsUsed, state.p2ActionsUsed + 1)
@@ -299,41 +307,39 @@ class SemelionGameViewModel: ViewModel() {
     }
 
 
-    fun swapJolly(state: GameUIState,suit:String): GameUIState{
-        val jolly = findCard(suit,state)?:return state
-        Log.d("jolly","jolly: $jolly")
-        val correctCard = findCard("${jolly.value}${jolly.house}",state) ?: return state
-        Log.d("jolly","carta corretta:${correctCard.name},jolly: $jolly")
+    fun swapJolly(state: GameUIState, suit: String): GameUIState {
+        val jolly = findCard(suit, state) ?: return state
+        Log.d("jolly", "jolly: $jolly")
+        val correctCard = findCard("${jolly.value}${jolly.house}", state) ?: return state
+        Log.d("jolly", "carta corretta:${correctCard.name},jolly: $jolly")
 
         if (!correctCard.isRevealed || !jolly.isRevealed) return state
 
         return state.copy(
             grid = state.grid.map {
-                when(it.name){
+                when (it.name) {
                     suit -> correctCard.copy()
                     correctCard.name -> jolly.copy()
                     else -> it.copy()
                 }
             },
 
-            revealedCards = if (correctCard.value == 7){
+            revealedCards = if (correctCard.value == 7) {
                 state.revealedCards + correctCard.name
-            }
-
-            else state.revealedCards,
+            } else state.revealedCards,
             incorrectSevenReveled = false
         )
     }
 
-    fun substituteJolly(state : GameUIState,suit: String): GameUIState{
-        val currentState = swapJolly(state,suit)
+    fun substituteJolly(state: GameUIState, suit: String): GameUIState {
+        val currentState = swapJolly(state, suit)
         return if (currentState == state) state
-        else replaceCard(currentState,suit)
+        else replaceCard(currentState, suit)
     }
 
-    fun jollyApplier(state: GameUIState, cardId: String): GameUIState{
+    fun jollyApplier(state: GameUIState, cardId: String): GameUIState {
         //cerco il jolly
-        val jolly = findCard(cardId,state) ?: return state
+        val jolly = findCard(cardId, state) ?: return state
         //ha senso continuare solo se il jolly è rivelato
         if (!jolly.isRevealed) return state
 
@@ -341,10 +347,10 @@ class SemelionGameViewModel: ViewModel() {
         val pos = state.grid.indexOfFirst { it == jolly }
 
         //il diviso funge da modulo perchè sto usando gli interi
-        val row = pos/7
+        val row = pos / 7
 
         val orders = state.grid.chunked(7)[row].getPredominantOrder()
-        if (orders.isEmpty() ) return state
+        if (orders.isEmpty()) return state
 
         //trovo il colore della riga
         var dominantHouse = colorHouse(orders.first().first)
@@ -353,7 +359,7 @@ class SemelionGameViewModel: ViewModel() {
         var i = 0
         orders.forEach {
             val house = colorHouse(it.first)
-            JOLLY_COLOR.forEach{ color ->
+            JOLLY_COLOR.forEach { color ->
                 if (cardId.contains(color) && house == color) {
                     dominantHouse = house
                     i += 1
@@ -364,14 +370,15 @@ class SemelionGameViewModel: ViewModel() {
         //ho due case del colore del jolly -> posso ignorarlo
         if (i != 1) {
             return state.copy(
-                grid = state.grid.map{ card ->
-                    when(card.name){
+                grid = state.grid.map { card ->
+                    when (card.name) {
                         cardId -> CardUIStates(
                             name = jolly.name,
                             value = 0,
                             house = colorHouse(jolly.house).lowercase(),
                             isRevealed = true
                         )
+
                         else -> card.copy()
                     }
                 }
@@ -379,50 +386,53 @@ class SemelionGameViewModel: ViewModel() {
         }
 
         //viene fatto solo per orders.size = 2 ed è corretto
-        val jollyOrder = orders.filter { colorHouse(it.first) == dominantHouse}
+        val jollyOrder = orders.filter { colorHouse(it.first) == dominantHouse }
 
         val value =
-            when (max(jollyOrder.first().second,jollyOrder.first().third)){
-                orders.first().second -> pos - 7*row +1
-                orders.first().third -> 7*(row+1) - pos
+            when (max(jollyOrder.first().second, jollyOrder.first().third)) {
+                orders.first().second -> pos - 7 * row + 1
+                orders.first().third -> 7 * (row + 1) - pos
                 else -> 0
             }
 
         //assume il valore in base all'ordinamento predominante
 
 
-        Log.d("validate","valore calcolato:$value, seme:$dominantHouse")
+        Log.d("validate", "valore calcolato:$value, seme:$dominantHouse")
 
         return state.copy(
-            grid = state.grid.map{ card ->
-                when(card.name){
+            grid = state.grid.map { card ->
+                when (card.name) {
                     cardId -> CardUIStates(
                         name = jolly.name,
                         value = value,
                         house = jollyOrder.first().first,
                         isRevealed = true
                     )
+
                     else -> card.copy()
                 }
             }
         )
     }
 
-     fun figureRevealed(cardId: String, state: GameUIState): GameUIState{
-        val card = findCard(cardId,state) ?: return state
+    fun figureRevealed(cardId: String, state: GameUIState): GameUIState {
+        val card = findCard(cardId, state) ?: return state
         if (card.value < 8) return state
 
         var modifiedState = state
 
-        when{
-            cardId.contains("8") ->{ //circular swap
-                modifiedState = jackSwap(cardId,modifiedState);Log.d("Figure","jack")}
+        when {
+            cardId.contains("8") -> { //circular swap
+                modifiedState = jackSwap(cardId, modifiedState); Log.d("Figure", "jack")
+            }
 
             cardId.contains("9") -> //swipe column
                 modifiedState = modifiedState.copy(
                     phase = GamePhase.QueenPending
                     //isQueenRevealed = true
                 )
+
             cardId.contains("10") -> //swipe row
                 modifiedState = modifiedState.copy(
                     phase = GamePhase.KingPending
@@ -430,13 +440,13 @@ class SemelionGameViewModel: ViewModel() {
                 )
         }
 
-        modifiedState = replaceCard(modifiedState,cardId)
+        modifiedState = replaceCard(modifiedState, cardId)
         return modifiedState
     }
 
-     fun jackSwap(cardId: String, state: GameUIState): GameUIState {
+    fun jackSwap(cardId: String, state: GameUIState): GameUIState {
         val swapCount = state.uncoverDeck.first().value - 1
-        val jackHouse = findCard(cardId,state)?.house ?: return state
+        val jackHouse = findCard(cardId, state)?.house ?: return state
 
         Log.d("jackSwap", "numero di swap: $swapCount")
 
@@ -444,19 +454,22 @@ class SemelionGameViewModel: ViewModel() {
             val currentPos = currentState.grid.indexOfFirst { it.name == currentId }
             val nextPosition = (0..27)
                 .filter {
-                    it !=currentPos && colorHouse(state.grid[it].house) == colorHouse(jackHouse)
+                    it != currentPos && colorHouse(state.grid[it].house) == colorHouse(jackHouse)
                 }
                 .random()
             val nextCard = currentState.grid[nextPosition]
 
-            Log.d("jackSwap", "from: $currentPos card: $currentId, to: $nextPosition, nextCard: ${nextCard.name}")
+            Log.d(
+                "jackSwap",
+                "from: $currentPos card: $currentId, to: $nextPosition, nextCard: ${nextCard.name}"
+            )
 
             nextCard.name to figureSwap(currentId, nextCard.name, currentState)
         }.second
     }
 
-    fun replaceCard(state: GameUIState,cardID: String): GameUIState{
-        val card = findCard(cardID,state) ?: return state
+    fun replaceCard(state: GameUIState, cardID: String): GameUIState {
+        val card = findCard(cardID, state) ?: return state
         if (!card.isRevealed) return state
         val newUncover = state.uncoverDeck
         val nextCard = state.uncoverDeck.first()
@@ -464,7 +477,7 @@ class SemelionGameViewModel: ViewModel() {
 
         return state.copy(
             grid = state.grid.map {
-                when(it.name){
+                when (it.name) {
                     card.name -> nextCard.copy()
                     else -> it.copy()
                 }
@@ -476,12 +489,12 @@ class SemelionGameViewModel: ViewModel() {
 
     }
 
-    fun actionCounter(state: GameUIState,rows: List<List<CardUIStates>>): GameUIState{
+    fun actionCounter(state: GameUIState, rows: List<List<CardUIStates>>): GameUIState {
         val p1Actions = calcActions(listOf(rows[2], rows[3]))
         val p2Actions = calcActions(listOf(rows[0], rows[1]))
 
         //se p1 ha rivelato un 7 passa
-        if (state.p1Turn && state.incorrectSevenReveled){
+        if (state.p1Turn && state.incorrectSevenReveled) {
             return state.copy(
                 p1Actions = p1Actions,
                 p2Actions = p2Actions,
@@ -492,7 +505,7 @@ class SemelionGameViewModel: ViewModel() {
         }
 
         //se p2 ha rivelato un 7 passa
-        if (!state.p1Turn && state.incorrectSevenReveled){
+        if (!state.p1Turn && state.incorrectSevenReveled) {
             return state.copy(
                 p1Actions = p1Actions,
                 p2Actions = p2Actions,
@@ -503,7 +516,7 @@ class SemelionGameViewModel: ViewModel() {
         }
 
         //fine turno p1
-        if (p1Actions - state.p1ActionsUsed <= 0 && state.p1Turn){
+        if (p1Actions - state.p1ActionsUsed <= 0 && state.p1Turn) {
             return state.copy(
                 p1Actions = p1Actions,
                 p2Actions = p2Actions,
@@ -513,7 +526,7 @@ class SemelionGameViewModel: ViewModel() {
         }
 
         //fine turno p2
-        if (p2Actions - state.p2ActionsUsed  <=0){
+        if (p2Actions - state.p2ActionsUsed <= 0) {
             return state.copy(
                 p1Actions = p1Actions,
                 p2Actions = p2Actions,
@@ -524,20 +537,20 @@ class SemelionGameViewModel: ViewModel() {
 
         //continuo il turno
         return state.copy(
-                p1Actions = p1Actions,
-                p2Actions = p2Actions,
-            )
+            p1Actions = p1Actions,
+            p2Actions = p2Actions,
+        )
     }
 
-    fun findCard(cardID: String,state: GameUIState): CardUIStates?{
+    fun findCard(cardID: String, state: GameUIState): CardUIStates? {
         return state.grid.find { it.name == cardID }
     }
 
     fun calcActions(rows: List<List<CardUIStates>>): Int {
         return 1 + rows.sumOf { row ->
             val revealed = row.filter { it.isRevealed }
-            if (revealed.size<2) return@sumOf 0
-            row.getPredominantOrder().sumOf { triple -> max(triple.second,triple.third)/2 }
+            if (revealed.size < 2) return@sumOf 0
+            row.getPredominantOrder().sumOf { triple -> max(triple.second, triple.third) / 2 }
         }
 
         //        var actions = 1
@@ -556,8 +569,41 @@ class SemelionGameViewModel: ViewModel() {
 //        }
     }
 
+    fun findWinner(state: GameUIState): GameUIState {
+        val rows = state.grid.chunked(7)
+        val p2r = listOf(rows[0], rows[1])
+        val p1r = listOf(rows[2], rows[3])
+
+        val predRows = Pair(
+            first = p2r.fold(0) { acc:Int, row ->
+                acc + row.findPowerRow()
+            },
+            second = p1r.fold(0){ acc, row ->
+                acc + row.findPowerRow()
+            }
+        )
+        Log.d("winner","p2:${predRows.first}, p1:${predRows.second} ")
+
+        return when{
+            (predRows.first == 2 && predRows.second == 2) -> state.copy( winner = "Pareggio", phase = GamePhase.GameOver)
+            predRows.first == 2 -> state.copy( winner = "vince p1", phase = GamePhase.GameOver)
+            predRows.second == 2 -> state.copy( winner = "vince p2", phase = GamePhase.GameOver)
+            else -> state
+        }
+    }
 }
 
+
+fun List<CardUIStates>.findPowerRow(): Int{
+    val order = this.getPredominantOrder()
+    return when(order.size){
+        1 ->  {
+            val (_,second,third)= order.first()
+            if (second == 7 || third == 7) 1 else 0
+        }
+        else -> 0
+    }
+}
 fun List<CardUIStates>.getRowOrder(index:Int) : RowOrder {
     //considero solo le carte rivelate
     val revealed = filter { it.isRevealed }
@@ -621,7 +667,6 @@ fun findMax(triples:List<Triple<String,Int,Int>>,parameter:String):Triple<String
 
 fun List<CardUIStates>.getPredominantOrder():List<Triple<String,Int,Int>>{
     //considero solo le carte rivelate
-    val cards = this
     val revealed = filter { it.isRevealed }
     val houses = mutableSetOf<String>()
 
@@ -629,7 +674,7 @@ fun List<CardUIStates>.getPredominantOrder():List<Triple<String,Int,Int>>{
 
     val triples: MutableList<Triple<String,Int,Int>> = mutableListOf()
 
-    houses.forEach { house -> triples.add(houseRowOrder(house,cards)) }
+    houses.forEach { house -> triples.add(houseRowOrder(house,this)) }
 
     if (triples.isEmpty()) return emptyList()
 

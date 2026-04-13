@@ -50,6 +50,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -65,6 +67,7 @@ import androidx.compose.ui.res.imageResource
 import it.di.unipi.sam636694.semelion.ui.theme.GamePhase
 import androidx.core.graphics.scale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SemelionScreen(
     modifier: Modifier = Modifier,
@@ -88,6 +91,13 @@ fun SemelionScreen(
                 text = "il giocatore 1 ha: ${state.p1Actions - state.p1ActionsUsed} azioni Rimanenti",
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
+        }
+        if (state.phase is GamePhase.GameOver){
+            BasicAlertDialog(
+                onDismissRequest ={},
+            ) {
+                Text(text = "${state.winner} ha vinto !!!")
+            }
         }
     }
 }

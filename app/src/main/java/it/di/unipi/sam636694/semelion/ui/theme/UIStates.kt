@@ -18,7 +18,8 @@ data class GameUIState (
     val p1Turn: Boolean = true,
     val revealedCards: List<String> = emptyList(),
     val phase: GamePhase = GamePhase.PlayerTurn,
-    val lastReplacedCard : String? = null
+    val lastReplacedCard : String? = null,
+    val winner : String? = null
 )
 
 sealed class GamePhase {
@@ -26,5 +27,6 @@ sealed class GamePhase {
     object QueenPending : GamePhase()
     object KingPending  : GamePhase()
     object Validation : GamePhase()
+
     object GameOver     : GamePhase()
 }
