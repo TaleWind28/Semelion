@@ -219,6 +219,10 @@ class SemelionGameViewModel: ViewModel() {
                 null
             }
         }
+        Log.d("swap","${positions.first}")
+        if (row[rids.first].findPowerRow() == 1 || row[rids.second].findPowerRow() == 1) {
+            return "Non puoi scambiare carte appartenenti ad una riga potente"
+        }
 
         val c2SwapValid =  valueControl(rowId= rids.first,globalPosition= positions.first, value= card2.value) || !card2.isRevealed || card2.name.contains("joker")
 
