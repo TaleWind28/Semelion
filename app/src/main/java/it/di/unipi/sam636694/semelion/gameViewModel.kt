@@ -23,14 +23,16 @@ class SemelionGameViewModel: ViewModel() {
     val uiState = _uiState.asStateFlow()
     val validationQueue = Channel<String>(Channel.BUFFERED)
 
-    init {
+    fun setup(){
         val decks = createDecks()
         _uiState.value = GameUIState(
             grid = decks.first,
             uncoverDeck = decks.second,
             phase = GamePhase.PlayerTurn
         )
+    }
 
+    fun validation(){
         viewModelScope.launch {
             for (cardId in validationQueue) {
                 delay(200)
@@ -39,13 +41,18 @@ class SemelionGameViewModel: ViewModel() {
         }
     }
 
+    init {
+        setup()
+        validation()
+    }
+
     fun processIntent(intent: GameIntent) {
         Log.d("MVI", "Intent: $intent | Phase: ${_uiState.value.phase}")
         when (intent) {
             is GameIntent.CardClicked -> handleCardClicked(intent.cardId)
             is GameIntent.SwapCards -> handleSwapCards(intent.id1, intent.id2)
             is GameIntent.QueenDirectionChosen -> handleQueenDirection(intent.direction)
-            is GameIntent.KingDirectionChosen -> handleKingDirection(intent.direction)
+            is GameIntent.KingDirectionChosen -> handleKingDirection(intent.rowIndex,intent.direction)
         }
     }
 
@@ -67,12 +74,9 @@ class SemelionGameViewModel: ViewModel() {
 
         _uiState.update { state ->
             val revealedCards = state.revealedCards + cardId
-            val (p1Actions, p2Actions) = increaseUsedActions(state)
             state.copy(
                 grid = revealOnGrid(revealedCards, state),
                 revealedCards = revealedCards,
-                p1ActionsUsed = p1Actions,
-                p2ActionsUsed = p2Actions,
                 phase = GamePhase.Validation
             )
         }
@@ -99,6 +103,7 @@ class SemelionGameViewModel: ViewModel() {
         val card1 = findCard(id1, _uiState.value) ?: return
         val card2 = findCard(id2, _uiState.value) ?: return
         val message = canSwap(card1,card2,_uiState.value)
+
         if (message != null){
             viewModelScope.launch {
                 SnackBarController.sendEvent(
@@ -110,8 +115,6 @@ class SemelionGameViewModel: ViewModel() {
             return
         }
 
-        val (p1Actions, p2Actions) = increaseUsedActions(_uiState.value)
-
         _uiState.update {
             it.copy(
                 grid = it.grid.map { card ->
@@ -121,8 +124,6 @@ class SemelionGameViewModel: ViewModel() {
                         else -> card.copy()
                     }
                 },
-                p1ActionsUsed = p1Actions,
-                p2ActionsUsed = p2Actions,
                 phase = GamePhase.Validation
             )
         }
@@ -157,8 +158,20 @@ class SemelionGameViewModel: ViewModel() {
         }
     }
 
-    private fun handleKingDirection(direction: (Int, Int) -> Int) {
+    private fun handleKingDirection(rowIndex:Int, direction: (Int, Int) -> Int) {
+        //controllo di essere nello stato giusto
         if (_uiState.value.phase !is GamePhase.KingPending) return
+        if (_uiState.value.grid.chunked(7)[rowIndex].findPowerRow() == 1){
+            viewModelScope.launch {
+                SnackBarController.sendEvent(
+                    event = SnackBarEvent(
+                        message = "Non puoi spostare Righe Potenti"
+                    )
+                )
+            }
+
+            return
+        }
         _uiState.update { state ->
             state.copy(
                 grid = (0 until 6).fold(state) { acc, i ->
@@ -169,6 +182,7 @@ class SemelionGameViewModel: ViewModel() {
                 phase = GamePhase.Validation          // transizione dentro lo stato
             )
         }
+
         viewModelScope.launch {
             val needsDelay = _uiState.value.grid
                 .find { it.name == _uiState.value.lastReplacedCard }
@@ -277,10 +291,18 @@ class SemelionGameViewModel: ViewModel() {
             coverCard(card.name, state)
         }
 
-        //aggiorna azioni
-        modifiedState = actionCounter(modifiedState, modifiedState.grid.chunked(7))
+        if (modifiedState.phase is GamePhase.Validation){
+            //aggiorna azioni
+            val (p1Actions, p2Actions) = increaseUsedActions(modifiedState)
+            modifiedState = modifiedState.copy(
+                p1ActionsUsed = p1Actions,
+                p2ActionsUsed = p2Actions
+            )
+            modifiedState = actionCounter(modifiedState, modifiedState.grid.chunked(7))
+        }
 
         modifiedState = findWinner(modifiedState)
+
         Log.d("validate","fase: ${modifiedState.phase}")
 
         return if (modifiedState.phase == GamePhase.Validation) {

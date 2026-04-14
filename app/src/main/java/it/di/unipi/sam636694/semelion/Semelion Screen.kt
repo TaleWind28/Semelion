@@ -1,9 +1,12 @@
 package it.di.unipi.sam636694.semelion
+import android.content.res.Configuration
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +42,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
@@ -48,35 +53,31 @@ import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
 @Composable
 fun SemelionScreen(
     modifier: Modifier = Modifier,
-    viewModel: SemelionGameViewModel = viewModel()
+    viewModel: SemelionGameViewModel = viewModel(),
+    paddingValues: PaddingValues
 ){
     val state by viewModel.uiState.collectAsState()
-    Column(
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        Spacer(modifier = Modifier.height(6.dp))
+    val configuration = LocalConfiguration.current
 
-        OpponentHeader(actionsUsed=state.p2ActionsUsed, actionsTotal =state.p2Actions, isWaiting = state.p1Turn )
+    when (configuration.orientation) {
+        Configuration.ORIENTATION_LANDSCAPE -> {
+            Log.d("kingFinder","${state.grid.indexOfFirst { it.name == "10D" }}")
+            Landscape(state = state, viewModel = viewModel)
+        }
+        else -> {
+            Column(
+                modifier = modifier.padding(paddingValues).fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Portrait(state = state,viewModel = viewModel)
+            }
 
-        Spacer(modifier = Modifier.height(6.dp))
-
-        FinalGrid(state = state, model = viewModel)
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        ActionsPanel(state = state)
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        PlayerFooter(isYourTurn = state.p1Turn)
-
-        Spacer(modifier = Modifier.height(6.dp))
-
+        }
     }
+
     // Game over dialog
     if (state.phase is GamePhase.GameOver) {
-        BasicAlertDialog(onDismissRequest = {}) {
+        BasicAlertDialog(onDismissRequest = {viewModel.setup()}) {
             Surface(shape = RoundedCornerShape(16.dp)) {
                 Text(
                     text = "${state.winner} ha vinto!!!",
@@ -87,7 +88,41 @@ fun SemelionScreen(
         }
     }
 }
+@Composable
+fun Portrait(state: GameUIState, viewModel: SemelionGameViewModel){
+    Spacer(modifier = Modifier.height(6.dp))
 
+    OpponentHeader(actionsUsed=state.p2ActionsUsed, actionsTotal =state.p2Actions, isWaiting = state.p1Turn )
+
+    Spacer(modifier = Modifier.height(6.dp))
+
+    FinalGrid(state = state, model = viewModel)
+
+    Spacer(modifier = Modifier.height(6.dp))
+
+    ActionsPanel(state = state)
+
+    Spacer(modifier = Modifier.height(6.dp))
+
+    PlayerFooter(isYourTurn = state.p1Turn)
+
+    Spacer(modifier = Modifier.height(6.dp))
+}
+
+@Composable
+fun Landscape(state: GameUIState, viewModel: SemelionGameViewModel){
+    Column() {
+        Text(
+            text = "il giocatore 2 ha: ${state.p2Actions - state.p2ActionsUsed} azioni Rimanenti",
+            modifier = Modifier.align(Alignment.CenterHorizontally).rotate(180f)
+        )
+        FinalGrid(state = state, model = viewModel)
+        Text(
+            text = "il giocatore 1 ha: ${state.p1Actions - state.p1ActionsUsed} azioni Rimanenti",
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+    }
+}
 
 
 @Composable

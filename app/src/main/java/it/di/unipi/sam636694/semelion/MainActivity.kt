@@ -65,13 +65,13 @@ class MainActivity : ComponentActivity() {
                             hostState = snackBarHostState
                         )
                     },
-                    topBar = { SemelionTopBar() },
+                    //topBar = { SemelionTopBar() },
                     bottomBar = { SemelionNavigationBar() },
                     modifier = Modifier.fillMaxSize(),
                     containerColor = Color.White,
                     contentWindowInsets = WindowInsets(0,0,0,0)
                 ) { padding ->
-                    SemelionScreen(Modifier.fillMaxSize().padding(padding))
+                    SemelionScreen(Modifier.fillMaxSize(), paddingValues = padding)
                 }
             }
         }

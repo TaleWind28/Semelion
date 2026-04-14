@@ -7,5 +7,5 @@ sealed class GameIntent {
 
     data class QueenDirectionChosen(val direction: (Int, Int) -> Int) : GameIntent()
 
-    data class KingDirectionChosen(val direction: (Int, Int) -> Int) : GameIntent()
+    data class KingDirectionChosen(val rowIndex:Int,val direction: (Int, Int) -> Int) : GameIntent()
 }

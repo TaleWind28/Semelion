@@ -28,7 +28,7 @@ enum class RowOrder { CRESCENT, DECRESCENT, BOTH }
 
 val JOLLY_COLOR = listOf("black","red")
 
-const val DELAY_TIME: Long = 300
+const val DELAY_TIME: Long = 500
 const val UNCOVER_DECK_SIZE = 8
 
 val POSITION_VALUES = Pair(first = {rid:Int,pos:Int -> 7*(rid+1)-pos},second= {rid:Int,pos:Int -> pos+1-(7*rid)})

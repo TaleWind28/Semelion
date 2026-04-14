@@ -175,7 +175,7 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
             ) { kingRevealed ->
                 if (kingRevealed) {
                     FilledTonalIconButton(
-                        onClick = { model.processIntent(GameIntent.KingDirectionChosen{ i:Int, inc:Int -> rowIndex*7 + i + inc}) },
+                        onClick = { model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex){ i:Int, inc:Int -> rowIndex*7 + i + inc}) },
                         modifier = Modifier.size(32.dp),
                         colors = IconButtonDefaults.filledTonalIconButtonColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -265,7 +265,7 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
                 if (kingRevealed) {
                     FilledTonalIconButton(
                         onClick =
-                            { model.processIntent(GameIntent.KingDirectionChosen{ i:Int, inc:Int -> 7*rowIndex + (6-i) - inc}) },
+                            { model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex){ i:Int, inc:Int -> 7*rowIndex + (6-i) - inc}) },
                         modifier = Modifier.size(32.dp),
                         colors = IconButtonDefaults.filledTonalIconButtonColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer
