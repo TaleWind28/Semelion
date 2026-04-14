@@ -3,9 +3,12 @@ package it.di.unipi.sam636694.semelion
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import it.di.unipi.sam636694.semelion.ui.theme.CardUIStates
-import it.di.unipi.sam636694.semelion.ui.theme.GamePhase
-import it.di.unipi.sam636694.semelion.ui.theme.GameUIState
+import it.di.unipi.sam636694.semelion.Utilities.SnackBarController
+import it.di.unipi.sam636694.semelion.Utilities.SnackBarEvent
+import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
+import it.di.unipi.sam636694.semelion.ui.states.GameIntent
+import it.di.unipi.sam636694.semelion.ui.states.GamePhase
+import it.di.unipi.sam636694.semelion.ui.states.GameUIState
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

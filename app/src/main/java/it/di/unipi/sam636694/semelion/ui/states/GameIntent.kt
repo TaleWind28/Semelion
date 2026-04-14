@@ -1,4 +1,4 @@
-package it.di.unipi.sam636694.semelion
+package it.di.unipi.sam636694.semelion.ui.states
 
 sealed class GameIntent {
     data class CardClicked(val cardId: String) : GameIntent()

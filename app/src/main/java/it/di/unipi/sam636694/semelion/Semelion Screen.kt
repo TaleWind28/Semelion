@@ -1,4 +1,5 @@
 package it.di.unipi.sam636694.semelion
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,8 +19,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import it.di.unipi.sam636694.semelion.ui.theme.GameUIState
+import it.di.unipi.sam636694.semelion.ui.states.GameUIState
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -37,9 +39,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import it.di.unipi.sam636694.semelion.ui.theme.GamePhase
-import it.di.unipi.sam636694.semelion.ui.theme.FinalGrid
+import it.di.unipi.sam636694.semelion.ui.states.GamePhase
+import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -175,8 +178,6 @@ fun OpponentHeader(
     }
 }
 
-
-// ─── Actions Panel ────────────────────────────────────────────────────────────
 @Composable
 fun ActionsPanel(state: GameUIState) {
     Row(
@@ -266,10 +267,47 @@ fun ActionsPanel(state: GameUIState) {
                 }
             }
         }
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFFF5F5F5),
+            modifier = Modifier.width(90.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("MAZZO SCOPERTA", fontSize = 9.sp, color = TextSecondary, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(6.dp))
+                // Mostra la carta scoperta se disponibile, altrimenti placeholder
+
+                val revealedCard = if (state.uncoverDeck.isNotEmpty()) state.uncoverDeck.first() else null
+                if (revealedCard != null) {
+                    val imageResId = if (revealedCard.isRevealed) cardImageMap[revealedCard.name] ?: R.drawable.purple_back else R.drawable.purple_back
+                    Image(
+                        painter = painterResource(imageResId),
+                        contentDescription = "Carta scoperta",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(0.65f)
+                            .clip(RoundedCornerShape(6.dp))
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(0.65f)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFFE0E0E0)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("—", color = TextSecondary, fontSize = 20.sp)
+                    }
+                }
+            }
+        }
     }
 }
 
-// ─── Player footer ────────────────────────────────────────────────────────────
 @Composable
 fun PlayerFooter(isYourTurn: Boolean) {
     Surface(
@@ -311,5 +349,3 @@ fun PlayerFooter(isYourTurn: Boolean) {
         }
     }
 }
-
-

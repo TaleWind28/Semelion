@@ -1,4 +1,4 @@
-package it.di.unipi.sam636694.semelion
+package it.di.unipi.sam636694.semelion.Utilities
 
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow

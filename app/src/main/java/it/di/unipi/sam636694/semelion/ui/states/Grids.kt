@@ -1,4 +1,4 @@
-package it.di.unipi.sam636694.semelion.ui.theme
+package it.di.unipi.sam636694.semelion.ui.states
 
 import android.annotation.SuppressLint
 import android.content.ClipData
@@ -57,12 +57,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.scale
-import it.di.unipi.sam636694.semelion.GameIntent
 import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.RowOrder
 import it.di.unipi.sam636694.semelion.SemelionGameViewModel
-import it.di.unipi.sam636694.semelion.SnackBarController
-import it.di.unipi.sam636694.semelion.SnackBarEvent
+import it.di.unipi.sam636694.semelion.Utilities.SnackBarController
+import it.di.unipi.sam636694.semelion.Utilities.SnackBarEvent
 import it.di.unipi.sam636694.semelion.cardImageMap
 import it.di.unipi.sam636694.semelion.getRowOrder
 import kotlinx.coroutines.launch
@@ -156,7 +155,6 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-//            .height(cardSize)
             .padding(horizontal = 4.dp, vertical = 2.dp),
         shape = RoundedCornerShape(12.dp),
         color = rowBackground,
@@ -167,6 +165,7 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
             modifier = Modifier,
             verticalAlignment = Alignment.CenterVertically
         ){
+            //FRECCE RE SX
             AnimatedContent(
                 targetState = phase is GamePhase.KingPending,
                 transitionSpec = {
@@ -193,8 +192,10 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
                 }
             }
 
+            //RIGHE
             rowItems.forEachIndexed { itemIndex, card ->
                 Column{
+                    //FRECCE DONNA ALTE
                     if (rowIndex == 0){
                         AnimatedContent(
                             targetState = phase is GamePhase.QueenPending,
@@ -221,8 +222,10 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
                         }
                     }
 
+                    //CARTE
                     FinalCard(card = card, model = model, size = cardSize)
 
+                    //FRECCE DONNA BASSE
                     if (rowIndex == 3){
                         AnimatedContent(
                             targetState = phase is GamePhase.QueenPending,
@@ -251,6 +254,7 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
                 }
             }
 
+            //FRECCE RE DX
             AnimatedContent(
                 targetState = phase is GamePhase.KingPending,
                 transitionSpec = {

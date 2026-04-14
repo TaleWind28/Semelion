@@ -1,4 +1,4 @@
-package it.di.unipi.sam636694.semelion.ui.theme
+package it.di.unipi.sam636694.semelion.ui.states
 
 data class CardUIStates(
     val name:String,

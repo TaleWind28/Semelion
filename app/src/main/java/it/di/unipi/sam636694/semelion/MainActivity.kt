@@ -13,6 +13,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -20,6 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import it.di.unipi.sam636694.semelion.Utilities.ObserveAsEvents
+import it.di.unipi.sam636694.semelion.Utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.ui.theme.SemelionTheme
 import kotlinx.coroutines.launch
 
@@ -41,16 +44,16 @@ class MainActivity : ComponentActivity() {
                     SnackbarHostState()
                 }
                 val scope  = rememberCoroutineScope()
-                ObserveAsEvents(flow = SnackBarController.events,snackBarHostState) { event ->
+                ObserveAsEvents(flow = SnackBarController.events, snackBarHostState) { event ->
                     scope.launch {
                         snackBarHostState.currentSnackbarData?.dismiss()
 
-                        val result  = snackBarHostState.showSnackbar(
+                        val result = snackBarHostState.showSnackbar(
                             message = event.message,
                             actionLabel = event.action?.name,
                             duration = SnackbarDuration.Short
                         )
-                        if (result == SnackbarResult.ActionPerformed){
+                        if (result == SnackbarResult.ActionPerformed) {
                             event.action?.action?.invoke()
                         }
                     }
@@ -63,6 +66,7 @@ class MainActivity : ComponentActivity() {
                         )
                     },
                     topBar = { SemelionTopBar() },
+                    bottomBar = { SemelionNavigationBar() },
                     modifier = Modifier.fillMaxSize(),
                     containerColor = Color.White,
                     contentWindowInsets = WindowInsets(0,0,0,0)
@@ -72,4 +76,9 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
+
+@Composable
+fun SemelionNavigationBar(){
+
 }
