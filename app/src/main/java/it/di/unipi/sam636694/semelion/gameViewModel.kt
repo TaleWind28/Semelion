@@ -161,6 +161,7 @@ class SemelionGameViewModel: ViewModel() {
     private fun handleKingDirection(rowIndex:Int, direction: (Int, Int) -> Int) {
         //controllo di essere nello stato giusto
         if (_uiState.value.phase !is GamePhase.KingPending) return
+        //controllo che il giocatore non abbia selezionato una riga potente
         if (_uiState.value.grid.chunked(7)[rowIndex].findPowerRow() == 1){
             viewModelScope.launch {
                 SnackBarController.sendEvent(
@@ -169,9 +170,9 @@ class SemelionGameViewModel: ViewModel() {
                     )
                 )
             }
-
             return
         }
+        //aggiorno lo stato shiftando la griglia
         _uiState.update { state ->
             state.copy(
                 grid = (0 until 6).fold(state) { acc, i ->
@@ -611,7 +612,7 @@ class SemelionGameViewModel: ViewModel() {
 
     fun actionCounter(state: GameUIState, rows: List<List<CardUIStates>>): GameUIState {
         val p1Actions = calcActions(listOf(rows[2], rows[3]))
-        val p2Actions = calcActions(listOf(rows[0], rows[1]))
+        val p2Actions = calcActions(listOf(rows[0], rows[1])) + if(state.p2FirstTurn) 1 else 0
 
         //se p1 ha rivelato un 7 passa
         if (state.p1Turn && state.incorrectSevenReveled) {
@@ -649,8 +650,9 @@ class SemelionGameViewModel: ViewModel() {
         if (p2Actions - state.p2ActionsUsed <= 0) {
             return state.copy(
                 p1Actions = p1Actions,
-                p2Actions = p2Actions,
+                p2Actions = p2Actions  - if (state.p2FirstTurn) 1 else 0 ,
                 p2ActionsUsed = 0,
+                p2FirstTurn = false,
                 p1Turn = true
             )
         }
@@ -672,21 +674,6 @@ class SemelionGameViewModel: ViewModel() {
             if (revealed.size < 2) return@sumOf 0
             row.getPredominantOrder().sumOf { triple -> max(triple.second, triple.third) / 2 }
         }
-
-        //        var actions = 1
-//        rows.forEach { row ->
-//            val revealed = row.filter { it.isRevealed }
-//            if (revealed.size < 2) return@forEach  // salta righe con meno di 2 carte rivelate
-//
-//            val dominant = row.getPredominantOrder()
-//            if (dominant.isEmpty()) return@forEach  // salta se non c'è ordine predominante
-//
-//            dominant.forEach { triple ->
-//                Log.d("CALCACTIONS","tripla:$triple")
-//                actions += max(triple.second,triple.third)/2
-//
-//            }
-//        }
     }
 
     fun findWinner(state: GameUIState): GameUIState {
@@ -706,8 +693,8 @@ class SemelionGameViewModel: ViewModel() {
 
         return when{
             (predRows.first == 2 && predRows.second == 2) -> state.copy( winner = "Pareggio", phase = GamePhase.GameOver)
-            predRows.first == 2 -> state.copy( winner = "vince p1", phase = GamePhase.GameOver)
-            predRows.second == 2 -> state.copy( winner = "vince p2", phase = GamePhase.GameOver)
+            predRows.first == 2 -> state.copy( winner = "Vince p2", phase = GamePhase.GameOver)
+            predRows.second == 2 -> state.copy( winner = "Vince p1", phase = GamePhase.GameOver)
             else -> state
         }
     }

@@ -80,7 +80,7 @@ fun SemelionScreen(
         BasicAlertDialog(onDismissRequest = {viewModel.setup()}) {
             Surface(shape = RoundedCornerShape(16.dp)) {
                 Text(
-                    text = "${state.winner} ha vinto!!!",
+                    text = "${state.winner}",
                     modifier = Modifier.padding(24.dp),
                     style = MaterialTheme.typography.titleLarge
                 )

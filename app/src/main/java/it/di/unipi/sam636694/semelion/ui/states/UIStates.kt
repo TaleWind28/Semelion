@@ -12,14 +12,15 @@ data class GameUIState (
     val uncoverDeck : List<CardUIStates> = emptyList(),
     val p1Actions: Int = 1,
     val p1ActionsUsed: Int = 0,
-    val p2Actions: Int = 1,
+    val p2Actions: Int = 2,
     val p2ActionsUsed: Int = 0,
     val incorrectSevenReveled: Boolean = false,
     val p1Turn: Boolean = true,
     val revealedCards: List<String> = emptyList(),
     val phase: GamePhase = GamePhase.PlayerTurn,
     val lastReplacedCard : String? = null,
-    val winner : String? = null
+    val winner : String? = null,
+    val p2FirstTurn: Boolean = true
 )
 
 sealed class GamePhase {
