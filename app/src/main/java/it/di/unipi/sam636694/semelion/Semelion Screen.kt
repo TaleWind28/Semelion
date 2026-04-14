@@ -54,7 +54,6 @@ import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
 fun SemelionScreen(
     modifier: Modifier = Modifier,
     viewModel: SemelionGameViewModel = viewModel(),
-    paddingValues: PaddingValues
 ){
     val state by viewModel.uiState.collectAsState()
     val configuration = LocalConfiguration.current
@@ -66,7 +65,7 @@ fun SemelionScreen(
         }
         else -> {
             Column(
-                modifier = modifier.padding(paddingValues).fillMaxSize(),
+                modifier = modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Portrait(state = state,viewModel = viewModel)
@@ -114,11 +113,13 @@ fun Landscape(state: GameUIState, viewModel: SemelionGameViewModel){
     Column() {
         Text(
             text = "il giocatore 2 ha: ${state.p2Actions - state.p2ActionsUsed} azioni Rimanenti",
+            color = Color.Black,
             modifier = Modifier.align(Alignment.CenterHorizontally).rotate(180f)
         )
         FinalGrid(state = state, model = viewModel)
         Text(
             text = "il giocatore 1 ha: ${state.p1Actions - state.p1ActionsUsed} azioni Rimanenti",
+            color = Color.Black,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
     }

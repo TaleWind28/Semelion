@@ -1,6 +1,7 @@
 package it.di.unipi.sam636694.semelion
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -11,7 +12,6 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import it.di.unipi.sam636694.semelion.Utilities.NavigationUIApp
 import it.di.unipi.sam636694.semelion.Utilities.ObserveAsEvents
 import it.di.unipi.sam636694.semelion.Utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.ui.theme.SemelionTheme
@@ -56,27 +57,8 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-
-                Scaffold(
-                    snackbarHost = {
-                        SnackbarHost(
-                            hostState = snackBarHostState
-                        )
-                    },
-                    //topBar = { SemelionTopBar() },
-                    bottomBar = { SemelionNavigationBar() },
-                    modifier = Modifier.fillMaxSize(),
-                    containerColor = Color.White,
-                    contentWindowInsets = WindowInsets(0,0,0,0)
-                ) { padding ->
-                    SemelionScreen(Modifier.fillMaxSize(), paddingValues = padding)
-                }
+                NavigationUIApp(snackBarHostState)
             }
         }
     }
-}
-
-@Composable
-fun SemelionNavigationBar(){
-
 }

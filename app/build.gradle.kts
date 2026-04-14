@@ -42,6 +42,7 @@ android {
 dependencies {
 
     implementation(libs.androidx.foundation)
+    implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
     val composeBom = platform("androidx.compose:compose-bom:2026.01.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)

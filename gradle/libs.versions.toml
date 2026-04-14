@@ -13,6 +13,7 @@ navigation3 = "1.1.0"
 navigationCompose = "2.9.7"
 foundation = "1.10.6"
 foundationVersion = "1.10.6"
+material3AdaptiveNavigationSuite = "1.4.0"
 
 [libraries]
 androidx-compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
@@ -39,6 +40,7 @@ androidx-navigation3-ui = {module = "androidx.navigation3:navigation3-ui",versio
 
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundationVersion" }
+androidx-compose-material3-adaptive-navigation-suite = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite", version.ref = "material3AdaptiveNavigationSuite" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
