@@ -3,8 +3,8 @@ package it.di.unipi.sam636694.semelion
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import it.di.unipi.sam636694.semelion.Utilities.SnackBarController
-import it.di.unipi.sam636694.semelion.Utilities.SnackBarEvent
+import it.di.unipi.sam636694.semelion.utilities.SnackBarController
+import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase

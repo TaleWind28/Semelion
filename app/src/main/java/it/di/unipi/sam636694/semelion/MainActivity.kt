@@ -1,27 +1,20 @@
 package it.di.unipi.sam636694.semelion
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import it.di.unipi.sam636694.semelion.Utilities.NavigationUIApp
-import it.di.unipi.sam636694.semelion.Utilities.ObserveAsEvents
-import it.di.unipi.sam636694.semelion.Utilities.SnackBarController
+import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
+import it.di.unipi.sam636694.semelion.utilities.ObserveAsEvents
+import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.ui.theme.SemelionTheme
 import kotlinx.coroutines.launch
 

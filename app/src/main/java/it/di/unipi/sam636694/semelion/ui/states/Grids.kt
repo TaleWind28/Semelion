@@ -60,8 +60,8 @@ import androidx.core.graphics.scale
 import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.RowOrder
 import it.di.unipi.sam636694.semelion.SemelionGameViewModel
-import it.di.unipi.sam636694.semelion.Utilities.SnackBarController
-import it.di.unipi.sam636694.semelion.Utilities.SnackBarEvent
+import it.di.unipi.sam636694.semelion.utilities.SnackBarController
+import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import it.di.unipi.sam636694.semelion.cardImageMap
 import it.di.unipi.sam636694.semelion.getRowOrder
 import kotlinx.coroutines.launch

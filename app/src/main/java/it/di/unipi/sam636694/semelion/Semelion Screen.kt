@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -110,7 +109,7 @@ fun Portrait(state: GameUIState, viewModel: SemelionGameViewModel){
 
 @Composable
 fun Landscape(state: GameUIState, viewModel: SemelionGameViewModel){
-    Column() {
+    Column{
         Text(
             text = "il giocatore 2 ha: ${state.p2Actions - state.p2ActionsUsed} azioni Rimanenti",
             color = Color.Black,

@@ -1,7 +1,6 @@
-package it.di.unipi.sam636694.semelion.Utilities
+package it.di.unipi.sam636694.semelion.utilities
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -27,12 +26,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.sp
 import it.di.unipi.sam636694.semelion.SemelionScreen
 
-@Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("🏠 Home Screen", fontSize = 24.sp)
-    }
-}
 
 @Composable
 fun FavoritesScreen(modifier: Modifier = Modifier) {

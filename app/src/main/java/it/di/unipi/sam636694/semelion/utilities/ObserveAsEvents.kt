@@ -1,4 +1,4 @@
-package it.di.unipi.sam636694.semelion.Utilities
+package it.di.unipi.sam636694.semelion.utilities
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
