@@ -178,16 +178,16 @@ class SemelionGameViewModel: ViewModel() {
     fun canSwap(card1: CardUIStates,card2: CardUIStates,state: GameUIState): String?{
         val row = state.grid.chunked(7)
         val rows = Pair(row[0] + row[1],row[2] + row[3])
-        //controllo posizionale sui valori
-        val f1 = {rid:Int,pos:Int -> 7*(rid+1)-pos}
-        val f2 = {rid:Int,pos:Int -> pos+1-(7*rid)}
-        val positions = Pair(state.grid.indexOfFirst { it.name== card1.name },state.grid.indexOfFirst { it.name== card2.name })
-        val rids = Pair(positions.first/7,positions.second/7)
+
+        val cardInfos = Pair(
+                state.grid.indexOfFirst { it.name== card1.name }.let{it to it/7},
+                state.grid.indexOfFirst { it.name== card2.name }.let { it to it/7 },
+        )
 
         fun valueControl(rowId:Int,globalPosition:Int,value:Int): Boolean{
             return when (value) {
-                f1(rowId,globalPosition) -> true
-                f2(rowId,globalPosition) -> true
+                POSITION_VALUES.first(rowId,globalPosition)-> true
+                POSITION_VALUES.second(rowId,globalPosition) -> true
                 else -> false
             }
         }
@@ -219,14 +219,18 @@ class SemelionGameViewModel: ViewModel() {
                 null
             }
         }
-        Log.d("swap","${positions.first}")
-        if (row[rids.first].findPowerRow() == 1 || row[rids.second].findPowerRow() == 1) {
+
+        Log.d("swap","$cardInfos")
+
+        if (row[cardInfos.first.second].findPowerRow() == 1 || row[cardInfos.second.second].findPowerRow() == 1) {
             return "Non puoi scambiare carte appartenenti ad una riga potente"
         }
 
-        val c2SwapValid =  valueControl(rowId= rids.first,globalPosition= positions.first, value= card2.value) || !card2.isRevealed || card2.name.contains("joker")
+        val c2SwapValid = !card2.isRevealed || card2.name.contains("joker") ||
+                valueControl(rowId= cardInfos.first.second,globalPosition= cardInfos.first.first, value= card2.value)
 
-        val c1SwapValid = valueControl(rowId= rids.second,globalPosition= positions.second,value= card1.value) || !card1.isRevealed || card1.name.contains("joker")
+        val c1SwapValid = !card1.isRevealed || card1.name.contains("joker") ||
+                valueControl(rowId= cardInfos.second.second,globalPosition= cardInfos.second.first,value= card1.value)
 
         val positionValid = when{
             !card1.isRevealed && !card2.isRevealed -> true
@@ -235,9 +239,7 @@ class SemelionGameViewModel: ViewModel() {
             else -> c1SwapValid || c2SwapValid
         }
 
-        val fairness = fairnessControl(card1,card2,state.p1Turn)
-
-        return  errorMessage(positionValid,fairness)
+        return  errorMessage(positionValid,fairnessControl(card1,card2,state.p1Turn))
     }
 
     fun validateState(cardId: String, state: GameUIState): GameUIState {

@@ -1,5 +1,7 @@
 package it.di.unipi.sam636694.semelion
 
+import androidx.compose.ui.graphics.Color
+
 fun mapHouse(value:Int):String{
     return when (value){
         1 -> "F"
@@ -28,6 +30,8 @@ val JOLLY_COLOR = listOf("black","red")
 
 const val DELAY_TIME: Long = 300
 const val UNCOVER_DECK_SIZE = 8
+
+val POSITION_VALUES = Pair(first = {rid:Int,pos:Int -> 7*(rid+1)-pos},second= {rid:Int,pos:Int -> pos+1-(7*rid)})
 val SEMELION_FIGURES = listOf(
     Pair(10,"D"),
     Pair(9,"C"),
@@ -81,3 +85,9 @@ val cardImageMap = mapOf(
     "joker_red" to R.drawable.joker_red,
     "joker_black" to R.drawable.joker_black
 )
+
+
+// ─── Colori del tema ──────────────────────────────────────────────────────────
+val GreenAccent   = Color(0xFF3BFF7C)
+val TextPrimary   = Color(0xFF111111)
+val TextSecondary = Color(0xFF888888)

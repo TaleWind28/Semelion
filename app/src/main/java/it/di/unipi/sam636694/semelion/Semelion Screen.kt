@@ -1,21 +1,6 @@
 package it.di.unipi.sam636694.semelion
-
-import android.annotation.SuppressLint
-import android.content.ClipData
-import android.content.ClipDescription
-import android.graphics.Canvas
-import android.graphics.Point
-import android.util.Log
-import android.view.View
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
-import androidx.compose.foundation.draganddrop.dragAndDropTarget
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,47 +12,34 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draganddrop.DragAndDropEvent
-import androidx.compose.ui.draganddrop.DragAndDropTarget
-import androidx.compose.ui.draganddrop.mimeTypes
-import androidx.compose.ui.draganddrop.toAndroidDragEvent
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import it.di.unipi.sam636694.semelion.ui.theme.CardUIStates
 import it.di.unipi.sam636694.semelion.ui.theme.GameUIState
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import it.di.unipi.sam636694.semelion.ui.theme.GamePhase
-import androidx.core.graphics.scale
-import kotlinx.coroutines.launch
+import it.di.unipi.sam636694.semelion.ui.theme.FinalGrid
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,329 +48,268 @@ fun SemelionScreen(
     viewModel: SemelionGameViewModel = viewModel()
 ){
     val state by viewModel.uiState.collectAsState()
-
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column {
-            Text(
-                text = "il giocatore 2 ha: ${state.p2Actions - state.p2ActionsUsed} azioni Rimanenti",
-                modifier = Modifier.align(Alignment.CenterHorizontally).rotate(180f)
-            )
-
-            FinalGrid(state = state, model = viewModel)
-
-            Text(
-                text = "il giocatore 1 ha: ${state.p1Actions - state.p1ActionsUsed} azioni Rimanenti",
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
-        }
-        if (state.phase is GamePhase.GameOver){
-            BasicAlertDialog(
-                onDismissRequest ={},
-            ) {
-                Text(text = "${state.winner} ha vinto !!!")
-            }
-        }
-    }
-}
-
-@Composable
-fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
-    //griglia di gioco
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Spacer(modifier = Modifier.height(6.dp))
 
-        ) {
-        //preparazione "misure"
-        val rows = state.grid.chunked(7)
+        OpponentHeader(actionsUsed=state.p2ActionsUsed, actionsTotal =state.p2Actions, isWaiting = state.p1Turn )
 
-        val attentionModifier = Modifier.border(
-            color = Color(0xFF3BFF7C),
-            width = 6.dp,
-            shape = RoundedCornerShape(8.dp)
-        )
+        Spacer(modifier = Modifier.height(6.dp))
 
-        //utility per non duplicare codice
-        fun playerModifier(isActive: Boolean): Modifier =
-            if (isActive) attentionModifier else Modifier
+        FinalGrid(state = state, model = viewModel)
 
-        val playerConfigs = listOf(
-            Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFF009688), 180f)),
-            Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFF9C27B0), 0f))
-        )
+        Spacer(modifier = Modifier.height(6.dp))
 
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            playerConfigs.forEachIndexed { index, (isActive, playerRows, style) ->
-                if (index > 0) Spacer(modifier = Modifier.size(8.dp))
+        ActionsPanel(state = state)
 
-                Box(modifier = playerModifier(isActive)) {
-                    Column {
-                        playerRows.forEachIndexed { rowIndex, rowItems ->
-                            CardRow(
-                                rowIndex = rowIndex + (index * 2),
-                                rowItems = rowItems,
-                                model = model,
-                                rowBackground = style.first.copy(alpha = if (index == 0) 0.15f else 0.08f),
-                                rotation = style.second,
-                                phase = model.uiState.value.phase
-                            )
-                        }
-                    }
-                }
+        Spacer(modifier = Modifier.height(6.dp))
+
+        PlayerFooter(isYourTurn = state.p1Turn)
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+    }
+    // Game over dialog
+    if (state.phase is GamePhase.GameOver) {
+        BasicAlertDialog(onDismissRequest = {}) {
+            Surface(shape = RoundedCornerShape(16.dp)) {
+                Text(
+                    text = "${state.winner} ha vinto!!!",
+                    modifier = Modifier.padding(24.dp),
+                    style = MaterialTheme.typography.titleLarge
+                )
             }
         }
     }
 }
 
 
-@SuppressLint("ConfigurationScreenWidthHeight")
+
 @Composable
-fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameViewModel, rowBackground: Color, rotation: Float, phase: GamePhase){
-    //preparazione misure
-    val configuration = LocalConfiguration.current
-    val screenWidthDp = configuration.screenWidthDp.dp
-    val labelWidth = 32.dp
-    val cardSize = (screenWidthDp - labelWidth*2 ) / 7
-
-    //definizione funzione per evitare duplicazioni di codice
-    @Composable
-    fun RowLabel(rowOrder: RowOrder, showOn: Float) {
-        if (rotation == showOn) {
-            Column(
-                modifier = Modifier.width(labelWidth),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                val (arrow, label,color) = when (rowOrder) {
-                    RowOrder.CRESCENT ->  Triple("→", "ASC",  Color.Blue)
-                    RowOrder.DECRESCENT -> Triple("←", "DESC",  Color.Red)
-                    RowOrder.BOTH -> Triple("↔", "BOTH",  Color.Black)
-                }
-
-                Text(text = arrow, fontSize = 20.sp, color = color)
-                Text(text = label, fontSize = 10.sp, color = color, modifier =  Modifier.rotate(rotation))
-            }
-        } else {
-            Spacer(modifier = Modifier.width(labelWidth))
-        }
-    }
-
-    val rowOrder = rowItems.getRowOrder(rowIndex)
+fun SemelionTopBar() {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 2.dp),
-        shape = RoundedCornerShape(12.dp),
-        color = rowBackground,
-        shadowElevation = 2.dp,
-        tonalElevation = 2.dp
-    ){
-            Row(
-                modifier = Modifier.wrapContentWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ){
-                AnimatedContent(
-                    targetState = phase is GamePhase.KingPending,
-                    transitionSpec = {
-                        fadeIn(tween(200)) togetherWith fadeOut(tween(200))
-                    },
-                    label = "left_control"
-                ) { kingRevealed ->
-                    if (kingRevealed) {
-                        FilledTonalIconButton(
-                            onClick = { model.processIntent(GameIntent.KingDirectionChosen{ i:Int, inc:Int -> rowIndex*7 + i + inc}) },
-                            modifier = Modifier.size(32.dp),
-                            colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                contentDescription = "Swipa a sx",
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    } else {
-                        RowLabel(rowOrder = rowOrder, showOn = 180f)
+        color = Color.White,
+        shadowElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .height(56.dp)
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = TextPrimary)
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = "Semelion",
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                color = TextPrimary,
+                modifier = Modifier.weight(1f)
+            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("TURN", fontSize = 10.sp, color = GreenAccent, fontWeight = FontWeight.Bold)
+                Text("YOU (Player 1)", fontSize = 12.sp, color = GreenAccent, fontWeight = FontWeight.SemiBold)
+            }
+            Spacer(Modifier.width(12.dp))
+            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = TextPrimary)
+        }
+    }
+}
+
+@Composable
+fun OpponentHeader(
+    actionsUsed: Int,
+    actionsTotal: Int,
+    isWaiting: Boolean
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFFE8F5E9),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Avatar placeholder
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF9E9E9E)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Outlined.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+            }
+
+            Spacer(Modifier.width(10.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text("OPPONENT", fontSize = 10.sp, color = TextSecondary, fontWeight = FontWeight.Bold)
+            }
+
+            Column(horizontalAlignment = Alignment.End) {
+                // Pallini azioni
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    repeat(actionsTotal) { i ->
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(if (i < actionsTotal - actionsUsed) GreenAccent else Color(0xFFCCCCCC))
+                        )
                     }
                 }
-                rowItems.forEachIndexed { itemIndex, card ->
-                    Column{
-                        if (rowIndex == 0){
-                            AnimatedContent(
-                                targetState = phase is GamePhase.QueenPending,
-                                transitionSpec = {
-                                    fadeIn(tween(200)) togetherWith fadeOut(tween(200))
-                                },
-                                label = "Upper_control"
-                            ) { queenRevealed ->
-                                if (queenRevealed) {
-                                    FilledTonalIconButton(
-                                        onClick = { model.processIntent(GameIntent.QueenDirectionChosen{ i, inc ->  itemIndex + 7*i + inc } )} ,
-                                        modifier = Modifier.size(32.dp),
-                                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                                        )
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.outline_arrow_drop_up_24),
-                                            contentDescription = "Swipa a dx",
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                } else {
-                                    RowLabel(rowOrder = rowOrder, showOn = 0f)
-                                }
-                            }
-                        }
+                Spacer(Modifier.height(4.dp))
+                if (isWaiting) {
+                    Text("WAITING FOR YOU", fontSize = 10.sp, color = TextSecondary)
+                } else {
+                    Text("PLAYING", fontSize = 10.sp, color = GreenAccent, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
 
-                        FinalCard(card = card, model = model, size = cardSize)
-                        if (rowIndex == 3){
-                            AnimatedContent(
-                                targetState = phase is GamePhase.QueenPending,
-                                transitionSpec = {
-                                    fadeIn(tween(200)) togetherWith fadeOut(tween(200))
-                                },
-                                label = "Upper_control"
-                            ) { queenRevealed ->
-                                if (queenRevealed) {
-                                    FilledTonalIconButton(
-                                        onClick = { model.processIntent(GameIntent.QueenDirectionChosen{ i, inc ->  itemIndex + 7*(3-i) - inc }) },
-                                        modifier = Modifier.size(32.dp),
-                                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                                        )
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.outline_arrow_drop_down_24),
-                                            contentDescription = "Swipa a dx",
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                } else {
-                                    RowLabel(rowOrder = rowOrder, showOn = 180f)
-                                }
-                            }
+
+// ─── Actions Panel ────────────────────────────────────────────────────────────
+@Composable
+fun ActionsPanel(state: GameUIState) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        // Azioni
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFFF5F5F5),
+            modifier = Modifier.weight(1f)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        "ACTIONS",
+                        fontSize = 11.sp,
+                        color = TextSecondary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("REMAINING", fontSize = 9.sp, color = TextSecondary)
+                        val remaining = state.p1Actions - state.p1ActionsUsed
+                        repeat(state.p1Actions) { i ->
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(if (i < remaining) GreenAccent else Color(0xFFCCCCCC))
+                            )
                         }
                     }
-
-
-
                 }
 
-                AnimatedContent(
-                    targetState = phase is GamePhase.KingPending,
-                    transitionSpec = {
-                        fadeIn(tween(200)) togetherWith fadeOut(tween(200))
-                    },
-                    label = "left_control"
-                ) { kingRevealed ->
-                    if (kingRevealed) {
-                        FilledTonalIconButton(
-                            onClick =
-                            { model.processIntent(GameIntent.KingDirectionChosen{ i:Int, inc:Int -> 7*rowIndex + (6-i) - inc}) },
-                            modifier = Modifier.size(32.dp),
-                            colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            )
-                        ) {
+                Spacer(Modifier.height(10.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // REVEAL
+                    Button(
+                        onClick = { },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = GreenAccent),
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        enabled = state.p1Turn && state.p1ActionsUsed < state.p1Actions
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = "Swipa a dx",
+                                Icons.Outlined.Person,
+                                contentDescription = null,
+                                tint = Color.Black,
                                 modifier = Modifier.size(18.dp)
                             )
+                            Text(
+                                "REVEAL",
+                                fontSize = 10.sp,
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
-                    } else {
-                        RowLabel(rowOrder = rowOrder, showOn = 0f)
+                    }
+                    // SWAP
+                    Button(
+                        onClick = { },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = GreenAccent),
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        enabled = state.p1Turn && state.p1ActionsUsed < state.p1Actions
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            // icona swap
+                            Text("⇄", fontSize = 18.sp, color = Color.Black)
+                            Text(
+                                "SWAP",
+                                fontSize = 10.sp,
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
         }
+    }
 }
 
+// ─── Player footer ────────────────────────────────────────────────────────────
 @Composable
-fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
-    //context densità e size in pixel
-    val density = LocalDensity.current
-    val sizePx = with(density) { size.toPx().toInt()}
-    Log.d("final","$sizePx")
-
-    val imageResId = if (card.isRevealed)
-        (cardImageMap[card.name]) ?: R.drawable.purple_back
-    else
-        R.drawable.purple_back
-
-    val view = LocalView.current
-
-    val imageBitmap = ImageBitmap.imageResource(id = imageResId)
-
-    val scope = rememberCoroutineScope()
-    Image(
-        modifier = Modifier
-            .size(size)
-                .pointerInput(card.name, card.isRevealed) {
-
-                        detectTapGestures(
-                            onTap = {
-//                                scope.launch {
-//                                    SnackBarController.sendEvent(
-//                                        event = SnackBarEvent(
-//                                            message = "Premuta la carta ${card.name}"
-//                                        )
-//                                    )
-//                                }
-                                if (!card.isRevealed) model.processIntent(GameIntent.CardClicked(cardId = card.name))
-                            },
-                            onLongPress = {
-                                if (model.uiState.value.phase !is  GamePhase.PlayerTurn){
-                                    scope.launch {
-                                        SnackBarController.sendEvent(
-                                            event = SnackBarEvent(
-                                                message = "Risolvi Prima l'effetto della figura"
-                                            )
-                                        )
-                                    }
-                                    return@detectTapGestures
-                                }
-                                //il 42 fa ridere ma è stato calcolato a mano
-                                val scaled = imageBitmap.asAndroidBitmap().scale(sizePx / 2 + 42, sizePx, false)
-                                val shadow = object : View.DragShadowBuilder() {
-                                    override fun onProvideShadowMetrics(outShadowSize: Point, outShadowTouchPoint: Point) {
-                                        outShadowSize.set(scaled.width, scaled.height)
-                                        outShadowTouchPoint.set(scaled.width / 2, scaled.height / 2)
-                                    }
-
-                                    override fun onDrawShadow(canvas: Canvas) {
-                                        canvas.drawBitmap(scaled, 0f, 0f, null)
-                                    }
-                                }
-                                val clipData = ClipData.newPlainText(card.name, card.name)
-
-                                view.startDragAndDrop(clipData, shadow, card.name, 0)
-                            }
-                        )
-
+fun PlayerFooter(isYourTurn: Boolean) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = if (isYourTurn) Color.White else Color(0xFFF5F5F5),
+        border = if (isYourTurn) androidx.compose.foundation.BorderStroke(2.dp, GreenAccent) else null,
+        modifier = Modifier.fillMaxWidth(),
+        shadowElevation = if (isYourTurn) 4.dp else 1.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF607D8B)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Outlined.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
             }
-            .dragAndDropTarget(
-                shouldStartDragAndDrop = { event ->
-                    event.mimeTypes().contains(ClipDescription.MIMETYPE_TEXT_PLAIN)
-                },
-                target = remember(card.name) {
-                    object : DragAndDropTarget {
-                        override fun onDrop(event: DragAndDropEvent): Boolean {
-                            val text = (event.toAndroidDragEvent()
-                                .clipData?.getItemAt(0)?.text ?: "") as String
-                            if (text == card.name) return false
-                            model.processIntent(GameIntent.SwapCards(text,card.name))
-                            return true
-                        }
-                    }
+
+            Spacer(Modifier.width(10.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text("YOU", fontSize = 10.sp, color = TextSecondary, fontWeight = FontWeight.Bold)
+            }
+
+            if (isYourTurn) {
+                Button(
+                    onClick = {},
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = GreenAccent)
+                ) {
+                    Text("YOUR TURN", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
-            ),
-        painter = painterResource(id = imageResId),
-        contentDescription = "Carta Semelion"
-    )
+            }
+        }
+    }
 }
+
+

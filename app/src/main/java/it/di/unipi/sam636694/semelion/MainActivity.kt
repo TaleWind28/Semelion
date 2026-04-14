@@ -1,12 +1,12 @@
 package it.di.unipi.sam636694.semelion
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -62,12 +62,12 @@ class MainActivity : ComponentActivity() {
                             hostState = snackBarHostState
                         )
                     },
+                    topBar = { SemelionTopBar() },
                     modifier = Modifier.fillMaxSize(),
                     containerColor = Color.White,
                     contentWindowInsets = WindowInsets(0,0,0,0)
                 ) { padding ->
-                    Log.d("errore","$padding")
-                    SemelionScreen(Modifier.fillMaxSize())
+                    SemelionScreen(Modifier.fillMaxSize().padding(padding))
                 }
             }
         }
