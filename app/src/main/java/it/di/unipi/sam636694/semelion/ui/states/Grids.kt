@@ -20,6 +20,8 @@ import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.animateTo
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,10 +57,12 @@ import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.draganddrop.mimeTypes
 import androidx.compose.ui.draganddrop.toAndroidDragEvent
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -135,12 +139,12 @@ fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameViewModel, rowBackground: Color, rotation: Float, phase: GamePhase){
+fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameViewModel, rowBackground: Color, rotation: Float, phase: GamePhase) {
     //preparazione misure
     val configuration = LocalConfiguration.current
     val screenWidthDp = configuration.screenWidthDp.dp
     val labelWidth = 32.dp
-    val cardSize = (screenWidthDp - labelWidth*2 ) / 7
+    val cardSize = (screenWidthDp - labelWidth * 2) / 7
 
     //definizione funzione per evitare duplicazioni di codice
     @Composable
@@ -150,55 +154,38 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
                 modifier = Modifier.width(labelWidth),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val (arrow, label,color) = when (rowOrder) {
-                    RowOrder.CRESCENT ->  Triple("→", "ASC",  Color.Blue)
-                    RowOrder.DECRESCENT -> Triple("←", "DESC",  Color.Red)
-                    RowOrder.BOTH -> Triple("↔", "BOTH",  Color.Black)
+                val (arrow, label, color) = when (rowOrder) {
+                    RowOrder.CRESCENT -> Triple("→", "ASC", Color.Blue)
+                    RowOrder.DECRESCENT -> Triple("←", "DESC", Color.Red)
+                    RowOrder.BOTH -> Triple("↔", "BOTH", Color.Black)
                 }
 
                 Text(text = arrow, fontSize = 20.sp, color = color)
-                Text(text = label, fontSize = 10.sp, color = color, modifier =  Modifier.rotate(rotation))
+                Text(
+                    text = label,
+                    fontSize = 10.sp,
+                    color = color,
+                    modifier = Modifier.rotate(rotation)
+                )
             }
         } else {
             Spacer(modifier = Modifier.width(labelWidth))
         }
     }
 
-    val rowOrder = rowItems.getRowOrder(rowIndex)
-    val swipableState = remember {
-        AnchoredDraggableState(0)
-    }
-
-    var rowWidthPx by remember { mutableFloatStateOf(0f) }
-
     val draggableState = remember {
         AnchoredDraggableState(initialValue = 0)
     }
 
-    LaunchedEffect(rowWidthPx) {
-        if (rowWidthPx > 0f) {
-            draggableState.updateAnchors(
-                DraggableAnchors {
-                    (-1) at -rowWidthPx
-                    0 at 0f
-                    1 at rowWidthPx
-                }
-            )
-        }
-    }
-
+    //risoluzione swipe left/right
     LaunchedEffect(draggableState.currentValue) {
         if (phase !is GamePhase.KingPending) return@LaunchedEffect
         when (draggableState.currentValue) {
             -1 -> {
-                //
-                Log.d("drag","$rowIndex left")
                 model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex){ i:Int, inc:Int -> rowIndex*7 + i + inc})
                 draggableState.animateTo(0) // ritorna al centro dopo lo swipe
             }
             1 -> {
-                Log.d("drag","$rowIndex, right")
-                //onSwipe(Direction.RIGHT)
                 model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex){ i:Int, inc:Int -> 7*rowIndex + (6-i) - inc})
                 draggableState.animateTo(0)
             }
@@ -212,133 +199,66 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
         color = rowBackground,
         shadowElevation = 2.dp,
         tonalElevation = 2.dp
-    ){
+    ) {
         Row(
             modifier = Modifier
-                .onSizeChanged { size -> rowWidthPx = size.width.toFloat() }
+                .fillMaxWidth()
+                .onSizeChanged { size -> draggableState.updateAnchors(
+                    DraggableAnchors {
+                        (-1) at -size.width.toFloat()
+                        0 at 0f
+                        1 at size.width.toFloat()
+                    }
+                ) }
                 .anchoredDraggable(draggableState, Orientation.Horizontal),
             verticalAlignment = Alignment.CenterVertically
-        ){
-            //FRECCE RE SX
-            AnimatedContent(
-                targetState = phase is GamePhase.KingPending,
-                transitionSpec = {
-                    fadeIn(tween(200)) togetherWith fadeOut(tween(200))
-                },
-                label = "left_control"
-            ) { kingRevealed ->
-                if (kingRevealed) {
-                    FilledTonalIconButton(
-                        onClick = { model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex){ i:Int, inc:Int -> rowIndex*7 + i + inc}) },
-                        modifier = Modifier.size(32.dp),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                            contentDescription = "Swipa a sx",
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                } else {
-                    RowLabel(rowOrder = rowOrder, showOn = 180f)
-                }
+        ) {
+            RowLabel(rowOrder = rowItems.getRowOrder(rowIndex), showOn = 180f)
+
+            val columnSwipableStates = remember {
+                List(rowItems.size){AnchoredDraggableState(0)}
             }
 
-            //RIGHE
             rowItems.forEachIndexed { itemIndex, card ->
-                Column{
-                    //FRECCE DONNA ALTE
-                    if (rowIndex == 0){
-                        AnimatedContent(
-                            targetState = phase is GamePhase.QueenPending,
-                            transitionSpec = {
-                                fadeIn(tween(200)) togetherWith fadeOut(tween(200))
-                            },
-                            label = "Upper_control"
-                        ) { queenRevealed ->
-                            if (queenRevealed) {
-                                FilledTonalIconButton(
-                                    onClick = { model.processIntent(GameIntent.QueenDirectionChosen{ i, inc ->  itemIndex + 7*i + inc } )} ,
-                                    modifier = Modifier.size(32.dp),
-                                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                                    )
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.outline_arrow_drop_up_24),
-                                        contentDescription = "Swipa a dx",
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
+
+                val colState = columnSwipableStates[itemIndex]
+                //risoluzione swipe up/down
+                LaunchedEffect(colState.currentValue) {
+                    if (phase !is GamePhase.QueenPending) return@LaunchedEffect
+                    when (colState.currentValue) {
+                        -1 -> {
+                            model.processIntent(GameIntent.QueenDirectionChosen { i, inc -> itemIndex + 7 * i + inc })
+                            colState.animateTo(0)
+                        }
+                        1 -> {
+                            model.processIntent(GameIntent.QueenDirectionChosen { i, inc -> itemIndex + 7 * (3 - i) - inc })
+                            colState.animateTo(0)
                         }
                     }
+                }
 
-                    //CARTE
+                Column(
+                    modifier = Modifier
+                        .onSizeChanged { size ->
+                            colState.updateAnchors(
+                                DraggableAnchors {
+                                    (-1) at -size.height.toFloat()
+                                    0 at 0f
+                                    1 at size.height.toFloat()
+                                }
+                            )
+                        }
+                        .anchoredDraggable(colState, orientation = Orientation.Vertical)
+                ) {
+                    // CARTE
                     FinalCard(card = card, model = model, size = cardSize)
-
-                    //FRECCE DONNA BASSE
-                    if (rowIndex == 3){
-                        AnimatedContent(
-                            targetState = phase is GamePhase.QueenPending,
-                            transitionSpec = {
-                                fadeIn(tween(200)) togetherWith fadeOut(tween(200))
-                            },
-                            label = "Upper_control"
-                        ) { queenRevealed ->
-                            if (queenRevealed) {
-                                FilledTonalIconButton(
-                                    onClick = { model.processIntent(GameIntent.QueenDirectionChosen{ i, inc ->  itemIndex + 7*(3-i) - inc }) },
-                                    modifier = Modifier.size(32.dp),
-                                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                                    )
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.outline_arrow_drop_down_24),
-                                        contentDescription = "Swipa a dx",
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
                 }
             }
 
-            //FRECCE RE DX
-            AnimatedContent(
-                targetState = phase is GamePhase.KingPending,
-                transitionSpec = {
-                    fadeIn(tween(200)) togetherWith fadeOut(tween(200))
-                },
-                label = "left_control"
-            ) { kingRevealed ->
-                if (kingRevealed) {
-                    FilledTonalIconButton(
-                        onClick =
-                            { model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex){ i:Int, inc:Int -> 7*rowIndex + (6-i) - inc}) },
-                        modifier = Modifier.size(32.dp),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = "Swipa a dx",
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                } else {
-                    RowLabel(rowOrder = rowOrder, showOn = 0f)
-                }
-            }
+            RowLabel(rowOrder = rowItems.getRowOrder(rowIndex), showOn = 0f)
         }
     }
 }
-
 @Composable
 fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
     //context densità e size in pixel

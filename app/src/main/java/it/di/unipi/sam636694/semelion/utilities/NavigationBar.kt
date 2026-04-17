@@ -42,8 +42,13 @@ enum class AppDestinations(
     val screen: @Composable (Modifier) -> Unit  // ← aggiunto
 ) {
     HOME("Home", Icons.Default.Home, { SemelionScreen(modifier = it) }),
-    FAVORITES("Rules", Icons.Default.Favorite, { PdfViewerScreen(it) }),
-    PROFILE("Profile", Icons.Default.AccountBox, { ProfileScreen(it) }),
+    FAVORITES("Rules", Icons.Default.Favorite, { PdfViewerScreen(modifier = it) }),
+    PROFILE("Profile", Icons.Default.AccountBox, { LogScreen(modifier = it)}),
+}
+
+@Composable
+fun LogScreen(modifier: Modifier = Modifier){
+    Text("LogScreen", color = Color.Black)
 }
 
 @Composable
