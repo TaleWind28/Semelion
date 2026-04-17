@@ -15,12 +15,18 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
+import androidx.compose.foundation.gestures.AnchoredDraggableState
+import androidx.compose.foundation.gestures.DraggableAnchors
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.anchoredDraggable
+import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -35,8 +41,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draganddrop.DragAndDropEvent
@@ -48,12 +59,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.scale
@@ -65,6 +78,7 @@ import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import it.di.unipi.sam636694.semelion.cardImageMap
 import it.di.unipi.sam636694.semelion.getRowOrder
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 
 @Composable
@@ -151,7 +165,45 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
     }
 
     val rowOrder = rowItems.getRowOrder(rowIndex)
+    val swipableState = remember {
+        AnchoredDraggableState(0)
+    }
 
+    var rowWidthPx by remember { mutableFloatStateOf(0f) }
+
+    val draggableState = remember {
+        AnchoredDraggableState(initialValue = 0)
+    }
+
+    LaunchedEffect(rowWidthPx) {
+        if (rowWidthPx > 0f) {
+            draggableState.updateAnchors(
+                DraggableAnchors {
+                    (-1) at -rowWidthPx
+                    0 at 0f
+                    1 at rowWidthPx
+                }
+            )
+        }
+    }
+
+    LaunchedEffect(draggableState.currentValue) {
+        if (phase !is GamePhase.KingPending) return@LaunchedEffect
+        when (draggableState.currentValue) {
+            -1 -> {
+                //
+                Log.d("drag","$rowIndex left")
+                model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex){ i:Int, inc:Int -> rowIndex*7 + i + inc})
+                draggableState.animateTo(0) // ritorna al centro dopo lo swipe
+            }
+            1 -> {
+                Log.d("drag","$rowIndex, right")
+                //onSwipe(Direction.RIGHT)
+                model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex){ i:Int, inc:Int -> 7*rowIndex + (6-i) - inc})
+                draggableState.animateTo(0)
+            }
+        }
+    }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -162,7 +214,9 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
         tonalElevation = 2.dp
     ){
         Row(
-            modifier = Modifier,
+            modifier = Modifier
+                .onSizeChanged { size -> rowWidthPx = size.width.toFloat() }
+                .anchoredDraggable(draggableState, Orientation.Horizontal),
             verticalAlignment = Alignment.CenterVertically
         ){
             //FRECCE RE SX
