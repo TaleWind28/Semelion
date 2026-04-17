@@ -24,15 +24,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.sp
+import it.di.unipi.sam636694.semelion.PdfViewerScreen
 import it.di.unipi.sam636694.semelion.SemelionScreen
 
 
-@Composable
-fun FavoritesScreen(modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("❤️ Favorites Screen", fontSize = 24.sp)
-    }
-}
 
 @Composable
 fun ProfileScreen(modifier: Modifier = Modifier) {
@@ -47,7 +42,7 @@ enum class AppDestinations(
     val screen: @Composable (Modifier) -> Unit  // ← aggiunto
 ) {
     HOME("Home", Icons.Default.Home, { SemelionScreen(modifier = it) }),
-    FAVORITES("Favorites", Icons.Default.Favorite, { FavoritesScreen(it) }),
+    FAVORITES("Rules", Icons.Default.Favorite, { PdfViewerScreen(it) }),
     PROFILE("Profile", Icons.Default.AccountBox, { ProfileScreen(it) }),
 }
 
