@@ -91,3 +91,8 @@ val cardImageMap = mapOf(
 val GreenAccent   = Color(0xFF3BFF7C)
 val TextPrimary   = Color(0xFF111111)
 val TextSecondary = Color(0xFF888888)
+
+
+fun actionTemplate(type:String, relevantCards:List<Triple<String,Int, Boolean>>, outcome: List<Triple<String,Int, Boolean>>): String{
+    return "$type:{$relevantCards} -> {$outcome} "
+}

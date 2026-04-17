@@ -23,6 +23,13 @@ class SemelionGameViewModel: ViewModel() {
     val uiState = _uiState.asStateFlow()
     val validationQueue = Channel<String>(Channel.BUFFERED)
 
+    fun sendMessage(type:String, relevantCards:List<Triple<String,Int, Boolean>>, outcome:List<Triple<String,Int, Boolean>>){
+        viewModelScope.launch {
+            SharedRepository.send(actionTemplate(type=type ,relevantCards=relevantCards ,outcome=outcome))
+        }
+
+    }
+
     fun setup(){
         val decks = createDecks()
         _uiState.value = GameUIState(
@@ -71,6 +78,9 @@ class SemelionGameViewModel: ViewModel() {
         val needsDelay = _uiState.value.grid
             .find { it.name == cardId }
             ?.let { it.value >= 7 } ?: false
+        //azione per log
+        val pos = _uiState.value.grid.indexOfFirst { it.name == cardId }
+        val relevantCards = listOf(Triple(cardId ,pos , findCard(cardId,_uiState.value)?.isRevealed ?: false))
 
         _uiState.update { state ->
             val revealedCards = state.revealedCards + cardId
@@ -80,6 +90,10 @@ class SemelionGameViewModel: ViewModel() {
                 phase = GamePhase.Validation
             )
         }
+
+        val outcome = listOf(Triple(cardId ,pos , findCard(cardId,_uiState.value)?.isRevealed ?: false))
+
+        sendMessage("reveal",relevantCards, outcome =outcome)
 
         viewModelScope.launch {
             if (needsDelay) delay(300)
@@ -115,6 +129,11 @@ class SemelionGameViewModel: ViewModel() {
             return
         }
 
+        val relevantCards = listOf(
+            Triple(id1,_uiState.value.grid.indexOfFirst { it.name == id1 }, findCard(id1,_uiState.value)?.isRevealed ?: false),
+            Triple(id2,_uiState.value.grid.indexOfFirst { it.name == id2 }, findCard(id2,_uiState.value)?.isRevealed ?: false)
+        )
+
         _uiState.update {
             it.copy(
                 grid = it.grid.map { card ->
@@ -128,22 +147,31 @@ class SemelionGameViewModel: ViewModel() {
             )
         }
 
+        val outcome = listOf(
+            Triple(id1,_uiState.value.grid.indexOfFirst { it.name == id1 }, findCard(id1,_uiState.value)?.isRevealed ?: false),
+            Triple(id2,_uiState.value.grid.indexOfFirst { it.name == id2 }, findCard(id2,_uiState.value)?.isRevealed ?: false)
+        )
+
+        sendMessage("swap",relevantCards,outcome)
+
         viewModelScope.launch {
             val needsDelay = _uiState.value.grid.any { it.name in listOf(id1, id2) && it.value >= 7 }
             if (!needsDelay) delay(DELAY_TIME)
             _uiState.update { validateState(id1, it) }
         }
+
     }
 
     private fun handleQueenDirection(direction: (Int, Int) -> Int) {
         if (_uiState.value.phase !is GamePhase.QueenPending) return
 
         _uiState.update { state ->
+
             state.copy(
                 grid = (0 until 3).fold(state) { acc, i ->
                     val id1 = findCard(acc.grid[direction(i, 0)].name, state)?.name ?: "none"
                     val id2 = findCard(acc.grid[direction(i, 7)].name, state)?.name ?: "none"
-                    figureSwap(id1, id2, acc)
+                    figureSwap(id1, id2, acc,"Queen'Swipe")
                 }.grid,
                 phase = GamePhase.Validation          // transizione dentro lo stato
             )
@@ -178,7 +206,7 @@ class SemelionGameViewModel: ViewModel() {
                 grid = (0 until 6).fold(state) { acc, i ->
                     val id1 = findCard(acc.grid[direction(i, 0)].name, state)?.name ?: "none"
                     val id2 = findCard(acc.grid[direction(i, 1)].name, state)?.name ?: "none"
-                    figureSwap(id1, id2, acc)
+                    figureSwap(id1, id2, acc,"King's Rule")
                 }.grid,
                 phase = GamePhase.Validation          // transizione dentro lo stato
             )
@@ -396,6 +424,11 @@ class SemelionGameViewModel: ViewModel() {
 
         val revealedCards = state.revealedCards - cardId
 
+        val relevantCards = listOf(Triple(cardId,position,true))
+        val outcome = listOf(Triple(cardId,position,false))
+
+        sendMessage("covered",relevantCards,outcome)
+
         return state.copy(
             grid = revealOnGrid(revealedCards, state),
             revealedCards = revealedCards,
@@ -403,11 +436,16 @@ class SemelionGameViewModel: ViewModel() {
         )
     }
 
-    fun figureSwap(id1: String, id2: String, state: GameUIState): GameUIState {
+    fun figureSwap(id1: String, id2: String, state: GameUIState, type: String): GameUIState {
         val card1 = findCard(id1, state) ?: return state
         val card2 = findCard(id2, state) ?: return state
 
-        return state.copy(
+        val relevantCards = listOf(
+            Triple(id1,state.grid.indexOfFirst { it.name == id1 }, findCard(id1,state)?.isRevealed ?: false),
+            Triple(id2,state.grid.indexOfFirst { it.name == id2 }, findCard(id2,state)?.isRevealed ?: false)
+        )
+
+        val modifiedState = state.copy(
             grid = state.grid.map { card ->
                 when (card.name) {
                     id1 -> card2.copy()
@@ -417,6 +455,14 @@ class SemelionGameViewModel: ViewModel() {
             },
         )
 
+        val outcome = listOf(
+            Triple(id1,modifiedState.grid.indexOfFirst { it.name == id1 }, findCard(id1,modifiedState)?.isRevealed ?: false),
+            Triple(id2,modifiedState.grid.indexOfFirst { it.name == id2 }, findCard(id2,modifiedState)?.isRevealed ?: false)
+        )
+
+        sendMessage(type,relevantCards,outcome)
+
+        return modifiedState
     }
 
     fun increaseUsedActions(state: GameUIState): Pair<Int, Int> {
@@ -426,7 +472,6 @@ class SemelionGameViewModel: ViewModel() {
             Pair(state.p1ActionsUsed, state.p2ActionsUsed + 1)
         }
     }
-
 
     fun swapJolly(state: GameUIState, suit: String): GameUIState {
         val jolly = findCard(suit, state) ?: return state
@@ -585,7 +630,7 @@ class SemelionGameViewModel: ViewModel() {
                 "from: $currentPos card: $currentId, to: $nextPosition, nextCard: ${nextCard.name}"
             )
 
-            nextCard.name to figureSwap(currentId, nextCard.name, currentState)
+            nextCard.name to figureSwap(currentId, nextCard.name, currentState, "Jack' chain")
         }.second
     }
 
@@ -594,7 +639,11 @@ class SemelionGameViewModel: ViewModel() {
         if (!card.isRevealed) return state
         val newUncover = state.uncoverDeck
         val nextCard = state.uncoverDeck.first()
-//        Log.d("replaceJack","${state.uncoverDeck.first()}")
+        val pos = _uiState.value.grid.indexOfFirst { it.name==cardID }
+        val relevantCards = listOf(Triple(cardID,pos, true))
+        val outcome = listOf(Triple(nextCard.name,pos, true))
+
+        sendMessage("addedFromUncover",relevantCards,outcome)
 
         return state.copy(
             grid = state.grid.map {
@@ -638,6 +687,11 @@ class SemelionGameViewModel: ViewModel() {
 
         //fine turno p1
         if (p1Actions - state.p1ActionsUsed <= 0 && state.p1Turn) {
+            sendMessage(
+                "Turn End",
+                listOf(Triple("P1 aveva",state.p1Actions, true)),
+                listOf(Triple("P1 ha usato",state.p1ActionsUsed,true))
+            )
             return state.copy(
                 p1Actions = p1Actions,
                 p2Actions = p2Actions,
@@ -648,6 +702,11 @@ class SemelionGameViewModel: ViewModel() {
 
         //fine turno p2
         if (p2Actions - state.p2ActionsUsed <= 0) {
+            sendMessage(
+                "Turn End",
+                listOf(Triple("P2 aveva",state.p2Actions, true)),
+                listOf(Triple("P2 ha usato",state.p2ActionsUsed,true))
+            )
             return state.copy(
                 p1Actions = p1Actions,
                 p2Actions = p2Actions  - if (state.p2FirstTurn) 1 else 0 ,

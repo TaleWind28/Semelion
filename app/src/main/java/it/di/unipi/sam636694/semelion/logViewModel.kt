@@ -2,9 +2,9 @@ package it.di.unipi.sam636694.semelion
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class LogViewModel: ViewModel() {
@@ -12,18 +12,21 @@ class LogViewModel: ViewModel() {
 
     val uiState = _uiState.asStateFlow()
 
-    val logQueue = Channel<String>(Channel.BUFFERED)
-
     init {
         viewModelScope.launch{
-            for (action in logQueue){
-                registerAction(action,_uiState.value)
+            SharedRepository.channel.collect{ message ->
+                registerAction(action = message, state = _uiState.value)
+
             }
         }
     }
 
     fun registerAction(action:String,state: LogUIState){
-
+        _uiState.update {
+            state.copy(
+                actions = state.actions + action
+            )
+        }
     }
 
 }
