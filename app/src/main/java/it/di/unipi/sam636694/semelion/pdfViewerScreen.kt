@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,7 +25,8 @@ import java.io.File
 
 @Composable
 fun PdfViewerScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    padding : PaddingValues
 ){
     val context = LocalContext.current
     val pdfUri = remember {

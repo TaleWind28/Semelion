@@ -16,10 +16,14 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,8 +33,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draganddrop.DragAndDropEvent
@@ -49,6 +56,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.scale
@@ -66,7 +74,6 @@ fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
     //griglia di gioco
     Column(
         modifier = Modifier.fillMaxWidth(),
-
         ) {
         //preparazione "misure"
         val rows = state.grid.chunked(7)
@@ -87,21 +94,21 @@ fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
         )
 
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.SpaceEvenly
         ) {
             playerConfigs.forEachIndexed { index, (isActive, playerRows, style) ->
                 Log.d("SemelionScreen","$index")
                 if (index > 0) Spacer(modifier = Modifier.size(8.dp))
 
                 Box(modifier = playerModifier(isActive)) {
-                    Column {
+                    Column(verticalArrangement = Arrangement.SpaceEvenly) {
                         playerRows.forEachIndexed { rowIndex, rowItems ->
                             CardRow(
                                 rowIndex = rowIndex + (index * 2),
                                 rowItems = rowItems,
                                 model = model,
                                 rowBackground = style.first.copy(alpha = if (index == 0) 0.15f else 0.08f),
-                                rotation = style.second,
                                 phase = model.uiState.value.phase
                             )
                         }
@@ -115,39 +122,10 @@ fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameViewModel, rowBackground: Color, rotation: Float, phase: GamePhase) {
+fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameViewModel, rowBackground: Color, phase: GamePhase) {
     //preparazione misure
-    val configuration = LocalConfiguration.current
-    val screenWidthDp = configuration.screenWidthDp.dp
-    val labelWidth = 32.dp
-    val cardSize = (screenWidthDp - labelWidth * 2) / 7
-
-    //definizione funzione per evitare duplicazioni di codice
-    @Composable
-    fun RowLabel(rowOrder: RowOrder, showOn: Float) {
-        if (rotation == showOn) {
-            Column(
-                modifier = Modifier.width(labelWidth),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                val (arrow, label, color) = when (rowOrder) {
-                    RowOrder.CRESCENT -> Triple("→", "ASC", Color.Blue)
-                    RowOrder.DECRESCENT -> Triple("←", "DESC", Color.Red)
-                    RowOrder.BOTH -> Triple("↔", "BOTH", Color.Black)
-                }
-
-                Text(text = arrow, fontSize = 20.sp, color = color)
-                Text(
-                    text = label,
-                    fontSize = 10.sp,
-                    color = color,
-                    modifier = Modifier.rotate(rotation)
-                )
-            }
-        } else {
-            Spacer(modifier = Modifier.width(labelWidth))
-        }
-    }
+    var cardSize by remember{ mutableStateOf(48.dp)}
+    val density = LocalDensity.current
 
     val draggableState = remember {
         AnchoredDraggableState(initialValue = 0)
@@ -167,6 +145,7 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
             }
         }
     }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -179,7 +158,13 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .onSizeChanged { size -> draggableState.updateAnchors(
+                .onSizeChanged { size ->
+                    with(density) {
+                        val totalSpacingPx = 0.50.dp.toPx() * 6  // 6 gap tra 7 carte
+                        cardSize = ((size.width - totalSpacingPx) / 7).toDp()
+                    }
+
+                    draggableState.updateAnchors(
                     DraggableAnchors {
                         (-1) at -size.width.toFloat()
                         0 at 0f
@@ -187,10 +172,8 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
                     }
                 ) }
                 .anchoredDraggable(draggableState, Orientation.Horizontal),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            RowLabel(rowOrder = rowItems.getRowOrder(rowIndex), showOn = 180f)
-
             val columnSwipableStates = remember {
                 List(rowItems.size){AnchoredDraggableState(0)}
             }
@@ -226,14 +209,12 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
                         }
                         .anchoredDraggable(colState, orientation = Orientation.Vertical)
                 ) {
+
                     // CARTE
                     FinalCard(card = card, model = model, size = cardSize)
 
-
                 }
             }
-
-            RowLabel(rowOrder = rowItems.getRowOrder(rowIndex), showOn = 0f)
         }
     }
 }
@@ -253,6 +234,7 @@ fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
     val imageBitmap = ImageBitmap.imageResource(id = imageResId)
 
     val scope = rememberCoroutineScope()
+
     Image(
         modifier = Modifier
             .size(size)

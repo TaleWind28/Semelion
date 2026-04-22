@@ -1,6 +1,8 @@
 package it.di.unipi.sam636694.semelion.utilities
 
+import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -25,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import it.di.unipi.sam636694.semelion.LogViewModel
 import it.di.unipi.sam636694.semelion.PdfViewerScreen
@@ -34,19 +37,18 @@ import it.di.unipi.sam636694.semelion.SemelionScreen
 enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
-    val screen: @Composable (Modifier) -> Unit  // ← aggiunto
+    val screen: @Composable (PaddingValues) -> Unit  // ← aggiunto
 ) {
-    HOME("Home", Icons.Default.Home, { modifier -> SemelionScreen(modifier = modifier) }),
-    FAVORITES("Rules", Icons.Default.Favorite, { modifier -> PdfViewerScreen(modifier = modifier) }),
-    PROFILE("Profile", Icons.Default.AccountBox, { modifier -> LogScreen(modifier = modifier)}),
+    HOME("Home", Icons.Default.Home, { padding -> SemelionScreen(padding = padding) }),
+    FAVORITES("Rules", Icons.Default.Favorite, { padding -> PdfViewerScreen(padding = padding) }),
+    PROFILE("Profile", Icons.Default.AccountBox, { padding -> LogScreen(padding = padding)}),
 }
 
 @Composable
-fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel = viewModel()){
-    Text("LogScreen", color = Color.Black)
+fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel = viewModel(),padding: PaddingValues){
     val state by viewModel.uiState.collectAsState()
-
-    LazyColumn(modifier = modifier.background(Color.LightGray)) {
+    Log.d("padding","$padding")
+    LazyColumn(modifier = modifier.background(Color.LightGray).fillMaxSize().padding(15.dp)) {
         items(state.actions){
             Text(text=it,color=Color.Black)
         }
@@ -75,7 +77,7 @@ fun NavigationUIApp(snackBarHostState: SnackbarHostState) {
             contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { innerPadding ->
 
-            currentDestination.screen(Modifier.padding(innerPadding))
+            currentDestination.screen(innerPadding)
         }
     }
 }
