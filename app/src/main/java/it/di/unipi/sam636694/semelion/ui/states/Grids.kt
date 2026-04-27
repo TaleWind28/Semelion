@@ -19,18 +19,13 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,29 +39,23 @@ import androidx.compose.ui.draganddrop.DragAndDropEvent
 import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.draganddrop.mimeTypes
 import androidx.compose.ui.draganddrop.toAndroidDragEvent
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.graphics.scale
 import it.di.unipi.sam636694.semelion.R
-import it.di.unipi.sam636694.semelion.RowOrder
 import it.di.unipi.sam636694.semelion.SemelionGameViewModel
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import it.di.unipi.sam636694.semelion.cardImageMap
-import it.di.unipi.sam636694.semelion.getRowOrder
 import kotlinx.coroutines.launch
 
 @Composable
@@ -95,7 +84,7 @@ fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
 
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.SpaceEvenly
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             playerConfigs.forEachIndexed { index, (isActive, playerRows, style) ->
                 Log.d("SemelionScreen","$index")
@@ -149,7 +138,7 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 2.dp),
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         shape = RoundedCornerShape(12.dp),
         color = rowBackground,
         shadowElevation = 2.dp,
@@ -165,7 +154,7 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
                     }
 
                     draggableState.updateAnchors(
-                    DraggableAnchors {
+                    newAnchors = DraggableAnchors {
                         (-1) at -size.width.toFloat()
                         0 at 0f
                         1 at size.width.toFloat()
@@ -196,7 +185,7 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
                     }
                 }
 
-                Column(
+                Box(
                     modifier = Modifier
                         .onSizeChanged { size ->
                             colState.updateAnchors(
@@ -209,7 +198,6 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
                         }
                         .anchoredDraggable(colState, orientation = Orientation.Vertical)
                 ) {
-
                     // CARTE
                     FinalCard(card = card, model = model, size = cardSize)
 

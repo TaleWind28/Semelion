@@ -770,6 +770,8 @@ fun List<CardUIStates>.findPowerRow(): Int{
         else -> 0
     }
 }
+
+//usarlo per la freccia
 fun List<CardUIStates>.getRowOrder(index:Int) : RowOrder {
     //considero solo le carte rivelate
     val revealed = filter { it.isRevealed }

@@ -90,23 +90,16 @@ fun SemelionScreen(
 }
 @Composable
 fun Portrait(state: GameUIState, viewModel: SemelionGameViewModel){
-    Spacer(modifier = Modifier.height(6.dp))
 
     OpponentHeader(actionsUsed=state.p2ActionsUsed, actionsTotal =state.p2Actions, isWaiting = state.p1Turn )
 
-//    Spacer(modifier = Modifier.height(6.dp))
-
     FinalGrid(state = state, model = viewModel)
 
-//    Spacer(modifier = Modifier.height(6.dp))
+    Column{
+        ActionsPanel(state = state)
 
-    ActionsPanel(state = state)
-
-//    Spacer(modifier = Modifier.height(6.dp))
-
-    PlayerFooter(isYourTurn = state.p1Turn)
-
-//    Spacer(modifier = Modifier.height(6.dp))
+        PlayerFooter(isYourTurn = state.p1Turn)
+    }
 }
 
 @Composable
