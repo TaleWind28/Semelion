@@ -163,9 +163,8 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
                 .anchoredDraggable(draggableState, Orientation.Horizontal),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val columnSwipableStates = remember {
-                List(rowItems.size){AnchoredDraggableState(0)}
-            }
+
+            val columnSwipableStates = remember { List(rowItems.size){AnchoredDraggableState(0)} }
 
             rowItems.forEachIndexed { itemIndex, card ->
 
@@ -185,29 +184,13 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
                     }
                 }
 
-                Box(
-                    modifier = Modifier
-                        .onSizeChanged { size ->
-                            colState.updateAnchors(
-                                DraggableAnchors {
-                                    (-1) at -size.height.toFloat()
-                                    0 at 0f
-                                    1 at size.height.toFloat()
-                                }
-                            )
-                        }
-                        .anchoredDraggable(colState, orientation = Orientation.Vertical)
-                ) {
-                    // CARTE
-                    FinalCard(card = card, model = model, size = cardSize)
-
-                }
+                // CARTE
+                FinalCard(card = card, model = model, size = cardSize, colState = columnSwipableStates[itemIndex]) }
             }
         }
     }
-}
 @Composable
-fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
+fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp,colState : AnchoredDraggableState<Int>) {
     //context densità e size in pixel
     val density = LocalDensity.current
     val sizePx = with(density) { size.toPx().toInt()}
@@ -276,7 +259,17 @@ fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp) {
                         }
                     }
                 }
-            ),
+            )
+            .onSizeChanged { size ->
+                colState.updateAnchors(
+                    newAnchors = DraggableAnchors {
+                        (-1) at -size.height.toFloat()
+                        0 at 0f
+                        1 at size.height.toFloat()
+                    }
+                )
+            }
+            .anchoredDraggable(colState, orientation = Orientation.Vertical),
         painter = painterResource(id = imageResId),
         contentDescription = "Carta Semelion"
     )
