@@ -2,7 +2,15 @@ package it.di.unipi.sam636694.semelion
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import it.di.unipi.sam636694.semelion.database.GameModes
+import it.di.unipi.sam636694.semelion.database.Matches
+import it.di.unipi.sam636694.semelion.database.MatchesDao
+import it.di.unipi.sam636694.semelion.database.Participations
+import it.di.unipi.sam636694.semelion.database.ParticipationsDao
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
@@ -18,16 +26,37 @@ import kotlinx.coroutines.launch
 import kotlin.collections.chunked
 import kotlin.math.max
 
-class SemelionGameViewModel: ViewModel() {
+class SemelionGameViewModel(val matchesDao: MatchesDao, val participationsDao: ParticipationsDao) : ViewModel(){
+
     private val _uiState = MutableStateFlow(GameUIState())
     val uiState = _uiState.asStateFlow()
     val validationQueue = Channel<String>(Channel.BUFFERED)
+
+    fun createMatch(gameMode: GameModes, gameState: GameUIState, hostId: Long, guestId: Long) {
+        viewModelScope.launch {
+            // 1. inserisci la partita e prendi l'id generato
+            val matchId = matchesDao.insert(
+                Matches(gameMode = gameMode, gameState = gameState)
+            )
+        }
+    }
 
     fun sendMessage(type:String, relevantCards:List<Triple<String,Int, Boolean>>, outcome:List<Triple<String,Int, Boolean>>){
         viewModelScope.launch {
             SharedRepository.send(actionTemplate(type=type ,relevantCards=relevantCards ,outcome=outcome))
         }
 
+    }
+
+    //serve per mettere i dao nel viewmodel
+    companion object {
+        fun factory(matchesDao: MatchesDao, participationsDao: ParticipationsDao): ViewModelProvider.Factory {
+            return viewModelFactory {
+                initializer {
+                    SemelionGameViewModel(matchesDao, participationsDao)
+                }
+            }
+        }
     }
 
     fun setup(){
@@ -37,6 +66,7 @@ class SemelionGameViewModel: ViewModel() {
             uncoverDeck = decks.second,
             phase = GamePhase.PlayerTurn
         )
+//        createMatch(GameModes.ScreenSharing,_uiState.value,1221323124,3143412313123)
     }
 
     fun validation(){

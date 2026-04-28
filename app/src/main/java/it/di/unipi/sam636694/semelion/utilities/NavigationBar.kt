@@ -31,17 +31,23 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import it.di.unipi.sam636694.semelion.LogViewModel
 import it.di.unipi.sam636694.semelion.PdfViewerScreen
+import it.di.unipi.sam636694.semelion.SemelionGameViewModel
 import it.di.unipi.sam636694.semelion.SemelionScreen
+import it.di.unipi.sam636694.semelion.database.SemelionDB
 
 
 enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
-    val screen: @Composable (PaddingValues) -> Unit  // ← aggiunto
+    val screen: @Composable (PaddingValues, SemelionDB) -> Unit  // ← aggiunto
 ) {
-    HOME("Home", Icons.Default.Home, { padding -> SemelionScreen(padding = padding) }),
-    FAVORITES("Rules", Icons.Default.Favorite, { padding -> PdfViewerScreen(padding = padding) }),
-    PROFILE("Profile", Icons.Default.AccountBox, { padding -> LogScreen(padding = padding)}),
+    HOME("Home", Icons.Default.Home, { padding,db ->
+        val viewModel: SemelionGameViewModel = viewModel(
+            factory = SemelionGameViewModel.factory(db.matchesDao(), db.participationsDao())
+        )
+        SemelionScreen(padding = padding, viewModel = viewModel) }),
+    FAVORITES("Rules", Icons.Default.Favorite, { padding, db -> PdfViewerScreen(padding = padding) }),
+    PROFILE("Profile", Icons.Default.AccountBox, { padding, db -> LogScreen(padding = padding)}),
 }
 
 @Composable
@@ -56,7 +62,7 @@ fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel = viewModel
 }
 
 @Composable
-fun NavigationUIApp(snackBarHostState: SnackbarHostState) {
+fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     NavigationSuiteScaffold(
         navigationSuiteItems = {
@@ -77,7 +83,7 @@ fun NavigationUIApp(snackBarHostState: SnackbarHostState) {
             contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { innerPadding ->
 
-            currentDestination.screen(innerPadding)
+            currentDestination.screen(innerPadding,db)
         }
     }
 }

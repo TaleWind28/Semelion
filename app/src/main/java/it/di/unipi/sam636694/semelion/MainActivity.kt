@@ -12,6 +12,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 import it.di.unipi.sam636694.semelion.utilities.ObserveAsEvents
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
@@ -19,6 +20,8 @@ import it.di.unipi.sam636694.semelion.ui.theme.SemelionTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    private val db by lazy { SemelionDB.getDatabase(this) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -29,6 +32,8 @@ class MainActivity : ComponentActivity() {
 
         // 4. Nasconde sia la Status Bar (alto) che la Navigation Bar (basso)
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+
+
 
         setContent {
             SemelionTheme {
@@ -50,7 +55,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                NavigationUIApp(snackBarHostState)
+                NavigationUIApp(snackBarHostState,db)
             }
         }
     }

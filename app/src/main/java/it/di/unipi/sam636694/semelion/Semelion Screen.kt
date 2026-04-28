@@ -1,8 +1,10 @@
 package it.di.unipi.sam636694.semelion
 import android.content.res.Configuration
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,13 +43,19 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import it.di.unipi.sam636694.semelion.database.SemelionDB
+import it.di.unipi.sam636694.semelion.database.User
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
+import it.di.unipi.sam636694.semelion.ui.states.GameIntent
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -348,7 +356,7 @@ fun PlayerFooter(isYourTurn: Boolean) {
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = if (isYourTurn) Color.White else Color(0xFFF5F5F5),
-        border = if (isYourTurn) androidx.compose.foundation.BorderStroke(
+        border = if (isYourTurn) BorderStroke(
             2.dp,
             GreenAccent
         ) else null,

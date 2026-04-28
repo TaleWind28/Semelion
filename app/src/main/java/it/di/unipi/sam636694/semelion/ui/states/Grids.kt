@@ -169,6 +169,7 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
             rowItems.forEachIndexed { itemIndex, card ->
 
                 val colState = columnSwipableStates[itemIndex]
+
                 //risoluzione swipe up/down
                 LaunchedEffect(colState.currentValue) {
                     if (phase !is GamePhase.QueenPending) return@LaunchedEffect

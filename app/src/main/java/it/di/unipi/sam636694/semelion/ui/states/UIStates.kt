@@ -1,5 +1,7 @@
 package it.di.unipi.sam636694.semelion.ui.states
 
+import androidx.room.Entity
+
 data class CardUIStates(
     val name:String,
     val value: Int,
@@ -7,6 +9,7 @@ data class CardUIStates(
     val isRevealed: Boolean = false
 )
 
+@Entity(tableName = "StatiPartite")
 data class GameUIState (
     val grid: List<CardUIStates> = emptyList(),
     val uncoverDeck : List<CardUIStates> = emptyList(),
