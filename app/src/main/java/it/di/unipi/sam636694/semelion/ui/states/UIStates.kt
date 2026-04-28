@@ -9,7 +9,7 @@ data class CardUIStates(
     val isRevealed: Boolean = false
 )
 
-@Entity(tableName = "StatiPartite")
+//@Entity(tableName = "StatiPartite")
 data class GameUIState (
     val grid: List<CardUIStates> = emptyList(),
     val uncoverDeck : List<CardUIStates> = emptyList(),

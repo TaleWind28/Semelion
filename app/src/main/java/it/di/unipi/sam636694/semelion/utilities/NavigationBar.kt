@@ -39,15 +39,12 @@ import it.di.unipi.sam636694.semelion.database.SemelionDB
 enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
-    val screen: @Composable (PaddingValues, SemelionDB) -> Unit  // ← aggiunto
+    val screen: @Composable (PaddingValues, SemelionDB, SemelionGameViewModel) -> Unit  // ← aggiunto
 ) {
-    HOME("Home", Icons.Default.Home, { padding,db ->
-        val viewModel: SemelionGameViewModel = viewModel(
-            factory = SemelionGameViewModel.factory(db.matchesDao(), db.participationsDao())
-        )
+    HOME("Home", Icons.Default.Home, { padding,db, viewModel ->
         SemelionScreen(padding = padding, viewModel = viewModel) }),
-    FAVORITES("Rules", Icons.Default.Favorite, { padding, db -> PdfViewerScreen(padding = padding) }),
-    PROFILE("Profile", Icons.Default.AccountBox, { padding, db -> LogScreen(padding = padding)}),
+    FAVORITES("Rules", Icons.Default.Favorite, { padding, db,_ -> PdfViewerScreen(padding = padding) }),
+    PROFILE("Profile", Icons.Default.AccountBox, { padding, db,_ -> LogScreen(padding = padding)}),
 }
 
 @Composable
@@ -62,7 +59,7 @@ fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel = viewModel
 }
 
 @Composable
-fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB) {
+fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewModel: SemelionGameViewModel) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     NavigationSuiteScaffold(
         navigationSuiteItems = {
@@ -83,7 +80,7 @@ fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB) {
             contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { innerPadding ->
 
-            currentDestination.screen(innerPadding,db)
+            currentDestination.screen(innerPadding,db, viewModel)
         }
     }
 }

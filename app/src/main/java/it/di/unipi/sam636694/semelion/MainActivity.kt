@@ -55,7 +55,8 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                NavigationUIApp(snackBarHostState,db)
+                    SemelionNavigation(snackBarHostState,db)
+                    //SemelionHomeScreen(snackBarHostState,db)
             }
         }
     }

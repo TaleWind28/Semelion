@@ -42,6 +42,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -55,6 +56,7 @@ import it.di.unipi.sam636694.semelion.database.User
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
+import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -460,4 +462,17 @@ fun UncoverDeck(state: GameUIState){
             }
         }
     }
+}
+
+
+@Composable
+fun SemelionHomeScreen(snackBarHostState: SnackbarHostState, db: SemelionDB){
+    Column(Modifier.fillMaxWidth())
+    {
+        Button(onClick = {}) {
+            Text(text="Quick Play")
+        }
+    }
+    //se il bro vuole giocare si va in grafica di gioco
+    //NavigationUIApp(snackBarHostState,db)
 }
