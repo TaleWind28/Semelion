@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import it.di.unipi.sam636694.semelion.database.GameModes
+import it.di.unipi.sam636694.semelion.database.MatchStatistics
+import it.di.unipi.sam636694.semelion.database.MatchStatisticsDao
 import it.di.unipi.sam636694.semelion.database.Matches
 import it.di.unipi.sam636694.semelion.database.MatchesDao
 import it.di.unipi.sam636694.semelion.database.Participations
@@ -26,20 +28,22 @@ import kotlinx.coroutines.launch
 import kotlin.collections.chunked
 import kotlin.math.max
 
-class SemelionGameViewModel(val matchesDao: MatchesDao, val participationsDao: ParticipationsDao) : ViewModel(){
+class SemelionGameViewModel(
+    val matchesDao: MatchesDao,
+    val participationsDao: ParticipationsDao,
+    val matchStatisticsDao: MatchStatisticsDao
+) : ViewModel(){
 
     private val _uiState = MutableStateFlow(GameUIState())
     val uiState = _uiState.asStateFlow()
     val validationQueue = Channel<String>(Channel.BUFFERED)
 
-    fun createMatch(gameMode: GameModes, gameState: GameUIState, hostId: Long, guestId: Long) {
-        viewModelScope.launch {
-            // 1. inserisci la partita e prendi l'id generato
-            val matchId = matchesDao.insert(
-                Matches(gameMode = gameMode, gameState = gameState)
-            )
-        }
-    }
+    private val _matchSummary = MutableStateFlow(listOf(
+       MatchStatistics(matchId=3, userId= 123L,outcome = "still playing...",  figureRevealed = 0, winner = null,totalActions = 0),
+        MatchStatistics(matchId=3,userId= 124L,outcome = "still playing...",  figureRevealed = 0,winner = null,totalActions = 0)
+    ))
+
+    val matchSummary = _matchSummary.asStateFlow()
 
     fun sendMessage(type:String, relevantCards:List<Triple<String,Int, Boolean>>, outcome:List<Triple<String,Int, Boolean>>){
         viewModelScope.launch {
@@ -50,10 +54,10 @@ class SemelionGameViewModel(val matchesDao: MatchesDao, val participationsDao: P
 
     //serve per mettere i dao nel viewmodel
     companion object {
-        fun factory(matchesDao: MatchesDao, participationsDao: ParticipationsDao): ViewModelProvider.Factory {
+        fun factory(matchesDao: MatchesDao, participationsDao: ParticipationsDao, matchStatisticsDao: MatchStatisticsDao): ViewModelProvider.Factory {
             return viewModelFactory {
                 initializer {
-                    SemelionGameViewModel(matchesDao, participationsDao)
+                    SemelionGameViewModel(matchesDao, participationsDao, matchStatisticsDao)
                 }
             }
         }
@@ -64,13 +68,25 @@ class SemelionGameViewModel(val matchesDao: MatchesDao, val participationsDao: P
         _uiState.value = GameUIState(
             grid = decks.first,
             uncoverDeck = decks.second,
-            phase = GamePhase.PlayerTurn
+            phase = GamePhase.Loading
         )
-//        createMatch(GameModes.ScreenSharing,_uiState.value,1221323124,3143412313123)
+        validation()
     }
 
     fun validation(){
         viewModelScope.launch {
+
+            if (_uiState.value.phase is GamePhase.Loading){
+                //caso specifico di partita in ScreenSharing
+                val matchID = matchesDao.getNextMatchId()
+                Log.d("DB","nextId = $matchID")
+                matchesDao.insert(Matches(gameMode = GameModes.ScreenSharing, gameState = _uiState.value))
+                participationsDao.insert(Participations(matchId= matchID, userId = 124L, role = "Host"))
+                participationsDao.insert(Participations(matchId= matchID,userId = 123L, role = "Guest"))
+                Log.d("DB","Initializeds")
+                _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }
+            }
+
             for (cardId in validationQueue) {
                 delay(200)
                 validateState(cardId, _uiState.value)
@@ -80,7 +96,6 @@ class SemelionGameViewModel(val matchesDao: MatchesDao, val participationsDao: P
 
     init {
         setup()
-        validation()
     }
 
     fun processIntent(intent: GameIntent) {
@@ -358,6 +373,12 @@ class SemelionGameViewModel(val matchesDao: MatchesDao, val participationsDao: P
                 p2ActionsUsed = p2Actions
             )
             modifiedState = actionCounter(modifiedState, modifiedState.grid.chunked(7))
+            _matchSummary.update { summary ->
+                if(state.p1Turn)
+                    listOf(summary.first().copy( totalActions = summary.first().totalActions +1),summary.last())
+                else
+                    listOf(summary.first(),summary.last().copy(totalActions = summary.last().totalActions + 1))
+            }
         }
 
         modifiedState = findWinner(modifiedState)
@@ -785,6 +806,22 @@ class SemelionGameViewModel(val matchesDao: MatchesDao, val participationsDao: P
             predRows.first == 2 -> state.copy( winner = "Vince p2", phase = GamePhase.GameOver)
             predRows.second == 2 -> state.copy( winner = "Vince p1", phase = GamePhase.GameOver)
             else -> state
+        }
+    }
+
+    //DB FUNCTIONS
+    fun matchEnd(){
+        val winner = this._uiState.value.winner ?: "interrotta"
+        _matchSummary.update { lists -> lists.map { it.copy(outcome = winner) } }
+        viewModelScope.launch {
+            val matchId = matchesDao.getNextMatchId() - 1
+            matchesDao.update(Matches(matchId = matchId,gameMode= GameModes.ScreenSharing,gameState=_uiState.value))
+            Log.d("DB","$matchId")
+            matchSummary.value.forEach { stats ->
+                val stat = stats.copy(matchId = matchId,outcome = _uiState.value.winner ?: "interrupted")
+                Log.d("DB","inserting data: $stat")
+                matchStatisticsDao.insert(stat)
+            }
         }
     }
 }

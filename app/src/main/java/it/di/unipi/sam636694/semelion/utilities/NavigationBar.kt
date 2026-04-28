@@ -41,10 +41,10 @@ enum class AppDestinations(
     val icon: ImageVector,
     val screen: @Composable (PaddingValues, SemelionDB, SemelionGameViewModel) -> Unit  // ← aggiunto
 ) {
-    HOME("Home", Icons.Default.Home, { padding,db, viewModel ->
+    HOME("Home", Icons.Default.Home, { padding,_, viewModel ->
         SemelionScreen(padding = padding, viewModel = viewModel) }),
-    FAVORITES("Rules", Icons.Default.Favorite, { padding, db,_ -> PdfViewerScreen(padding = padding) }),
-    PROFILE("Profile", Icons.Default.AccountBox, { padding, db,_ -> LogScreen(padding = padding)}),
+    FAVORITES("Rules", Icons.Default.Favorite, { padding, _,_ -> PdfViewerScreen(padding = padding) }),
+    PROFILE("Profile", Icons.Default.AccountBox, { padding, _,_ -> LogScreen(padding = padding)}),
 }
 
 @Composable
@@ -79,7 +79,6 @@ fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewMo
             containerColor = Color.White,
             contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { innerPadding ->
-
             currentDestination.screen(innerPadding,db, viewModel)
         }
     }

@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,22 +41,15 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import it.di.unipi.sam636694.semelion.database.SemelionDB
-import it.di.unipi.sam636694.semelion.database.User
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
-import it.di.unipi.sam636694.semelion.ui.states.GameIntent
-import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,6 +79,9 @@ fun SemelionScreen(
 
     // Game over dialog
     if (state.phase is GamePhase.GameOver) {
+        LaunchedEffect(Unit) {
+            viewModel.matchEnd()
+        }
         BasicAlertDialog(onDismissRequest = {viewModel.setup()}) {
             Surface(shape = RoundedCornerShape(16.dp)) {
                 Text(
@@ -462,17 +457,4 @@ fun UncoverDeck(state: GameUIState){
             }
         }
     }
-}
-
-
-@Composable
-fun SemelionHomeScreen(snackBarHostState: SnackbarHostState, db: SemelionDB){
-    Column(Modifier.fillMaxWidth())
-    {
-        Button(onClick = {}) {
-            Text(text="Quick Play")
-        }
-    }
-    //se il bro vuole giocare si va in grafica di gioco
-    //NavigationUIApp(snackBarHostState,db)
 }

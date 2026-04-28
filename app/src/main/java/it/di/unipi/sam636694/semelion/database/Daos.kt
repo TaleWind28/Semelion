@@ -44,6 +44,9 @@ interface MatchesDao {
     @Query("SELECT * FROM Partite WHERE matchId = :matchId")
     suspend fun getMatchById(matchId: Long): Matches?
 
+    @Query("SELECT COALESCE(MAX(matchId), 0) + 1 FROM Partite")
+    suspend fun getNextMatchId(): Long
+
     // per riprendere una partita interrotta
     @Query("SELECT * FROM Partite WHERE matchId IN (SELECT matchId FROM Partecipazioni WHERE userId = :userId)")
     fun getMatchesByUser(userId: Long): Flow<List<Matches>>

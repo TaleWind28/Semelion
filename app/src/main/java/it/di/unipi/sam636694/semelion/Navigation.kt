@@ -8,6 +8,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -15,9 +17,8 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import it.di.unipi.sam636694.semelion.database.GameModes
-import it.di.unipi.sam636694.semelion.database.Matches
 import it.di.unipi.sam636694.semelion.database.SemelionDB
+import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 import kotlin.collections.listOf
 import kotlin.collections.mapOf
@@ -42,10 +43,16 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB){
                     }
                 is Route.ScreenSharingGame -> NavEntry(key){
                     val viewModel: SemelionGameViewModel = viewModel(
-                        factory = SemelionGameViewModel.factory(db.matchesDao(), db.participationsDao())
+                        factory = SemelionGameViewModel.factory(db.matchesDao(), db.participationsDao(), db.matchStatisticsDao())
                     )
-                    viewModel.createMatch(GameModes.ScreenSharing,viewModel.uiState.value,123L,123L)
-                    NavigationUIApp(snackBarHostState = snackBarHostState,db = db,viewModel)
+                    val uiState by viewModel.uiState.collectAsState()
+
+                    if (uiState.phase is GamePhase.Loading) {
+                        Text(text = "Loading..")
+                    } else {
+                        NavigationUIApp(snackBarHostState = snackBarHostState, db = db, viewModel)
+                    }
+
                 }
                 else ->error("Unknown NavKey:$key")
             }

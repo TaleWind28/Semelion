@@ -1,7 +1,5 @@
 package it.di.unipi.sam636694.semelion.ui.states
 
-import androidx.room.Entity
-
 data class CardUIStates(
     val name:String,
     val value: Int,
@@ -33,4 +31,6 @@ sealed class GamePhase {
     object Validation : GamePhase()
 
     object GameOver     : GamePhase()
+
+    object Loading : GamePhase()
 }
