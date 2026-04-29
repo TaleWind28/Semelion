@@ -1,6 +1,7 @@
 package it.di.unipi.sam636694.semelion
 
 import android.util.Log
+import androidx.compose.ui.text.toLowerCase
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -13,6 +14,10 @@ import it.di.unipi.sam636694.semelion.database.Matches
 import it.di.unipi.sam636694.semelion.database.MatchesDao
 import it.di.unipi.sam636694.semelion.database.Participations
 import it.di.unipi.sam636694.semelion.database.ParticipationsDao
+import it.di.unipi.sam636694.semelion.database.PlayerStatistics
+import it.di.unipi.sam636694.semelion.database.PlayerStatisticsDao
+import it.di.unipi.sam636694.semelion.database.User
+import it.di.unipi.sam636694.semelion.database.UserDao
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
@@ -25,13 +30,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Locale
+import java.util.Locale.getDefault
 import kotlin.collections.chunked
 import kotlin.math.max
 
 class SemelionGameViewModel(
     val matchesDao: MatchesDao,
     val participationsDao: ParticipationsDao,
-    val matchStatisticsDao: MatchStatisticsDao
+    val matchStatisticsDao: MatchStatisticsDao,
+    val playersStatisticsDao: PlayerStatisticsDao,
+    val userDao: UserDao
 ) : ViewModel(){
 
     private val _uiState = MutableStateFlow(GameUIState())
@@ -54,10 +63,10 @@ class SemelionGameViewModel(
 
     //serve per mettere i dao nel viewmodel
     companion object {
-        fun factory(matchesDao: MatchesDao, participationsDao: ParticipationsDao, matchStatisticsDao: MatchStatisticsDao): ViewModelProvider.Factory {
+        fun factory(matchesDao: MatchesDao, participationsDao: ParticipationsDao, matchStatisticsDao: MatchStatisticsDao, playerStatisticsDao: PlayerStatisticsDao,userDao: UserDao): ViewModelProvider.Factory {
             return viewModelFactory {
                 initializer {
-                    SemelionGameViewModel(matchesDao, participationsDao, matchStatisticsDao)
+                    SemelionGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao = playerStatisticsDao, userDao = userDao)
                 }
             }
         }
@@ -77,6 +86,9 @@ class SemelionGameViewModel(
         viewModelScope.launch {
 
             if (_uiState.value.phase is GamePhase.Loading){
+                //devo metterlo da un'altra parte
+                if (userDao.getUserById(123L) == null) userDao.insert(User(123L, nickName = "pino"))
+                if (userDao.getUserById(124L) == null) userDao.insert(User(124L, nickName = "pippo"))
                 //caso specifico di partita in ScreenSharing
                 val matchID = matchesDao.getNextMatchId()
                 Log.d("DB","nextId = $matchID")
@@ -641,20 +653,26 @@ class SemelionGameViewModel(
 
         when {
             cardId.contains("8") -> { //circular swap
-                modifiedState = jackSwap(cardId, modifiedState); Log.d("Figure", "jack")
+                modifiedState = jackSwap(cardId, modifiedState);
             }
 
             cardId.contains("9") -> //swipe column
                 modifiedState = modifiedState.copy(
                     phase = GamePhase.QueenPending
-                    //isQueenRevealed = true
                 )
 
             cardId.contains("10") -> //swipe row
                 modifiedState = modifiedState.copy(
                     phase = GamePhase.KingPending
-                    //isKingRevealed = true
                 )
+        }
+
+        _matchSummary.update { summary ->
+            summary.first().figureRevealed
+            if(state.p1Turn)
+                listOf(summary.first().copy(figureRevealed= summary.first().figureRevealed + 1),summary.last())
+            else
+                listOf(summary.first(),summary.last().copy(figureRevealed= summary.last().figureRevealed + 1))
         }
 
         modifiedState = replaceCard(modifiedState, cardId)
@@ -811,16 +829,36 @@ class SemelionGameViewModel(
 
     //DB FUNCTIONS
     fun matchEnd(){
-        val winner = this._uiState.value.winner ?: "interrotta"
-        _matchSummary.update { lists -> lists.map { it.copy(outcome = winner) } }
+        val outcome = this._uiState.value.winner ?: "interrotta"
+
+        val winningUser =
+            if (outcome.lowercase(getDefault()).contains("p1 vince")) 123L
+            else if (outcome.lowercase(getDefault()).contains("p2 vince")) 124L
+                else null
+
+        _matchSummary.update { lists -> lists.map { it.copy(outcome = outcome) } }
         viewModelScope.launch {
             val matchId = matchesDao.getNextMatchId() - 1
             matchesDao.update(Matches(matchId = matchId,gameMode= GameModes.ScreenSharing,gameState=_uiState.value))
             Log.d("DB","$matchId")
+            //update dei matchSummary
             matchSummary.value.forEach { stats ->
-                val stat = stats.copy(matchId = matchId,outcome = _uiState.value.winner ?: "interrupted")
+                val stat = stats.copy(matchId = matchId,outcome = outcome, winner = winningUser)
                 Log.d("DB","inserting data: $stat")
                 matchStatisticsDao.insert(stat)
+            }
+            //update dei playerSummary
+            listOf(123L,124L).fold(0){ acc,userId ->
+                Log.d("DB","inserting data for user:$userId")
+                //se non ha delle statistiche le creo
+                val playerStats = playersStatisticsDao.getStatsByUser(userId) ?: PlayerStatistics(userId, matchesPlayed = 0, matchesWon = 0, matchesLost = 0)
+                val wins = if (winningUser == userId) playerStats.matchesWon.plus(1) else playerStats.matchesWon
+                val losses = if (winningUser != userId) playerStats.matchesLost.plus(1) else playerStats.matchesLost
+
+                if (playerStats.matchesPlayed == 0) playersStatisticsDao.insert(playerStats.copy(matchesPlayed = 1, matchesWon = wins, matchesLost = losses))
+                else playersStatisticsDao.update(playerStats.copy(matchesPlayed = playerStats.matchesPlayed + 1, matchesWon = wins, matchesLost = losses))
+                Log.d("DB","data userted for user:$userId")
+                acc
             }
         }
     }

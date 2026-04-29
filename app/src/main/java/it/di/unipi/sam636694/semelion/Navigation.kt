@@ -38,12 +38,21 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB){
                 is Route.Home ->
                     NavEntry(key){
                         SemelionHomeScreen(
-                            destinations =  mapOf("Quick Play" to {backStack.add(Route.ScreenSharingGame(123L))})
+                            destinations =  mapOf(
+                                "Quick Play" to {backStack.add(Route.ScreenSharingGame(123L)) },
+                                "Connections" to {backStack.add(Route.SemelionConnections)},
+                            )
                         )
                     }
                 is Route.ScreenSharingGame -> NavEntry(key){
                     val viewModel: SemelionGameViewModel = viewModel(
-                        factory = SemelionGameViewModel.factory(db.matchesDao(), db.participationsDao(), db.matchStatisticsDao())
+                        factory = SemelionGameViewModel.factory(
+                            matchesDao= db.matchesDao(),
+                            participationsDao = db.participationsDao(),
+                            matchStatisticsDao = db.matchStatisticsDao(),
+                            playerStatisticsDao = db.playerStatisticsDao(),
+                            userDao = db.userDao()
+                        )
                     )
                     val uiState by viewModel.uiState.collectAsState()
 
@@ -54,6 +63,11 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB){
                     }
 
                 }
+
+                is Route.SemelionConnections -> NavEntry(key){
+
+                }
+
                 else ->error("Unknown NavKey:$key")
             }
 

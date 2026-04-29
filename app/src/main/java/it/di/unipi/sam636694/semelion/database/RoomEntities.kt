@@ -63,7 +63,7 @@ data class MatchStatistics(
     val userId: Long= 0,
     val matchId: Long= 0,
     val outcome: String,
-    val winner: String?,
+    val winner: Long?,
     val figureRevealed:Int,
     val totalActions: Int,
 )
@@ -77,9 +77,9 @@ data class MatchStatistics(
 data class PlayerStatistics(
     @PrimaryKey(autoGenerate = true)
     val userId: Long= 0,
-    val matchesPlayed: Int,
-    val matchesWon: Int,
-    val matchesLost: Int
+    val matchesPlayed: Int = 0,
+    val matchesWon: Int = 0,
+    val matchesLost: Int= 0
 )
 
 enum class GameModes{
