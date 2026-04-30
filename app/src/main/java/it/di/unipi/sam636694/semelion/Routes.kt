@@ -12,6 +12,9 @@ sealed interface Route: NavKey {
     data class NearbyGame(val hostId:Long, val guestId:Long, val connectionsClient: ConnectionsClient) : Route
 
     @Serializable
+    data object NearbyLobby : Route
+
+    @Serializable
     data class ScreenSharingGame(val userId: Long): Route
 
     @Serializable
