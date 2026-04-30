@@ -45,21 +45,15 @@ class SemelionGameViewModel(
 
     private val _uiState = MutableStateFlow(GameUIState())
     val uiState = _uiState.asStateFlow()
+
     val validationQueue = Channel<String>(Channel.BUFFERED)
 
     private val _matchSummary = MutableStateFlow(listOf(
        MatchStatistics(matchId=3, userId= 123L,outcome = "still playing...",  figureRevealed = 0, winner = null,totalActions = 0),
         MatchStatistics(matchId=3,userId= 124L,outcome = "still playing...",  figureRevealed = 0,winner = null,totalActions = 0)
     ))
-
     val matchSummary = _matchSummary.asStateFlow()
 
-    fun sendMessage(type:String, relevantCards:List<Triple<String,Int, Boolean>>, outcome:List<Triple<String,Int, Boolean>>){
-        viewModelScope.launch {
-            SharedRepository.send(actionTemplate(type=type ,relevantCards=relevantCards ,outcome=outcome))
-        }
-
-    }
 
     //serve per mettere i dao nel viewmodel
     companion object {
@@ -70,6 +64,14 @@ class SemelionGameViewModel(
                 }
             }
         }
+    }
+
+    //invia messaggi tra schermi
+    fun sendMessage(type:String, relevantCards:List<Triple<String,Int, Boolean>>, outcome:List<Triple<String,Int, Boolean>>){
+        viewModelScope.launch {
+            SharedRepository.send(actionTemplate(type=type ,relevantCards=relevantCards ,outcome=outcome))
+        }
+
     }
 
     fun setup(){
