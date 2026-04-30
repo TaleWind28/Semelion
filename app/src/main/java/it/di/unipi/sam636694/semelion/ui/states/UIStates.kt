@@ -33,4 +33,6 @@ sealed class GamePhase {
     object GameOver     : GamePhase()
 
     object Loading : GamePhase()
+
+    object WaitingForOpponent : GamePhase()
 }

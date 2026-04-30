@@ -31,9 +31,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import it.di.unipi.sam636694.semelion.LogViewModel
 import it.di.unipi.sam636694.semelion.PdfViewerScreen
-import it.di.unipi.sam636694.semelion.SemelionGameViewModel
 import it.di.unipi.sam636694.semelion.SemelionScreen
 import it.di.unipi.sam636694.semelion.database.SemelionDB
+import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
 
 
 enum class AppDestinations(

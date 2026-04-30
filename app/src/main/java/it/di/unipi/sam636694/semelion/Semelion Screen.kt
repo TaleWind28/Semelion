@@ -48,6 +48,8 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
+import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
 
@@ -56,14 +58,13 @@ import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
 fun SemelionScreen(
     modifier: Modifier = Modifier,
     padding: PaddingValues,
-    viewModel: SemelionGameViewModel = viewModel(),
+    viewModel: BaseGameViewModel = viewModel(),
 ){
     val state by viewModel.uiState.collectAsState()
     val configuration = LocalConfiguration.current
 
     when (configuration.orientation) {
         Configuration.ORIENTATION_LANDSCAPE -> {
-            Log.d("kingFinder","${state.grid.indexOfFirst { it.name == "10D" }}")
             Landscape(state = state, viewModel = viewModel)
         }
         else -> {
@@ -94,7 +95,7 @@ fun SemelionScreen(
     }
 }
 @Composable
-fun Portrait(state: GameUIState, viewModel: SemelionGameViewModel){
+fun Portrait(state: GameUIState, viewModel: BaseGameViewModel){
 
     OpponentHeader(actionsUsed=state.p2ActionsUsed, actionsTotal =state.p2Actions, isWaiting = state.p1Turn )
 
@@ -108,7 +109,7 @@ fun Portrait(state: GameUIState, viewModel: SemelionGameViewModel){
 }
 
 @Composable
-fun Landscape(state: GameUIState, viewModel: SemelionGameViewModel) {
+fun Landscape(state: GameUIState, viewModel: BaseGameViewModel) {
 
     Box(
         modifier = Modifier.fillMaxSize(),

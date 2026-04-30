@@ -1,6 +1,8 @@
 package it.di.unipi.sam636694.semelion
 
+import android.util.Log
 import androidx.compose.ui.graphics.Color
+import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 
 fun mapHouse(value:Int):String{
     return when (value){
@@ -95,3 +97,51 @@ val TextSecondary = Color(0xFF888888)
 fun actionTemplate(type:String, relevantCards:List<Triple<String,Int, Boolean>>, outcome: List<Triple<String,Int, Boolean>>): String{
     return "$type:{$relevantCards} -> {$outcome} "
 }
+
+fun gameActionTemplate(action: GameAction): String {
+    val cards = action.cards.joinToString(",")
+    return "${action.type}:{$cards}"
+}
+
+fun parseGameAction(raw: String): GameAction? {
+    return try {
+        val type = raw.substringBefore(":{")
+        val cards = raw.substringAfter(":{")
+            .removeSuffix("}")
+            .split(",")
+            .map { it.trim() }
+        GameAction(type = type, cards = cards)
+    } catch (e: Exception) {
+        Log.e("parseGameAction", "Stringa malformata: $raw")
+        null
+    }
+}
+
+data class GameAction(
+    val type: String,
+    val cards: List<String>,
+)
+
+// CardUIStates -> String
+// formato: "name|value|house|isRevealed"
+fun CardUIStates.serialize(): String =
+    "$name|$value|$house|$isRevealed"
+
+// String -> CardUIStates
+fun deserializeCard(raw: String): CardUIStates {
+    val parts = raw.split("|")
+    return CardUIStates(
+        name = parts[0],
+        value = parts[1].toInt(),
+        house = parts[2],
+        isRevealed = parts[3].toBoolean()
+    )
+}
+
+// List<CardUIStates> -> String
+fun List<CardUIStates>.serializeList(): String =
+    joinToString(";") { it.serialize() }
+
+// String -> List<CardUIStates>
+fun deserializeCardList(raw: String): List<CardUIStates> =
+    raw.split(";").map { deserializeCard(it) }

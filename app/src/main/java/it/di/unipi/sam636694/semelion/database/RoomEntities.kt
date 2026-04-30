@@ -84,7 +84,7 @@ data class PlayerStatistics(
 
 enum class GameModes{
     ScreenSharing,
-    P2P
+    NearBy
 }
 
 class Converters {

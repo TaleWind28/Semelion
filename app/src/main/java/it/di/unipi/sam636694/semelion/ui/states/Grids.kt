@@ -52,14 +52,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.scale
 import it.di.unipi.sam636694.semelion.R
-import it.di.unipi.sam636694.semelion.SemelionGameViewModel
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import it.di.unipi.sam636694.semelion.cardImageMap
+import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
+import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
+fun FinalGrid(state: GameUIState, model: BaseGameViewModel) {
     //griglia di gioco
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -111,7 +112,7 @@ fun FinalGrid(state: GameUIState, model: SemelionGameViewModel) {
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameViewModel, rowBackground: Color, phase: GamePhase) {
+fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewModel, rowBackground: Color, phase: GamePhase) {
     //preparazione misure
     var cardSize by remember{ mutableStateOf(48.dp)}
     val density = LocalDensity.current
@@ -184,14 +185,28 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: SemelionGameView
                         }
                     }
                 }
+                Box(modifier =
+                    Modifier.onSizeChanged { size ->
 
-                // CARTE
-                FinalCard(card = card, model = model, size = cardSize, colState = columnSwipableStates[itemIndex]) }
+                        colState.updateAnchors(
+                            newAnchors = DraggableAnchors {
+                                (-1) at -size.height.toFloat()
+                                0 at 0f
+                                1 at size.height.toFloat()
+                            }
+                        )
+                    }
+                    .anchoredDraggable(colState, orientation = Orientation.Vertical))
+                {
+                    // CARTE
+                    FinalCard(card = card, model = model, size = cardSize)
+                }
             }
         }
     }
+}
 @Composable
-fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp,colState : AnchoredDraggableState<Int>) {
+fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp) {
     //context densità e size in pixel
     val density = LocalDensity.current
     val sizePx = with(density) { size.toPx().toInt()}
@@ -261,16 +276,7 @@ fun FinalCard(card: CardUIStates, model: SemelionGameViewModel, size: Dp,colStat
                     }
                 }
             )
-            .onSizeChanged { size ->
-                colState.updateAnchors(
-                    newAnchors = DraggableAnchors {
-                        (-1) at -size.height.toFloat()
-                        0 at 0f
-                        1 at size.height.toFloat()
-                    }
-                )
-            }
-            .anchoredDraggable(colState, orientation = Orientation.Vertical),
+            ,
         painter = painterResource(id = imageResId),
         contentDescription = "Carta Semelion"
     )
