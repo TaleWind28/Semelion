@@ -1,5 +1,6 @@
 package it.di.unipi.sam636694.semelion
 
+import SemelionConnectionsScreen
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.PaddingValues
@@ -73,7 +74,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB){
                 }
 
                 is Route.SemelionConnections -> NavEntry(key) {
-                    //SemelionConnectionsScreen(backStack = backStack)
+                    SemelionConnectionsScreen(db,snackBarHostState)
                 }
 
                 is Route.NearbyGame -> NavEntry(key){
