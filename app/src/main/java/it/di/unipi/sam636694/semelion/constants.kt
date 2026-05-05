@@ -3,6 +3,7 @@ package it.di.unipi.sam636694.semelion
 import android.util.Log
 import androidx.compose.ui.graphics.Color
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
+import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 
 fun mapHouse(value:Int):String{
     return when (value){
@@ -100,7 +101,13 @@ fun actionTemplate(type:String, relevantCards:List<Triple<String,Int, Boolean>>,
 
 fun gameActionTemplate(action: GameAction): String {
     val cards = action.cards.joinToString(",")
-    return "${action.type}:{$cards}"
+    return when(action.type){
+        is ActionType.Reveal -> "reveal:{$cards}"
+        is ActionType.Swap -> "swap:{$cards}"
+//        is ActionType.QueenSwap -> "queenswap:${action.type.direction}"
+//        is ActionType.KingSwap -> "kingswap:${action.type.direction},${action.type.rowIndex}"
+        else -> ""
+    }
 }
 
 fun parseGameAction(raw: String): GameAction? {
@@ -110,17 +117,44 @@ fun parseGameAction(raw: String): GameAction? {
             .removeSuffix("}")
             .split(",")
             .map { it.trim() }
-        GameAction(type = type, cards = cards)
+        when(type.lowercase()){
+            "swap" -> GameAction(type = ActionType.Swap,cards)
+            "reveal" -> GameAction(type = ActionType.Reveal,cards)
+            else -> null
+        }
     } catch (e: Exception) {
         Log.e("parseGameAction", "Stringa malformata: $raw")
         null
     }
 }
 
+fun parseIntent(intent: GameIntent): GameAction?{
+    return when(intent){
+        is GameIntent.CardClicked -> GameAction(ActionType.Reveal,listOf(intent.cardId))
+        is GameIntent.SwapCards -> GameAction(ActionType.Swap,listOf(intent.id1,intent.id2))
+        is GameIntent.QueenDirectionChosen -> {
+            GameAction(ActionType.QueenSwap,listOf())
+        }
+        is GameIntent.KingDirectionChosen -> {
+            GameAction(ActionType.KingSwap,listOf())
+        }
+        else -> null
+    }
+}
+
 data class GameAction(
-    val type: String,
+    val type: ActionType,
     val cards: List<String>,
 )
+
+sealed class ActionType {
+    object Swap : ActionType()
+    object Reveal : ActionType()
+    object QueenSwap : ActionType()
+    object KingSwap : ActionType()
+
+    object JackMadness: ActionType()
+}
 
 // CardUIStates -> String
 // formato: "name|value|house|isRevealed"
@@ -145,3 +179,17 @@ fun List<CardUIStates>.serializeList(): String =
 // String -> List<CardUIStates>
 fun deserializeCardList(raw: String): List<CardUIStates> =
     raw.split(";").map { deserializeCard(it) }
+
+enum class Direction{
+    LEFT,
+    RIGHT,
+    UP,
+    DOWN
+}
+
+fun Direction.toFunction(rowIndex:Int): (Int, Int) -> Int = when (this) {
+    Direction.LEFT -> { i:Int, inc:Int -> rowIndex*7 + i + inc}
+    Direction.RIGHT -> { i:Int, inc:Int -> 7*rowIndex + (6-i) - inc}
+    Direction.UP -> { i, inc -> rowIndex + 7 * i + inc }
+    Direction.DOWN -> { i, inc -> rowIndex + 7 * (3 - i) - inc }
+}

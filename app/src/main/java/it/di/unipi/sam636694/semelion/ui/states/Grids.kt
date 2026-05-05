@@ -51,12 +51,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.scale
+import it.di.unipi.sam636694.semelion.Direction
 import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import it.di.unipi.sam636694.semelion.cardImageMap
 import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
 import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
+import it.di.unipi.sam636694.semelion.toFunction
 import kotlinx.coroutines.launch
 
 @Composable
@@ -126,11 +128,11 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
         if (phase !is GamePhase.KingPending) return@LaunchedEffect
         when (draggableState.currentValue) {
             -1 -> {
-                model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex){ i:Int, inc:Int -> rowIndex*7 + i + inc})
+                model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex, direction = Direction.LEFT.toFunction(rowIndex)))
                 draggableState.animateTo(0) // ritorna al centro dopo lo swipe
             }
             1 -> {
-                model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex){ i:Int, inc:Int -> 7*rowIndex + (6-i) - inc})
+                model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex, direction = Direction.RIGHT.toFunction(rowIndex)))
                 draggableState.animateTo(0)
             }
         }
@@ -175,12 +177,14 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
                 LaunchedEffect(colState.currentValue) {
                     if (phase !is GamePhase.QueenPending) return@LaunchedEffect
                     when (colState.currentValue) {
+                        //verso l'alto
                         -1 -> {
-                            model.processIntent(GameIntent.QueenDirectionChosen { i, inc -> itemIndex + 7 * i + inc })
+                            model.processIntent(GameIntent.QueenDirectionChosen(direction = Direction.UP.toFunction(itemIndex)))
                             colState.animateTo(0)
                         }
+                        //verso il basso
                         1 -> {
-                            model.processIntent(GameIntent.QueenDirectionChosen { i, inc -> itemIndex + 7 * (3 - i) - inc })
+                            model.processIntent(GameIntent.QueenDirectionChosen(direction = Direction.DOWN.toFunction(itemIndex)))
                             colState.animateTo(0)
                         }
                     }

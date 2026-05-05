@@ -51,16 +51,7 @@ class SemelionGameViewModel(
     userDao: UserDao
 ) : BaseGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao, userDao) {
 
-    override fun processIntent(intent: GameIntent) {
-        Log.d("MVI", "Intent: $intent | Phase: ${_uiState.value.phase}")
-        when (intent) {
-            is GameIntent.CardClicked -> handleCardClicked(intent.cardId)
-            is GameIntent.SwapCards -> handleSwapCards(intent.id1, intent.id2)
-            is GameIntent.QueenDirectionChosen -> handleQueenDirection(intent.direction)
-            is GameIntent.KingDirectionChosen -> handleKingDirection(intent.rowIndex,intent.direction)
-            else -> return
-        }
-    }
+
 
     init {
         setup()

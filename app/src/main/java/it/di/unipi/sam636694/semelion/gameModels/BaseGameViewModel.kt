@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import it.di.unipi.sam636694.semelion.DELAY_TIME
+import it.di.unipi.sam636694.semelion.Direction
 import it.di.unipi.sam636694.semelion.JOLLY_COLOR
 import it.di.unipi.sam636694.semelion.POSITION_VALUES
 import it.di.unipi.sam636694.semelion.SEMELION_FIGURES
@@ -170,13 +171,14 @@ abstract class BaseGameViewModel(
 
     }
 
-    protected fun handleQueenDirection(direction: (Int, Int) -> Int) {
+    protected fun handleQueenDirection(dir: Direction, direction: (Int, Int) -> Int) {
         if (_uiState.value.phase !is GamePhase.QueenPending) return
 
         _uiState.update { state ->
 
             state.copy(
                 grid = (0 until 3).fold(state) { acc, i ->
+
                     val id1 = findCard(acc.grid[direction(i, 0)].name, state)?.name ?: "none"
                     val id2 = findCard(acc.grid[direction(i, 7)].name, state)?.name ?: "none"
                     figureSwap(id1, id2, acc,"Queen'Swipe")
@@ -791,9 +793,27 @@ abstract class BaseGameViewModel(
 
     }
 
+    fun blankGrid(){
+        _uiState.update { it.copy(grid = emptyList(), uncoverDeck = emptyList()) }
+    }
+
+    fun updateGrid(grid:List<CardUIStates>,uncoverDeck:List<CardUIStates>){
+        _uiState.update { it.copy(grid = grid, uncoverDeck = uncoverDeck) }
+    }
+
     // — astratti: ogni figlio decide come gestirli —
     abstract fun setup()
-    abstract fun processIntent(intent: GameIntent)
+    open fun processIntent(intent: GameIntent) {
+        Log.d("MVI", "Intent: $intent | Phase: ${_uiState.value.phase}")
+        when (intent) {
+            is GameIntent.CardClicked -> handleCardClicked(intent.cardId)
+            is GameIntent.SwapCards -> handleSwapCards(intent.id1, intent.id2)
+//            is GameIntent.QueenDirectionChosen -> handleQueenDirection(intent.direction)
+//            is GameIntent.KingDirectionChosen -> handleKingDirection(intent.rowIndex,intent.direction)
+            else -> return
+        }
+    }
+
     abstract fun matchEnd()
 
 }
