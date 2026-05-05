@@ -173,10 +173,8 @@ abstract class BaseGameViewModel(
         if (_uiState.value.phase !is GamePhase.QueenPending) return false
 
         _uiState.update { state ->
-
             state.copy(
                 grid = (0 until 3).fold(state) { acc, i ->
-
                     val id1 = findCard(acc.grid[direction(i, 0)].name, state)?.name ?: "none"
                     val id2 = findCard(acc.grid[direction(i, 7)].name, state)?.name ?: "none"
                     figureSwap(id1, id2, acc,"Queen'Swipe")
@@ -607,6 +605,10 @@ abstract class BaseGameViewModel(
 
         when {
             cardId.contains("8") -> { //circular swap
+                modifiedState = modifiedState.copy(
+                    jackSwaps = generateJackChain(modifiedState,card.house,card.value-1),
+                    phase = GamePhase.JackMadness
+                )
                 //modifiedState = jackSwap(cardId, modifiedState);
             }
 
@@ -633,36 +635,19 @@ abstract class BaseGameViewModel(
         return modifiedState
     }
 
-    fun jackSwap(cardId: String, state: GameUIState): GameUIState {
+    fun jackSwap(cardId: String, state: GameUIState): Boolean {
         val swapCount = state.uncoverDeck.first().value - 1
-        val jackHouse = findCard(cardId, state)?.house ?: return state
-
         Log.d("jackSwap", "numero di swap: $swapCount")
 
-        //val positions = List(swapCount) { (0..27).filter { colorHouse(state.grid[it].house) == colorHouse(jackHouse) }.random() }
-        val positions = generateJackChain(state,jackHouse,swapCount)
-        Log.d("pos","$positions")
-
-//        return (1..swapCount).fold(cardId to state) { (currentId, currentState), _ ->
-//            val currentPos = currentState.grid.indexOfFirst { it.name == currentId }
-//            val nextPosition = (0..27)
-//                .filter {
-//                    it != currentPos && colorHouse(state.grid[it].house) == colorHouse(jackHouse)
-//                }
-//                .random()
-//            val nextCard = currentState.grid[nextPosition]
-//
-//            Log.d(
-//                "jackSwap",
-//                "from: $currentPos card: $currentId, to: $nextPosition, nextCard: ${nextCard.name}"
-//            )
-//
-//            nextCard.name to figureSwap(currentId, nextCard.name, currentState, "Jack' chain")
-//        }.second
-
-        return positions.fold(cardId to state) { (currentId, currentState), nextPosition ->
+        val swaps =
+            _uiState.value.jackSwaps.fold(cardId to state) { (currentId, currentState), nextPosition ->
             jackSwapStep(currentId, currentState, nextPosition)
-        }.second
+        }
+        val state = swaps.second.copy(phase = GamePhase.Validation)
+
+        _uiState.update { validateState(cardId =swaps.first ,state=state) }
+
+        return true
     }
 
     fun generateJackChain(state: GameUIState,jackHouse:String,swapCount:Int):List<Int>{
@@ -847,6 +832,11 @@ abstract class BaseGameViewModel(
             is GameIntent.SwapCards -> handleSwapCards(intent.id1, intent.id2)
             is GameIntent.QueenDirectionChosen -> handleQueenDirection(intent.direction.toFunction(intent.colIndex))
             is GameIntent.KingDirectionChosen -> handleKingDirection(intent.rowIndex, intent.direction.toFunction(intent.rowIndex))
+            is GameIntent.JackMadness -> {
+                val card = _uiState.value.grid[_uiState.value.jackSwaps.first()]
+                jackSwap(cardId = card.name,state=_uiState.value)
+                return true
+            }
             else -> false
         }
     }

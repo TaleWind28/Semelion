@@ -52,6 +52,7 @@ import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
 import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
+import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,6 +88,18 @@ fun SemelionScreen(
             Surface(shape = RoundedCornerShape(16.dp)) {
                 Text(
                     text = "${state.winner}",
+                    modifier = Modifier.padding(24.dp),
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
+        }
+    }
+
+    if (state.phase is GamePhase.JackMadness) {
+        BasicAlertDialog(onDismissRequest = {viewModel.processIntent(GameIntent.JackMadness)}) {
+            Surface(shape = RoundedCornerShape(16.dp)) {
+                Text(
+                    text = "il jack farà questi scambi:${state.jackSwaps}, ovviamente le carte in quelle posizioni sono del suo stesso colore",
                     modifier = Modifier.padding(24.dp),
                     style = MaterialTheme.typography.titleLarge
                 )

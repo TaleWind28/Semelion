@@ -67,7 +67,6 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
         }.toTypedArray()
     }
 
-    //CAMBIARE IL TIPO//
     val nvm: NearbyGameViewModel = viewModel(
         factory = NearbyGameViewModel.factory(
             matchesDao= db.matchesDao(),
@@ -80,6 +79,8 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
     )
 
     val connectionState by nvm.connectionState.collectAsState()
+    val gameState by nvm.uiState.collectAsState()
+
     //CAMBIARE IL TIPO//
 
     val permissionsLauncher = rememberLauncherForActivityResult(
@@ -90,23 +91,11 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
         }
     }
 
+
     //richiesta permessi
     LaunchedEffect(Unit) {
         permissionsLauncher.launch(requiredPermissions)
         nvm.updateConnectionsInfo(connectionsClient, null)
-    }
-
-    val gameState by nvm.uiState.collectAsState()
-
-    //cambio modalita
-    // ✅
-    LaunchedEffect(gameState.grid, connectionState.connectedEndpointId, connectionState.received) {
-
-        if (connectionState.isHost && connectionState.connectedEndpointId != null && !connectionState.sent && gameState.grid.isNotEmpty()) {
-            sendMessage("grid", gameState.grid.serializeList(), connectionsClient, connectionState.connectedEndpointId!!)
-            sendMessage("uncover", gameState.uncoverDeck.serializeList(), connectionsClient, connectionState.connectedEndpointId!!)
-            nvm.onSent()
-        }
     }
 
     DisposableEffect(Unit) {
@@ -173,7 +162,7 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
 
             }
         }
-        OrrebbondoSchermoDiDebug(gameState,connectionState)
+        //OrrebbondoSchermoDiDebug(gameState,connectionState)
     }
     else {
         SemelionScreen(padding = PaddingValues(4.dp), viewModel = nvm)

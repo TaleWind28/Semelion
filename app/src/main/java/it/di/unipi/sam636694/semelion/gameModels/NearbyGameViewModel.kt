@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import sendMessage
 import com.google.android.gms.nearby.connection.*
+import it.di.unipi.sam636694.semelion.serializeList
 
 
 class NearbyGameViewModel(
@@ -141,6 +142,12 @@ class NearbyGameViewModel(
     fun updateConnectionsInfo(connectionsClient: ConnectionsClient,endpoint: String?){
         this.connectionsClient = connectionsClient
         this.endpoint = endpoint
+        Log.d("send","${_connectionState.value.isHost}")
+        if (_connectionState.value.isHost) {
+            sendMessage("grid", _uiState.value.grid.serializeList(), connectionsClient, this.endpoint!!)
+            sendMessage("uncover", _uiState.value.uncoverDeck.serializeList(), connectionsClient, this.endpoint!!)
+            this.onSent()
+        }
     }
 
     fun produceAction(command:String){
@@ -223,43 +230,20 @@ class NearbyGameViewModel(
             connectionsClient?.let { client ->
                 sendMessage("endpoint", localId, client, endpointId)
             }
-            updateConnectionsInfo(connectionsClient!!, endpointId)
         }
-
-//        override fun onConnectionResult(endpointId: String, result: ConnectionResolution) {
-//            if (result.status.isSuccess) {
-//                _connectionState.update {
-//                    it.copy(
-//                        connectedEndpointId = endpointId,
-//                        isSearching = false,
-//                        status = "Connesso!"
-//                    )
-//                }
-//                connectionsClient?.stopAdvertising()
-//                connectionsClient?.stopDiscovery()
-//            } else {
-//                _connectionState.update {
-//                    it.copy(isSearching = false, status = "Connessione fallita")
-//                }
-//            }
-//        }
         override fun onConnectionResult(endpointId: String, result: ConnectionResolution) {
             onConnectionResult(endpointId, result.status.isSuccess) // ✅ qui
             if (result.status.isSuccess) {
                 connectionsClient?.stopAdvertising()
                 connectionsClient?.stopDiscovery()
             }
+            updateConnectionsInfo(connectionsClient!!, endpointId)
         }
 
         override fun onDisconnected(endpointId: String) {
             onDisconnected() // ✅ qui
         }
 
-//        override fun onDisconnected(endpointId: String) {
-//            _connectionState.update {
-//                it.copy(connectedEndpointId = null, status = "Disconnesso")
-//            }
-//        }
     }
 
     companion object {

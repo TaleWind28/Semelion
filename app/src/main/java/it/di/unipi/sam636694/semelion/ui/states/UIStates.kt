@@ -21,13 +21,16 @@ data class GameUIState (
     val phase: GamePhase = GamePhase.PlayerTurn,
     val lastReplacedCard : String? = null,
     val winner : String? = null,
-    val p2FirstTurn: Boolean = true
+    val p2FirstTurn: Boolean = true,
+    val jackSwaps: List<Int> = emptyList()
 )
 
 sealed class GamePhase {
     object PlayerTurn   : GamePhase()
     object QueenPending : GamePhase()
     object KingPending  : GamePhase()
+
+    object JackMadness : GamePhase()
     object Validation : GamePhase()
 
     object GameOver     : GamePhase()
