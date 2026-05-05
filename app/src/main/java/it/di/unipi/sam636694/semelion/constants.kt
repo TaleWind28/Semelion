@@ -99,62 +99,30 @@ fun actionTemplate(type:String, relevantCards:List<Triple<String,Int, Boolean>>,
     return "$type:{$relevantCards} -> {$outcome} "
 }
 
-fun gameActionTemplate(action: GameAction): String {
-    val cards = action.cards.joinToString(",")
-    return when(action.type){
-        is ActionType.Reveal -> "reveal:{$cards}"
-        is ActionType.Swap -> "swap:{$cards}"
-//        is ActionType.QueenSwap -> "queenswap:${action.type.direction}"
-//        is ActionType.KingSwap -> "kingswap:${action.type.direction},${action.type.rowIndex}"
-        else -> ""
+fun GameIntent.serialize(): String = when (this) {
+    is GameIntent.CardClicked -> "cardclicked:$cardId"
+    is GameIntent.SwapCards -> "swapcards:$id1:$id2"
+    is GameIntent.QueenDirectionChosen -> "queendirection:$colIndex:${direction.name}"
+    is GameIntent.KingDirectionChosen -> "kingdirection:$rowIndex:${direction.name}"
+    is GameIntent.Errore -> "errore:$id"
+    else -> "Errore:"
+}
+
+fun String.toGameIntent(): GameIntent {
+    val parts = this.split(":")
+    return when (parts[0]) {
+        "cardclicked" -> GameIntent.CardClicked(parts[1])
+        "swapcards" -> GameIntent.SwapCards(parts[1], parts[2])
+        "queendirection" -> GameIntent.QueenDirectionChosen(parts[1].toInt(),Direction.valueOf(parts[2]))
+        "kingdirection" -> GameIntent.KingDirectionChosen(
+            rowIndex = parts[1].toInt(),
+            direction = Direction.valueOf(parts[2])
+        )
+        "errore" -> GameIntent.Errore(parts[1])
+        else -> throw IllegalArgumentException("Intent sconosciuto: $this")
     }
 }
 
-fun parseGameAction(raw: String): GameAction? {
-    return try {
-        val type = raw.substringBefore(":{")
-        val cards = raw.substringAfter(":{")
-            .removeSuffix("}")
-            .split(",")
-            .map { it.trim() }
-        when(type.lowercase()){
-            "swap" -> GameAction(type = ActionType.Swap,cards)
-            "reveal" -> GameAction(type = ActionType.Reveal,cards)
-            else -> null
-        }
-    } catch (e: Exception) {
-        Log.e("parseGameAction", "Stringa malformata: $raw")
-        null
-    }
-}
-
-fun parseIntent(intent: GameIntent): GameAction?{
-    return when(intent){
-        is GameIntent.CardClicked -> GameAction(ActionType.Reveal,listOf(intent.cardId))
-        is GameIntent.SwapCards -> GameAction(ActionType.Swap,listOf(intent.id1,intent.id2))
-        is GameIntent.QueenDirectionChosen -> {
-            GameAction(ActionType.QueenSwap,listOf())
-        }
-        is GameIntent.KingDirectionChosen -> {
-            GameAction(ActionType.KingSwap,listOf())
-        }
-        else -> null
-    }
-}
-
-data class GameAction(
-    val type: ActionType,
-    val cards: List<String>,
-)
-
-sealed class ActionType {
-    object Swap : ActionType()
-    object Reveal : ActionType()
-    object QueenSwap : ActionType()
-    object KingSwap : ActionType()
-
-    object JackMadness: ActionType()
-}
 
 // CardUIStates -> String
 // formato: "name|value|house|isRevealed"

@@ -5,16 +5,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.google.android.gms.nearby.connection.ConnectionsClient
-import it.di.unipi.sam636694.semelion.ActionType
+import it.di.unipi.sam636694.semelion.Direction
 import it.di.unipi.sam636694.semelion.database.MatchStatisticsDao
 import it.di.unipi.sam636694.semelion.database.MatchesDao
 import it.di.unipi.sam636694.semelion.database.ParticipationsDao
 import it.di.unipi.sam636694.semelion.database.PlayerStatisticsDao
 import it.di.unipi.sam636694.semelion.database.UserDao
-import it.di.unipi.sam636694.semelion.gameActionTemplate
-import it.di.unipi.sam636694.semelion.parseGameAction
-import it.di.unipi.sam636694.semelion.parseIntent
-import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
+import it.di.unipi.sam636694.semelion.serialize
+import it.di.unipi.sam636694.semelion.toGameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import kotlinx.coroutines.flow.update
@@ -54,25 +52,31 @@ class NearbyGameViewModel(
 
     fun produceAction(command:String){
         Log.d("PayloadReceived","actionCommand:$command")
-        val action = parseGameAction(command)
+        val action = command.toGameIntent()
         Log.d("PayloadReceived","action:$action")
-        when(action?.type){
-            ActionType.Swap -> super.processIntent(GameIntent.SwapCards(action.cards.first(),action.cards.last()))
-            ActionType.Reveal -> super.processIntent(GameIntent.CardClicked(action.cards.first()))
-            else -> Log.d("produce","Azione non riconosciuta")
-        }
+        super.processIntent(action)
     }
 
     //overloading
-     override fun processIntent(intent: GameIntent) {
+     override fun processIntent(intent: GameIntent): Boolean {
+         //eseguo l'azione in locale
+        val result  = super.processIntent(intent)
+        //se è stata ammessa la forwardo al peer
+        if (!result) return false
+//        //specchio la direzione della donna
+//        if (intent is GameIntent.QueenDirectionChosen){
+//            if (intent.direction == Direction.UP) sendAction(GameIntent.QueenDirectionChosen(intent.colIndex, Direction.DOWN))
+//            if (intent.direction == Direction.DOWN) sendAction(GameIntent.QueenDirectionChosen(intent.colIndex, Direction.UP))
+//        }else{
+//            sendAction(intent)
+//        }
         sendAction(intent)
-        super.processIntent(intent)
+        return true
     }
 
     //mando messaggio al bro per replicare azione
     fun sendAction(intent: GameIntent){
-        val rawAction = parseIntent(intent) ?: return
-        val action = gameActionTemplate(rawAction)
+        val action = intent.serialize()
         Log.d("nvm","$endpoint:$connectionsClient")
         if (endpoint == null || connectionsClient == null) return
         Log.d("nvm","$endpoint:$connectionsClient")

@@ -73,7 +73,7 @@ abstract class BaseGameViewModel(
     }
 
 
-    protected fun handleCardClicked(cardId: String) {
+    protected fun handleCardClicked(cardId: String): Boolean {
         if (_uiState.value.phase !is GamePhase.PlayerTurn) {
             viewModelScope.launch {
                 SnackBarController.sendEvent(
@@ -82,7 +82,7 @@ abstract class BaseGameViewModel(
                     )
                 )
             }
-            return
+            return false
         }
 
         val needsDelay = _uiState.value.grid
@@ -109,10 +109,10 @@ abstract class BaseGameViewModel(
             if (needsDelay) delay(300)
             _uiState.update { validateState(cardId, it) }
         }
-
+        return true
     }
 
-    protected fun handleSwapCards(id1: String, id2: String) {
+    protected fun handleSwapCards(id1: String, id2: String): Boolean {
         if (_uiState.value.phase !is GamePhase.PlayerTurn){
             viewModelScope.launch {
                 SnackBarController.sendEvent(
@@ -121,11 +121,11 @@ abstract class BaseGameViewModel(
                     )
                 )
             }
-            return
+            return false
         }
 
-        val card1 = findCard(id1, _uiState.value) ?: return
-        val card2 = findCard(id2, _uiState.value) ?: return
+        val card1 = findCard(id1, _uiState.value) ?: return false
+        val card2 = findCard(id2, _uiState.value) ?: return false
         val message = canSwap(card1,card2,_uiState.value)
 
         if (message != null){
@@ -136,7 +136,7 @@ abstract class BaseGameViewModel(
                     )
                 )
             }
-            return
+            return false
         }
 
         val relevantCards = listOf(
@@ -170,10 +170,12 @@ abstract class BaseGameViewModel(
             _uiState.update { validateState(id1, it) }
         }
 
+        return true
+
     }
 
-    protected fun handleQueenDirection(direction: (Int, Int) -> Int) {
-        if (_uiState.value.phase !is GamePhase.QueenPending) return
+    protected fun handleQueenDirection(direction: (Int, Int) -> Int): Boolean {
+        if (_uiState.value.phase !is GamePhase.QueenPending) return false
 
         _uiState.update { state ->
 
@@ -195,11 +197,12 @@ abstract class BaseGameViewModel(
             if (needsDelay) delay(DELAY_TIME)
             _uiState.update { validateState(it.lastReplacedCard ?: "queen Landing", it) }
         }
+        return true
     }
 
-    protected fun handleKingDirection(rowIndex:Int, direction: (Int, Int) -> Int) {
+    protected fun handleKingDirection(rowIndex:Int, direction: (Int, Int) -> Int) : Boolean {
         //controllo di essere nello stato giusto
-        if (_uiState.value.phase !is GamePhase.KingPending) return
+        if (_uiState.value.phase !is GamePhase.KingPending) return false
         //controllo che il giocatore non abbia selezionato una riga potente
         if (_uiState.value.grid.chunked(7)[rowIndex].findPowerRow() == 1){
             viewModelScope.launch {
@@ -209,7 +212,7 @@ abstract class BaseGameViewModel(
                     )
                 )
             }
-            return
+            return false
         }
         //aggiorno lo stato shiftando la griglia
         _uiState.update { state ->
@@ -230,6 +233,8 @@ abstract class BaseGameViewModel(
             if (needsDelay) delay(DELAY_TIME)
             _uiState.update { validateState(it.lastReplacedCard ?: "king's cross", it) }
         }
+
+        return true
     }
 
     fun canSwap(card1: CardUIStates,card2: CardUIStates,state: GameUIState): String?{
@@ -607,7 +612,7 @@ abstract class BaseGameViewModel(
 
         when {
             cardId.contains("8") -> { //circular swap
-                modifiedState = jackSwap(cardId, modifiedState);
+                //modifiedState = jackSwap(cardId, modifiedState);
             }
 
             cardId.contains("9") -> //swipe column
@@ -639,22 +644,51 @@ abstract class BaseGameViewModel(
 
         Log.d("jackSwap", "numero di swap: $swapCount")
 
-        return (1..swapCount).fold(cardId to state) { (currentId, currentState), _ ->
-            val currentPos = currentState.grid.indexOfFirst { it.name == currentId }
-            val nextPosition = (0..27)
-                .filter {
-                    it != currentPos && colorHouse(state.grid[it].house) == colorHouse(jackHouse)
-                }
-                .random()
-            val nextCard = currentState.grid[nextPosition]
+        //val positions = List(swapCount) { (0..27).filter { colorHouse(state.grid[it].house) == colorHouse(jackHouse) }.random() }
+        val positions = generateJackChain(state,jackHouse,swapCount)
+        Log.d("pos","$positions")
 
-            Log.d(
-                "jackSwap",
-                "from: $currentPos card: $currentId, to: $nextPosition, nextCard: ${nextCard.name}"
-            )
+//        return (1..swapCount).fold(cardId to state) { (currentId, currentState), _ ->
+//            val currentPos = currentState.grid.indexOfFirst { it.name == currentId }
+//            val nextPosition = (0..27)
+//                .filter {
+//                    it != currentPos && colorHouse(state.grid[it].house) == colorHouse(jackHouse)
+//                }
+//                .random()
+//            val nextCard = currentState.grid[nextPosition]
+//
+//            Log.d(
+//                "jackSwap",
+//                "from: $currentPos card: $currentId, to: $nextPosition, nextCard: ${nextCard.name}"
+//            )
+//
+//            nextCard.name to figureSwap(currentId, nextCard.name, currentState, "Jack' chain")
+//        }.second
 
-            nextCard.name to figureSwap(currentId, nextCard.name, currentState, "Jack' chain")
+        return positions.fold(cardId to state) { (currentId, currentState), nextPosition ->
+            jackSwapStep(currentId, currentState, nextPosition)
         }.second
+    }
+
+    fun generateJackChain(state: GameUIState,jackHouse:String,swapCount:Int):List<Int>{
+        val validPositions = (0..27).filter { colorHouse(state.grid[it].house) == colorHouse(jackHouse) }
+
+        val positions = mutableListOf<Int>()
+        repeat(swapCount) {
+            val last = positions.lastOrNull()
+            positions.add(validPositions.filter { it != last }.random())
+        }
+        return positions
+    }
+
+    fun jackSwapStep(currentId: String, currentState: GameUIState, nextPosition: Int): Pair<String, GameUIState> {
+        val nextCard = currentState.grid[nextPosition]
+
+        val currentPos = currentState.grid.indexOfFirst { it.name == currentId }
+
+        Log.d("jackSwap", "from: $currentPos card: $currentId, to: $nextPosition, nextCard: ${nextCard.name}")
+
+        return nextCard.name to figureSwap(currentId, nextCard.name, currentState, "Jack' chain")
     }
 
     fun replaceCard(state: GameUIState, cardID: String): GameUIState {
@@ -804,14 +838,21 @@ abstract class BaseGameViewModel(
 
     // — astratti: ogni figlio decide come gestirli —
     abstract fun setup()
-    open fun processIntent(intent: GameIntent) {
+    open fun processIntent(intent: GameIntent): Boolean {
         Log.d("MVI", "Intent: $intent | Phase: ${_uiState.value.phase}")
-        when (intent) {
+        val c1 = intent is GameIntent.CardClicked
+        val c2 = intent is GameIntent.SwapCards
+        val c3 = intent is GameIntent.QueenDirectionChosen
+        val c4 = intent is GameIntent.KingDirectionChosen
+
+        Log.d("MVI","c1:$c1,c2:$c2,c3:$c3,c4:$c4")
+
+        return when (intent) {
             is GameIntent.CardClicked -> handleCardClicked(intent.cardId)
             is GameIntent.SwapCards -> handleSwapCards(intent.id1, intent.id2)
             is GameIntent.QueenDirectionChosen -> handleQueenDirection(intent.direction.toFunction(intent.colIndex))
             is GameIntent.KingDirectionChosen -> handleKingDirection(intent.rowIndex, intent.direction.toFunction(intent.rowIndex))
-            else -> return
+            else -> false
         }
     }
 

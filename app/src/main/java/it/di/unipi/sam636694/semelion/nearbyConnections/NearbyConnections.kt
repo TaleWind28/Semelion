@@ -56,7 +56,7 @@ import it.di.unipi.sam636694.semelion.serializeList
 import androidx.compose.runtime.collectAsState
 import it.di.unipi.sam636694.semelion.SemelionScreen
 import it.di.unipi.sam636694.semelion.deserializeCardList
-import it.di.unipi.sam636694.semelion.parseGameAction
+
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 
 @Composable
@@ -158,9 +158,7 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
                     else -> status = "Ricevuto $message"
 
                 }
-
                 Log.d("Payload",message)
-
             }
 
             override fun onPayloadTransferUpdate(

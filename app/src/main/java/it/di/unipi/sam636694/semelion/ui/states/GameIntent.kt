@@ -10,5 +10,7 @@ sealed class GameIntent {
     data class QueenDirectionChosen(val colIndex:Int,val direction: Direction) : GameIntent()
     data class KingDirectionChosen(val rowIndex: Int, val direction: Direction) : GameIntent()
 
+    data class JackMadness(val positions:List<String>) : GameIntent()
+
     data class Errore(val id: String) : GameIntent()
 }
