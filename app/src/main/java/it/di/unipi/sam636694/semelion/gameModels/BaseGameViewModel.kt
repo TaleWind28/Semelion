@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import it.di.unipi.sam636694.semelion.DELAY_TIME
-import it.di.unipi.sam636694.semelion.Direction
 import it.di.unipi.sam636694.semelion.JOLLY_COLOR
 import it.di.unipi.sam636694.semelion.POSITION_VALUES
 import it.di.unipi.sam636694.semelion.SEMELION_FIGURES
@@ -12,15 +11,11 @@ import it.di.unipi.sam636694.semelion.SharedRepository
 import it.di.unipi.sam636694.semelion.UNCOVER_DECK_SIZE
 import it.di.unipi.sam636694.semelion.actionTemplate
 import it.di.unipi.sam636694.semelion.colorHouse
-import it.di.unipi.sam636694.semelion.database.GameModes
 import it.di.unipi.sam636694.semelion.database.MatchStatistics
 import it.di.unipi.sam636694.semelion.database.MatchStatisticsDao
-import it.di.unipi.sam636694.semelion.database.Matches
 import it.di.unipi.sam636694.semelion.database.MatchesDao
-import it.di.unipi.sam636694.semelion.database.Participations
 import it.di.unipi.sam636694.semelion.database.ParticipationsDao
 import it.di.unipi.sam636694.semelion.database.PlayerStatisticsDao
-import it.di.unipi.sam636694.semelion.database.User
 import it.di.unipi.sam636694.semelion.database.UserDao
 import it.di.unipi.sam636694.semelion.mapHouse
 import it.di.unipi.sam636694.semelion.toFunction
