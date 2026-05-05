@@ -23,6 +23,7 @@ import it.di.unipi.sam636694.semelion.database.PlayerStatisticsDao
 import it.di.unipi.sam636694.semelion.database.User
 import it.di.unipi.sam636694.semelion.database.UserDao
 import it.di.unipi.sam636694.semelion.mapHouse
+import it.di.unipi.sam636694.semelion.toFunction
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
@@ -171,7 +172,7 @@ abstract class BaseGameViewModel(
 
     }
 
-    protected fun handleQueenDirection(dir: Direction, direction: (Int, Int) -> Int) {
+    protected fun handleQueenDirection(direction: (Int, Int) -> Int) {
         if (_uiState.value.phase !is GamePhase.QueenPending) return
 
         _uiState.update { state ->
@@ -808,8 +809,8 @@ abstract class BaseGameViewModel(
         when (intent) {
             is GameIntent.CardClicked -> handleCardClicked(intent.cardId)
             is GameIntent.SwapCards -> handleSwapCards(intent.id1, intent.id2)
-//            is GameIntent.QueenDirectionChosen -> handleQueenDirection(intent.direction)
-//            is GameIntent.KingDirectionChosen -> handleKingDirection(intent.rowIndex,intent.direction)
+            is GameIntent.QueenDirectionChosen -> handleQueenDirection(intent.direction.toFunction(intent.colIndex))
+            is GameIntent.KingDirectionChosen -> handleKingDirection(intent.rowIndex, intent.direction.toFunction(intent.rowIndex))
             else -> return
         }
     }

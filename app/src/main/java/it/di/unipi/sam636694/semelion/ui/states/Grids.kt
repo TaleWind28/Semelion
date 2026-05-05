@@ -128,11 +128,11 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
         if (phase !is GamePhase.KingPending) return@LaunchedEffect
         when (draggableState.currentValue) {
             -1 -> {
-                model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex, direction = Direction.LEFT.toFunction(rowIndex)))
+                model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex, direction = Direction.LEFT))
                 draggableState.animateTo(0) // ritorna al centro dopo lo swipe
             }
             1 -> {
-                model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex, direction = Direction.RIGHT.toFunction(rowIndex)))
+                model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex, direction = Direction.RIGHT))
                 draggableState.animateTo(0)
             }
         }
@@ -179,12 +179,12 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
                     when (colState.currentValue) {
                         //verso l'alto
                         -1 -> {
-                            model.processIntent(GameIntent.QueenDirectionChosen(direction = Direction.UP.toFunction(itemIndex)))
+                            model.processIntent(GameIntent.QueenDirectionChosen(colIndex=itemIndex,direction = Direction.UP))
                             colState.animateTo(0)
                         }
                         //verso il basso
                         1 -> {
-                            model.processIntent(GameIntent.QueenDirectionChosen(direction = Direction.DOWN.toFunction(itemIndex)))
+                            model.processIntent(GameIntent.QueenDirectionChosen(colIndex=itemIndex,direction = Direction.DOWN))
                             colState.animateTo(0)
                         }
                     }
