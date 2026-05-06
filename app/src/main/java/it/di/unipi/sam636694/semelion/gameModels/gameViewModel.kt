@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import it.di.unipi.sam636694.semelion.AudioPlayer
 import it.di.unipi.sam636694.semelion.DELAY_TIME
 import it.di.unipi.sam636694.semelion.JOLLY_COLOR
 import it.di.unipi.sam636694.semelion.POSITION_VALUES
@@ -48,8 +49,9 @@ class SemelionGameViewModel(
     participationsDao: ParticipationsDao,
     matchStatisticsDao: MatchStatisticsDao,
     playersStatisticsDao: PlayerStatisticsDao,
-    userDao: UserDao
-) : BaseGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao, userDao) {
+    userDao: UserDao,
+    player: AudioPlayer
+) : BaseGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao, userDao,player) {
 
 
 
@@ -118,10 +120,24 @@ class SemelionGameViewModel(
     }
 
     companion object {
-        fun factory(matchesDao: MatchesDao, participationsDao: ParticipationsDao, matchStatisticsDao: MatchStatisticsDao, playerStatisticsDao: PlayerStatisticsDao,userDao: UserDao): ViewModelProvider.Factory {
+        fun factory(
+            matchesDao: MatchesDao,
+            participationsDao: ParticipationsDao,
+            matchStatisticsDao: MatchStatisticsDao,
+            playerStatisticsDao: PlayerStatisticsDao,
+            userDao: UserDao,
+            player: AudioPlayer
+        ): ViewModelProvider.Factory {
             return viewModelFactory {
                 initializer {
-                    SemelionGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao = playerStatisticsDao, userDao = userDao)
+                    SemelionGameViewModel(
+                        matchesDao,
+                        participationsDao,
+                        matchStatisticsDao,
+                        playersStatisticsDao = playerStatisticsDao,
+                        userDao = userDao,
+                        player= player
+                        )
                 }
             }
         }

@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import it.di.unipi.sam636694.semelion.AudioPlayer
 import it.di.unipi.sam636694.semelion.LogViewModel
 import it.di.unipi.sam636694.semelion.PdfViewerScreen
 import it.di.unipi.sam636694.semelion.SemelionScreen
@@ -39,11 +40,11 @@ import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
 enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
-    val screen: @Composable (PaddingValues, SemelionDB, BaseGameViewModel) -> Unit  // ← aggiunto
+    val screen: @Composable (PaddingValues, SemelionDB, BaseGameViewModel, AudioPlayer) -> Unit  // ← aggiunto
 ) {
-    HOME("Home", Icons.Default.Home, { padding,_, viewModel -> SemelionScreen(padding = padding, viewModel = viewModel) }),
-    FAVORITES("Rules", Icons.Default.Favorite, { padding, _,_ -> PdfViewerScreen(padding = padding) }),
-    PROFILE("Profile", Icons.Default.AccountBox, { padding, _,_ -> LogScreen(padding = padding)}),
+    HOME("Home", Icons.Default.Home, { padding,_, viewModel,player -> SemelionScreen(padding = padding, viewModel = viewModel,player=player) }),
+    FAVORITES("Rules", Icons.Default.Favorite, { padding, _,_,_-> PdfViewerScreen(padding = padding) }),
+    PROFILE("Profile", Icons.Default.AccountBox, { padding, _,_,_ -> LogScreen(padding = padding)}),
 }
 
 @Composable
@@ -58,7 +59,7 @@ fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel = viewModel
 }
 
 @Composable
-fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewModel: BaseGameViewModel) {
+fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewModel: BaseGameViewModel,player: AudioPlayer) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     NavigationSuiteScaffold(
         navigationSuiteItems = {
@@ -78,7 +79,7 @@ fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewMo
             containerColor = Color.White,
             contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { innerPadding ->
-            currentDestination.screen(innerPadding,db, viewModel)
+            currentDestination.screen(innerPadding,db, viewModel, player)
         }
     }
 }

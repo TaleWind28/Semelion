@@ -40,12 +40,13 @@ import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.gameModels.NearbyGameViewModel
 import it.di.unipi.sam636694.semelion.serializeList
 import androidx.compose.runtime.collectAsState
+import it.di.unipi.sam636694.semelion.AudioPlayer
 import it.di.unipi.sam636694.semelion.ui.states.ConnectionUiState
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 
 @Composable
-fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostState) {
+fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostState,player: AudioPlayer) {
     val context = LocalContext.current
     val connectionsClient = remember { Nearby.getConnectionsClient(context) }
     val SERVICE_ID = "com.tuaapp.semelion"
@@ -73,6 +74,7 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
             matchStatisticsDao = db.matchStatisticsDao(),
             playerStatisticsDao = db.playerStatisticsDao(),
             userDao = db.userDao(),
+            player = player,
             localId = localEndpointName
         )
     )
@@ -165,7 +167,7 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
         }
     }
     else {
-        NavigationUIApp(snackBarHostState = snackbarHostState, db = db, nvm)
+        NavigationUIApp(snackBarHostState = snackbarHostState, db = db, nvm,player=player)
     }
 }
 

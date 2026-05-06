@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import sendMessage
 import com.google.android.gms.nearby.connection.*
+import it.di.unipi.sam636694.semelion.AudioPlayer
 import it.di.unipi.sam636694.semelion.serializeList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -43,11 +44,12 @@ class NearbyGameViewModel(
     matchStatisticsDao: MatchStatisticsDao,
     playersStatisticsDao: PlayerStatisticsDao,
     userDao: UserDao,
+    player: AudioPlayer,
     var endpoint:String?,
     var remoteId: String?,
     var connectionsClient: ConnectionsClient?,
     val localId:String,
-) : BaseGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao, userDao) {
+) : BaseGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao, userDao,player) {
 
 
     private val _connectionState = MutableStateFlow(ConnectionUiState())
@@ -160,19 +162,27 @@ class NearbyGameViewModel(
         super.processIntent(action)
     }
 
+    fun mapKingDirection(intent: GameIntent.KingDirectionChosen): GameIntent{
+        return when(intent.rowIndex){
+            0 -> GameIntent.KingDirectionChosen(rowIndex = 2,direction=intent.direction)
+            1 -> GameIntent.KingDirectionChosen(rowIndex = 3,direction=intent.direction)
+            2 -> GameIntent.KingDirectionChosen(rowIndex = 0,direction=intent.direction)
+            3 -> GameIntent.KingDirectionChosen(rowIndex = 1,direction=intent.direction)
+            else -> GameIntent.Errore("indice non consentito")
+        }
+    }
+
     //overloading
      override fun processIntent(intent: GameIntent): Boolean {
-         //eseguo l'azione in locale
+         val intent = if (intent is GameIntent.KingDirectionChosen && !this.connectionState.value.isHost){
+            mapKingDirection(intent)
+         }else{
+             intent
+        }
+        //eseguo l'azione in locale
         val result  = super.processIntent(intent)
         //se è stata ammessa la forwardo al peer
         if (!result) return false
-//        //specchio la direzione della donna
-//        if (intent is GameIntent.QueenDirectionChosen){
-//            if (intent.direction == Direction.UP) sendAction(GameIntent.QueenDirectionChosen(intent.colIndex, Direction.DOWN))
-//            if (intent.direction == Direction.DOWN) sendAction(GameIntent.QueenDirectionChosen(intent.colIndex, Direction.UP))
-//        }else{
-//            sendAction(intent)
-//        }
         sendAction(intent)
         return true
     }
@@ -187,7 +197,7 @@ class NearbyGameViewModel(
     }
 
     override fun matchEnd() {
-        TODO("Not yet implemented")
+        //TODO("Not yet implemented")
     }
 
     val payloadCallback = object : PayloadCallback() {
@@ -249,7 +259,15 @@ class NearbyGameViewModel(
     }
 
     companion object {
-        fun factory(matchesDao: MatchesDao, participationsDao: ParticipationsDao, matchStatisticsDao: MatchStatisticsDao, playerStatisticsDao: PlayerStatisticsDao,userDao: UserDao, localId:String): ViewModelProvider.Factory {
+        fun factory(
+            matchesDao: MatchesDao,
+            participationsDao: ParticipationsDao,
+            matchStatisticsDao: MatchStatisticsDao,
+            playerStatisticsDao: PlayerStatisticsDao,
+            player: AudioPlayer,
+            userDao: UserDao,
+            localId:String
+        ): ViewModelProvider.Factory {
             return viewModelFactory {
                 initializer {
                     NearbyGameViewModel(
@@ -258,6 +276,7 @@ class NearbyGameViewModel(
                         matchStatisticsDao,
                         playersStatisticsDao = playerStatisticsDao,
                         userDao = userDao,
+                        player= player,
                         remoteId = null,
                         localId = localId,
                         endpoint = null,

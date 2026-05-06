@@ -31,6 +31,7 @@ sealed class GamePhase {
     object KingPending  : GamePhase()
 
     object JackMadness : GamePhase()
+
     object Validation : GamePhase()
 
     object GameOver     : GamePhase()

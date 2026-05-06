@@ -3,9 +3,11 @@ package it.di.unipi.sam636694.semelion.gameModels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import it.di.unipi.sam636694.semelion.AudioPlayer
 import it.di.unipi.sam636694.semelion.DELAY_TIME
 import it.di.unipi.sam636694.semelion.JOLLY_COLOR
 import it.di.unipi.sam636694.semelion.POSITION_VALUES
+import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.SEMELION_FIGURES
 import it.di.unipi.sam636694.semelion.SharedRepository
 import it.di.unipi.sam636694.semelion.UNCOVER_DECK_SIZE
@@ -41,7 +43,8 @@ abstract class BaseGameViewModel(
     val participationsDao: ParticipationsDao,
     val matchStatisticsDao: MatchStatisticsDao,
     val playersStatisticsDao: PlayerStatisticsDao,
-    val userDao: UserDao
+    val userDao: UserDao,
+    val player: AudioPlayer
 ) : ViewModel(){
 
     protected val _uiState = MutableStateFlow(GameUIState())
@@ -303,8 +306,7 @@ abstract class BaseGameViewModel(
         var modifiedState = state
 
         if (card.isRevealed) {
-            //controlla se la carta rivelata
-            // è una figura
+            //controlla se la carta rivelata è una figura
             modifiedState = figureRevealed(cardId, modifiedState)
         }
 
@@ -435,6 +437,7 @@ abstract class BaseGameViewModel(
 
         val position = state.grid.indexOfFirst { card -> card.name == selectedCard.name }
 
+        //controllo se il 7 può essere rivelato
         if (position % 7 == 0 || position % 7 == 6) return state
 
         val revealedCards = state.revealedCards - cardId
@@ -444,10 +447,12 @@ abstract class BaseGameViewModel(
 
         sendScreenMessage("covered",relevantCards,outcome)
 
+        player.playFile(R.raw.there)
+
         return state.copy(
             grid = revealOnGrid(revealedCards, state),
             revealedCards = revealedCards,
-            incorrectSevenReveled = true
+            incorrectSevenReveled = true,
         )
     }
 
@@ -606,21 +611,28 @@ abstract class BaseGameViewModel(
 
         when {
             cardId.contains("8") -> { //circular swap
+                player.playFile(R.raw.aieio)
                 modifiedState = modifiedState.copy(
                     jackSwaps =  listOf(position) + generateJackChain(modifiedState,card.house,modifiedState.uncoverDeck.first().value-1),
                     phase = GamePhase.JackMadness
                 )
             }
 
-            cardId.contains("9") -> //swipe column
+            cardId.contains("9") -> { //swipe column
+                player.playFile(R.raw.nana)
                 modifiedState = modifiedState.copy(
                     phase = GamePhase.QueenPending
                 )
+            }
 
-            cardId.contains("10") -> //swipe row
+            cardId.contains("10") ->{//swipe row
+                player.playFile(R.raw.kingddd)
                 modifiedState = modifiedState.copy(
                     phase = GamePhase.KingPending
                 )
+            }
+
+
         }
 
         _matchSummary.update { summary ->

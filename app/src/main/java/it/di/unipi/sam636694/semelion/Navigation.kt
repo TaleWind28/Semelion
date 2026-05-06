@@ -29,7 +29,7 @@ import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
-fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB){
+fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, player: AudioPlayer){
 
     val backStack = rememberNavBackStack(Route.Home)
 
@@ -57,7 +57,8 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB){
                             participationsDao = db.participationsDao(),
                             matchStatisticsDao = db.matchStatisticsDao(),
                             playerStatisticsDao = db.playerStatisticsDao(),
-                            userDao = db.userDao()
+                            userDao = db.userDao(),
+                            player= player
                         )
                     )
 
@@ -66,13 +67,13 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB){
                     if (uiState.phase is GamePhase.Loading) {
                         Text(text = "Loading..")
                     } else {
-                        NavigationUIApp(snackBarHostState = snackBarHostState, db = db, viewModel)
+                        NavigationUIApp(snackBarHostState = snackBarHostState, db = db, viewModel,player)
                     }
 
                 }
 
                 is Route.SemelionConnections -> NavEntry(key) {
-                    SemelionConnectionsScreen(db,snackBarHostState)
+                    SemelionConnectionsScreen(db,snackBarHostState,player)
                 }
 
                 else ->error("Unknown NavKey:$key")

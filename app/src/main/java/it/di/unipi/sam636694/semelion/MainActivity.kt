@@ -21,6 +21,10 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private val db by lazy { SemelionDB.getDatabase(this) }
 
+    private val player by lazy {
+        AudioPlayer(applicationContext)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -54,7 +58,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                    SemelionNavigation(snackBarHostState,db)
+                    SemelionNavigation(snackBarHostState,db, player)
                     //SemelionHomeScreen(snackBarHostState,db)
             }
         }

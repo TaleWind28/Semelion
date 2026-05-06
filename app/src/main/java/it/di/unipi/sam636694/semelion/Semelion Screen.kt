@@ -61,8 +61,11 @@ fun SemelionScreen(
     modifier: Modifier = Modifier,
     padding: PaddingValues,
     viewModel: BaseGameViewModel = viewModel(),
+    player: AudioPlayer
 ){
+
     val state by viewModel.uiState.collectAsState()
+
 
     when(viewModel){
         is SemelionGameViewModel -> SinglePlayer(state = state, viewModel= viewModel, modifier = modifier)
@@ -70,30 +73,76 @@ fun SemelionScreen(
     }
 
     // Game over dialog
-    if (state.phase is GamePhase.GameOver) {
-        LaunchedEffect(Unit) {
-            viewModel.matchEnd()
-        }
-        BasicAlertDialog(onDismissRequest = {viewModel.setup()}) {
-            Surface(shape = RoundedCornerShape(16.dp)) {
-                Text(
-                    text = "${state.winner}",
-                    modifier = Modifier.padding(24.dp),
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-        }
-    }
+    
+    
+//    if (state.phase is GamePhase.GameOver) {
+//        LaunchedEffect(Unit) {
+//            viewModel.matchEnd()
+//        }
+//        //victory fanfare ff7 a cappela
+//        player.playFile(R.raw.victory_fanfare)
+//
+//        BasicAlertDialog(onDismissRequest = {viewModel.setup()}) {
+//            Surface(shape = RoundedCornerShape(16.dp)) {
+//                Text(
+//                    text = "${state.winner}",
+//                    modifier = Modifier.padding(24.dp),
+//                    style = MaterialTheme.typography.titleLarge
+//                )
+//            }
+//        }
+//    }
+//
+//    if (state.phase is GamePhase.JackMadness) {
+//        BasicAlertDialog(onDismissRequest = {viewModel.processIntent(GameIntent.JackMadness(state.jackSwaps))}) {
+//            Surface(shape = RoundedCornerShape(16.dp)) {
+//                Text(
+//                    text = "il jack farà questi scambi:${state.jackSwaps}, ovviamente le carte in quelle posizioni sono del suo stesso colore",
+//                    modifier = Modifier.padding(24.dp),
+//                    style = MaterialTheme.typography.titleLarge
+//                )
+//            }
+//        }
+//    }
 
-    if (state.phase is GamePhase.JackMadness) {
-        BasicAlertDialog(onDismissRequest = {viewModel.processIntent(GameIntent.JackMadness(state.jackSwaps))}) {
-            Surface(shape = RoundedCornerShape(16.dp)) {
-                Text(
-                    text = "il jack farà questi scambi:${state.jackSwaps}, ovviamente le carte in quelle posizioni sono del suo stesso colore",
-                    modifier = Modifier.padding(24.dp),
-                    style = MaterialTheme.typography.titleLarge
-                )
+    Dialogs(state = state, viewModel = viewModel)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGameViewModel) {
+    when(state.phase){
+        is GamePhase.GameOver -> {
+            LaunchedEffect(Unit) {
+                viewModel.matchEnd()
             }
+            //victory fanfare ff7 a cappela
+            viewModel.player.playFile(R.raw.victory_fanfare)
+
+            BasicAlertDialog(onDismissRequest = {viewModel.setup()}) {
+                Surface(shape = RoundedCornerShape(16.dp)) {
+                    Text(
+                        text = "${state.winner}",
+                        modifier = Modifier.padding(24.dp),
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
+            }
+        }
+        is GamePhase.JackMadness -> {
+
+            BasicAlertDialog(onDismissRequest = {viewModel.processIntent(GameIntent.JackMadness(state.jackSwaps))}) {
+                Surface(shape = RoundedCornerShape(16.dp)) {
+                    Text(
+                        text = "il jack farà questi scambi:${state.jackSwaps}, ovviamente le carte in quelle posizioni sono del suo stesso colore",
+                        modifier = Modifier.padding(24.dp),
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
+            }
+        }
+        else -> {
+
         }
     }
 }

@@ -57,6 +57,8 @@ import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import it.di.unipi.sam636694.semelion.cardImageMap
 import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
+import it.di.unipi.sam636694.semelion.gameModels.NearbyGameViewModel
+import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
 import kotlinx.coroutines.launch
 
 @Composable
@@ -65,8 +67,6 @@ fun FinalGrid(state: GameUIState, model: BaseGameViewModel) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         ) {
-        //preparazione "misure"
-        val rows = state.grid.chunked(7)
 
         val attentionModifier = Modifier.border(
             color = Color(0xFF3BFF7C),
@@ -78,10 +78,7 @@ fun FinalGrid(state: GameUIState, model: BaseGameViewModel) {
         fun playerModifier(isActive: Boolean): Modifier =
             if (isActive) attentionModifier else Modifier
 
-        val playerConfigs = listOf(
-            Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFF009688), 180f)),
-            Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFF9C27B0), 0f))
-        )
+        val playerConfigs = produceConfigs(state = state, viewModel = model)
 
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -99,7 +96,8 @@ fun FinalGrid(state: GameUIState, model: BaseGameViewModel) {
                                 rowItems = rowItems,
                                 model = model,
                                 rowBackground = style.first.copy(alpha = if (index == 0) 0.15f else 0.08f),
-                                phase = model.uiState.value.phase
+                                phase = state.phase,
+                                enabled= if (model is NearbyGameViewModel) model.connectionState.value.isHost == state.p1Turn else true
                             )
                         }
                     }
@@ -109,10 +107,48 @@ fun FinalGrid(state: GameUIState, model: BaseGameViewModel) {
     }
 }
 
+fun produceConfigs(state: GameUIState,viewModel: BaseGameViewModel):List<Triple<Boolean,List<List<CardUIStates>>,Pair<Color,Float>>>{
+    val rows = state.grid.chunked(7)
+    return when(viewModel){
+        is SemelionGameViewModel -> {
+            listOf(
+                //g2
+                Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFF009688), 180f)),
+                //g1
+                Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFF9C27B0), 0f))
+            )
+        }
+        is NearbyGameViewModel ->{
+            if (viewModel.connectionState.value.isHost){
+                listOf(
+                    //guest
+                    Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFF009688), 180f)),
+                    //host
+                    Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFF9C27B0), 0f))
+                    )
+            }else{
+                listOf(
+                    //host
+                    Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFF9C27B0), 0f)),
+                    //guest
+                    Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFF009688), 180f))
+                )
+            }
+
+        }
+        else -> {
+             listOf(
+                Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFF009688), 180f)),
+                //g1
+                Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFF9C27B0), 0f))
+            )
+        }
+    }
+}
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewModel, rowBackground: Color, phase: GamePhase) {
+fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewModel, rowBackground: Color, phase: GamePhase, enabled:Boolean) {
     //preparazione misure
     var cardSize by remember{ mutableStateOf(48.dp)}
     val density = LocalDensity.current
@@ -123,7 +159,7 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
 
     //risoluzione swipe left/right
     LaunchedEffect(draggableState.currentValue) {
-        if (phase !is GamePhase.KingPending) return@LaunchedEffect
+        if (phase !is GamePhase.KingPending || !enabled) return@LaunchedEffect
         when (draggableState.currentValue) {
             -1 -> {
                 model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex, direction = Direction.LEFT))
@@ -173,7 +209,7 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
 
                 //risoluzione swipe up/down
                 LaunchedEffect(colState.currentValue) {
-                    if (phase !is GamePhase.QueenPending) return@LaunchedEffect
+                    if (phase !is GamePhase.QueenPending || !enabled) return@LaunchedEffect
                     when (colState.currentValue) {
                         //verso l'alto
                         -1 -> {
@@ -201,14 +237,14 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
                     .anchoredDraggable(colState, orientation = Orientation.Vertical))
                 {
                     // CARTE
-                    FinalCard(card = card, model = model, size = cardSize)
+                    FinalCard(card = card, model = model, size = cardSize, enabled= enabled)
                 }
             }
         }
     }
 }
 @Composable
-fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp) {
+fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp,enabled:Boolean) {
     //context densità e size in pixel
     val density = LocalDensity.current
     val sizePx = with(density) { size.toPx().toInt()}
@@ -229,10 +265,13 @@ fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp) {
             .size(size)
             .pointerInput(card.name, card.isRevealed) {
                 detectTapGestures(
+
                     onTap = {
+                        if (!enabled) return@detectTapGestures
                         if (!card.isRevealed) model.processIntent(GameIntent.CardClicked(cardId = card.name))
                     },
                     onLongPress = {
+                        if (!enabled) return@detectTapGestures
                         if (model.uiState.value.phase !is  GamePhase.PlayerTurn){
                             scope.launch {
                                 SnackBarController.sendEvent(
