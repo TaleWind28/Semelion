@@ -57,8 +57,6 @@ import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import it.di.unipi.sam636694.semelion.cardImageMap
 import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
-import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
-import it.di.unipi.sam636694.semelion.toFunction
 import kotlinx.coroutines.launch
 
 @Composable

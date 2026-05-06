@@ -157,21 +157,6 @@ class NearbyGameViewModel(
         Log.d("PayloadReceived","actionCommand:$command")
         val action = command.toGameIntent()
         Log.d("PayloadReceived","action:$action")
-        //evito di attivare l'effetto del jack
-        if (action is GameIntent.CardClicked && _uiState.value.grid.find { it.name==action.cardId }?.value!! == 8){
-
-            val revealedCards = _uiState.value.revealedCards + action.cardId
-
-            _uiState.update { it.copy(grid = revealOnGrid(revealedCards,it),revealedCards= revealedCards) }
-
-            viewModelScope.launch {
-                delay(300)
-                _uiState.update { super.replaceCard(_uiState.value,action.cardId) }
-            }
-
-            return
-        }
-        Log.d("madness","passo")
         super.processIntent(action)
     }
 
@@ -204,7 +189,6 @@ class NearbyGameViewModel(
     override fun matchEnd() {
         TODO("Not yet implemented")
     }
-
 
     val payloadCallback = object : PayloadCallback() {
         override fun onPayloadReceived(endpointId: String, payload: Payload) {

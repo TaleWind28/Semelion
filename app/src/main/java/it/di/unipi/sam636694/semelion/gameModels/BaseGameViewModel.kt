@@ -672,7 +672,7 @@ abstract class BaseGameViewModel(
 
         Log.d("jackSwap", "from: $currentPos card: $currentId, to: $nextPosition, nextCard: ${nextCard.name}")
 
-        return nextCard.name to figureSwap(currentId, nextCard.name, currentState, "Jack' chain")
+        return currentId to figureSwap(currentId, nextCard.name, currentState, "Jack' chain")
     }
 
     fun replaceCard(state: GameUIState, cardID: String): GameUIState {
@@ -820,7 +820,6 @@ abstract class BaseGameViewModel(
         _uiState.update { it.copy(grid = grid, uncoverDeck = uncoverDeck) }
     }
 
-    // — astratti: ogni figlio decide come gestirli —
     abstract fun setup()
     open fun processIntent(intent: GameIntent): Boolean {
         Log.d("MVI", "Intent: $intent | Phase: ${_uiState.value.phase}")

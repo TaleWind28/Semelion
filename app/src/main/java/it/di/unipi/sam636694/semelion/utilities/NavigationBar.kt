@@ -33,16 +33,15 @@ import it.di.unipi.sam636694.semelion.LogViewModel
 import it.di.unipi.sam636694.semelion.PdfViewerScreen
 import it.di.unipi.sam636694.semelion.SemelionScreen
 import it.di.unipi.sam636694.semelion.database.SemelionDB
-import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
+import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
 
 
 enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
-    val screen: @Composable (PaddingValues, SemelionDB, SemelionGameViewModel) -> Unit  // ← aggiunto
+    val screen: @Composable (PaddingValues, SemelionDB, BaseGameViewModel) -> Unit  // ← aggiunto
 ) {
-    HOME("Home", Icons.Default.Home, { padding,_, viewModel ->
-        SemelionScreen(padding = padding, viewModel = viewModel) }),
+    HOME("Home", Icons.Default.Home, { padding,_, viewModel -> SemelionScreen(padding = padding, viewModel = viewModel) }),
     FAVORITES("Rules", Icons.Default.Favorite, { padding, _,_ -> PdfViewerScreen(padding = padding) }),
     PROFILE("Profile", Icons.Default.AccountBox, { padding, _,_ -> LogScreen(padding = padding)}),
 }
@@ -59,7 +58,7 @@ fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel = viewModel
 }
 
 @Composable
-fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewModel: SemelionGameViewModel) {
+fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewModel: BaseGameViewModel) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     NavigationSuiteScaffold(
         navigationSuiteItems = {

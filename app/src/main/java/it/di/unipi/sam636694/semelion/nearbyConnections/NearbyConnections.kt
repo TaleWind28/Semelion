@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,9 +40,9 @@ import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.gameModels.NearbyGameViewModel
 import it.di.unipi.sam636694.semelion.serializeList
 import androidx.compose.runtime.collectAsState
-import it.di.unipi.sam636694.semelion.SemelionScreen
 import it.di.unipi.sam636694.semelion.ui.states.ConnectionUiState
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
+import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 
 @Composable
 fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostState) {
@@ -102,9 +101,11 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
         onDispose { connectionsClient.stopAllEndpoints() }
     }
 
-    if (gameState.grid.isEmpty() ||
+    if (
+        gameState.grid.isEmpty() ||
         (connectionState.connectedEndpointId == null && !connectionState.sent && connectionState.isHost) ||
-        (connectionState.connectedEndpointId == null && !connectionState.received && !connectionState.isHost))  {
+        (connectionState.connectedEndpointId == null && !connectionState.received && !connectionState.isHost)
+        ){
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -162,10 +163,9 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
 
             }
         }
-        //OrrebbondoSchermoDiDebug(gameState,connectionState)
     }
     else {
-        SemelionScreen(padding = PaddingValues(4.dp), viewModel = nvm)
+        NavigationUIApp(snackBarHostState = snackbarHostState, db = db, nvm)
     }
 }
 

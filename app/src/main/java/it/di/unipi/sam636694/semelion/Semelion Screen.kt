@@ -49,6 +49,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
+import it.di.unipi.sam636694.semelion.gameModels.NearbyGameViewModel
 import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
@@ -62,21 +63,10 @@ fun SemelionScreen(
     viewModel: BaseGameViewModel = viewModel(),
 ){
     val state by viewModel.uiState.collectAsState()
-    val configuration = LocalConfiguration.current
 
-    when (configuration.orientation) {
-        Configuration.ORIENTATION_LANDSCAPE -> {
-            Landscape(state = state, viewModel = viewModel)
-        }
-        else -> {
-            Column(
-                modifier = modifier.fillMaxSize().padding(10.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Portrait(state = state,viewModel = viewModel)
-            }
-
-        }
+    when(viewModel){
+        is SemelionGameViewModel -> SinglePlayer(state = state, viewModel= viewModel, modifier = modifier)
+        is NearbyGameViewModel -> MultiPlayer(state= state, viewModel= viewModel, modifier = modifier)
     }
 
     // Game over dialog
@@ -122,6 +112,48 @@ fun Portrait(state: GameUIState, viewModel: BaseGameViewModel){
 }
 
 @Composable
+fun SinglePlayer(modifier: Modifier = Modifier,state: GameUIState,viewModel: SemelionGameViewModel) {
+    val configuration = LocalConfiguration.current
+    when (configuration.orientation) {
+        Configuration.ORIENTATION_LANDSCAPE -> {
+            Landscape(state = state, viewModel = viewModel)
+        }
+        else -> {
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Portrait(state = state,viewModel = viewModel)
+            }
+
+        }
+    }
+}
+
+@Composable
+fun MultiPlayer(modifier: Modifier = Modifier,state: GameUIState,viewModel: NearbyGameViewModel) {
+    Log.d("finder","jack:${state.grid.indexOfFirst { it.value == 8 }}")
+    val configuration = LocalConfiguration.current
+    when (configuration.orientation) {
+        Configuration.ORIENTATION_LANDSCAPE -> {
+            Landscape(state = state, viewModel = viewModel)
+        }
+        else -> {
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Portrait(state = state,viewModel = viewModel)
+            }
+
+        }
+    }
+}
+@Composable
 fun Landscape(state: GameUIState, viewModel: BaseGameViewModel) {
 
     Box(
@@ -132,7 +164,9 @@ fun Landscape(state: GameUIState, viewModel: BaseGameViewModel) {
             Text(
                 text = "il giocatore 2 ha: ${state.p2Actions - state.p2ActionsUsed} azioni Rimanenti",
                 color = Color.Black,
-                modifier = Modifier.align(Alignment.CenterHorizontally).rotate(180f)
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .rotate(180f)
             )
 
             FinalGrid(state = state, model = viewModel)
@@ -316,7 +350,9 @@ fun ActionsPanel(state: GameUIState) {
                         onClick = { },
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = GreenAccent),
-                        modifier = Modifier.weight(1f).height(56.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
                         enabled = state.p1Turn && state.p1ActionsUsed < state.p1Actions
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -339,7 +375,9 @@ fun ActionsPanel(state: GameUIState) {
                         onClick = { },
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = GreenAccent),
-                        modifier = Modifier.weight(1f).height(56.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
                         enabled = state.p1Turn && state.p1ActionsUsed < state.p1Actions
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {

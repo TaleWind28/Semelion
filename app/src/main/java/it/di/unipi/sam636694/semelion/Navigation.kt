@@ -21,13 +21,11 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import it.di.unipi.sam636694.semelion.database.SemelionDB
-import it.di.unipi.sam636694.semelion.gameModels.NearbyGameViewModel
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 import kotlin.collections.listOf
 import kotlin.collections.mapOf
 import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
-import it.di.unipi.sam636694.semelion.nearbyConnections.NearbyScreen
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
@@ -77,18 +75,6 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB){
                     SemelionConnectionsScreen(db,snackBarHostState)
                 }
 
-                is Route.NearbyGame -> NavEntry(key){
-                    val nearbyViewModel : NearbyGameViewModel = viewModel(
-                        factory = SemelionGameViewModel.factory(
-                            matchesDao= db.matchesDao(),
-                            participationsDao = db.participationsDao(),
-                            matchStatisticsDao = db.matchStatisticsDao(),
-                            playerStatisticsDao = db.playerStatisticsDao(),
-                            userDao = db.userDao()
-                        )
-                    )
-                    NearbyScreen(hostId = key.hostId, guestId =key.guestId, connectionsClient = key.connectionsClient, viewModel = nearbyViewModel)
-                }
                 else ->error("Unknown NavKey:$key")
             }
 
