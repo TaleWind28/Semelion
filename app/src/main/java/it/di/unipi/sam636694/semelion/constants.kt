@@ -104,8 +104,9 @@ fun GameIntent.serialize(): String = when (this) {
     is GameIntent.SwapCards -> "swapcards:$id1:$id2"
     is GameIntent.QueenDirectionChosen -> "queendirection:$colIndex:${direction.name}"
     is GameIntent.KingDirectionChosen -> "kingdirection:$rowIndex:${direction.name}"
+    is GameIntent.JackMadness -> "jackmadness:$jackSwaps"
     is GameIntent.Errore -> "errore:$id"
-    else -> "Errore:"
+    else -> "Undefined Behavior"
 }
 
 fun String.toGameIntent(): GameIntent {
@@ -114,10 +115,14 @@ fun String.toGameIntent(): GameIntent {
         "cardclicked" -> GameIntent.CardClicked(parts[1])
         "swapcards" -> GameIntent.SwapCards(parts[1], parts[2])
         "queendirection" -> GameIntent.QueenDirectionChosen(parts[1].toInt(),Direction.valueOf(parts[2]))
-        "kingdirection" -> GameIntent.KingDirectionChosen(
-            rowIndex = parts[1].toInt(),
-            direction = Direction.valueOf(parts[2])
-        )
+        "kingdirection" -> GameIntent.KingDirectionChosen( rowIndex = parts[1].toInt(), direction = Direction.valueOf(parts[2]))
+        "jackmadness" -> {
+            parts.drop(0)
+            Log.d("madness", parts[1])
+            val swaps = parts[1].removeSurrounding("[", "]").split(",").map { it.trim().toInt() }
+            Log.d("madness","$swaps")
+            GameIntent.JackMadness(swaps)
+        }
         "errore" -> GameIntent.Errore(parts[1])
         else -> throw IllegalArgumentException("Intent sconosciuto: $this")
     }

@@ -96,7 +96,7 @@ fun SemelionScreen(
     }
 
     if (state.phase is GamePhase.JackMadness) {
-        BasicAlertDialog(onDismissRequest = {viewModel.processIntent(GameIntent.JackMadness)}) {
+        BasicAlertDialog(onDismissRequest = {viewModel.processIntent(GameIntent.JackMadness(state.jackSwaps))}) {
             Surface(shape = RoundedCornerShape(16.dp)) {
                 Text(
                     text = "il jack farà questi scambi:${state.jackSwaps}, ovviamente le carte in quelle posizioni sono del suo stesso colore",

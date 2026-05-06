@@ -2,6 +2,7 @@ package it.di.unipi.sam636694.semelion.gameModels
 
 import android.util.Log
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.google.android.gms.nearby.connection.AdvertisingOptions
@@ -32,6 +33,8 @@ import kotlinx.coroutines.flow.update
 import sendMessage
 import com.google.android.gms.nearby.connection.*
 import it.di.unipi.sam636694.semelion.serializeList
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 class NearbyGameViewModel(
@@ -154,6 +157,21 @@ class NearbyGameViewModel(
         Log.d("PayloadReceived","actionCommand:$command")
         val action = command.toGameIntent()
         Log.d("PayloadReceived","action:$action")
+        //evito di attivare l'effetto del jack
+        if (action is GameIntent.CardClicked && _uiState.value.grid.find { it.name==action.cardId }?.value!! == 8){
+
+            val revealedCards = _uiState.value.revealedCards + action.cardId
+
+            _uiState.update { it.copy(grid = revealOnGrid(revealedCards,it),revealedCards= revealedCards) }
+
+            viewModelScope.launch {
+                delay(300)
+                _uiState.update { super.replaceCard(_uiState.value,action.cardId) }
+            }
+
+            return
+        }
+        Log.d("madness","passo")
         super.processIntent(action)
     }
 
