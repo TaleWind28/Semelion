@@ -1,8 +1,6 @@
 package it.di.unipi.sam636694.semelion
 
 import SemelionConnectionsScreen
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,7 +25,7 @@ import kotlin.collections.listOf
 import kotlin.collections.mapOf
 import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+
 @Composable
 fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, player: AudioPlayer){
 

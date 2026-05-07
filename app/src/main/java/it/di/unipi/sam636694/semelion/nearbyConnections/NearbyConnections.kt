@@ -46,23 +46,12 @@ import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 
 @Composable
 fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostState,player: AudioPlayer) {
-    val context = LocalContext.current
-    val connectionsClient = remember { Nearby.getConnectionsClient(context) }
-    val SERVICE_ID = "com.tuaapp.semelion"
 
-    val localEndpointName = remember {
-        Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
-    }
+    val SERVICE_ID = "com.tuaapp.semelion"
 
     val requiredPermissions = remember {
         buildList {
             add(Manifest.permission.ACCESS_FINE_LOCATION)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                add(Manifest.permission.BLUETOOTH_ADVERTISE)
-                add(Manifest.permission.BLUETOOTH_CONNECT)
-                add(Manifest.permission.BLUETOOTH_SCAN)
-                add(Manifest.permission.NEARBY_WIFI_DEVICES)
-            }
         }.toTypedArray()
     }
 
@@ -74,7 +63,7 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
             playerStatisticsDao = db.playerStatisticsDao(),
             userDao = db.userDao(),
             player = player,
-            localId = localEndpointName
+            localId = Build.MODEL
         )
     )
 
@@ -90,11 +79,10 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
         }
     }
 
-
     //richiesta permessi
     LaunchedEffect(Unit) {
         permissionsLauncher.launch(requiredPermissions)
-        nvm.updateConnectionsInfo(connectionsClient, null)
+        //nvm.updateConnectionsInfo(connectionsClient, null)
     }
 
     if (

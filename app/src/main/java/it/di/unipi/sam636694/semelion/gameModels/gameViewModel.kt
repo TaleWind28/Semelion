@@ -1,23 +1,13 @@
 package it.di.unipi.sam636694.semelion.gameModels
 
 import android.util.Log
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import it.di.unipi.sam636694.semelion.AudioPlayer
-import it.di.unipi.sam636694.semelion.DELAY_TIME
-import it.di.unipi.sam636694.semelion.JOLLY_COLOR
-import it.di.unipi.sam636694.semelion.POSITION_VALUES
 import it.di.unipi.sam636694.semelion.RowOrder
-import it.di.unipi.sam636694.semelion.SEMELION_FIGURES
-import it.di.unipi.sam636694.semelion.SharedRepository
-import it.di.unipi.sam636694.semelion.UNCOVER_DECK_SIZE
-import it.di.unipi.sam636694.semelion.actionTemplate
-import it.di.unipi.sam636694.semelion.colorHouse
 import it.di.unipi.sam636694.semelion.database.GameModes
-import it.di.unipi.sam636694.semelion.database.MatchStatistics
 import it.di.unipi.sam636694.semelion.database.MatchStatisticsDao
 import it.di.unipi.sam636694.semelion.database.Matches
 import it.di.unipi.sam636694.semelion.database.MatchesDao
@@ -27,22 +17,12 @@ import it.di.unipi.sam636694.semelion.database.PlayerStatistics
 import it.di.unipi.sam636694.semelion.database.PlayerStatisticsDao
 import it.di.unipi.sam636694.semelion.database.User
 import it.di.unipi.sam636694.semelion.database.UserDao
-import it.di.unipi.sam636694.semelion.mapHouse
-import it.di.unipi.sam636694.semelion.utilities.SnackBarController
-import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
-import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale.getDefault
-import kotlin.collections.chunked
-import kotlin.math.max
 
 class SemelionGameViewModel(
     matchesDao: MatchesDao,
