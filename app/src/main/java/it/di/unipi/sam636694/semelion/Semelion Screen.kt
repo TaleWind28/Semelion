@@ -73,38 +73,6 @@ fun SemelionScreen(
     }
 
     // Game over dialog
-    
-    
-//    if (state.phase is GamePhase.GameOver) {
-//        LaunchedEffect(Unit) {
-//            viewModel.matchEnd()
-//        }
-//        //victory fanfare ff7 a cappela
-//        player.playFile(R.raw.victory_fanfare)
-//
-//        BasicAlertDialog(onDismissRequest = {viewModel.setup()}) {
-//            Surface(shape = RoundedCornerShape(16.dp)) {
-//                Text(
-//                    text = "${state.winner}",
-//                    modifier = Modifier.padding(24.dp),
-//                    style = MaterialTheme.typography.titleLarge
-//                )
-//            }
-//        }
-//    }
-//
-//    if (state.phase is GamePhase.JackMadness) {
-//        BasicAlertDialog(onDismissRequest = {viewModel.processIntent(GameIntent.JackMadness(state.jackSwaps))}) {
-//            Surface(shape = RoundedCornerShape(16.dp)) {
-//                Text(
-//                    text = "il jack farà questi scambi:${state.jackSwaps}, ovviamente le carte in quelle posizioni sono del suo stesso colore",
-//                    modifier = Modifier.padding(24.dp),
-//                    style = MaterialTheme.typography.titleLarge
-//                )
-//            }
-//        }
-//    }
-
     Dialogs(state = state, viewModel = viewModel)
 }
 

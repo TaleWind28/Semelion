@@ -83,7 +83,6 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
     val gameState by nvm.uiState.collectAsState()
 
     //CAMBIARE IL TIPO//
-
     val permissionsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->

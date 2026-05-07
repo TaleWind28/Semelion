@@ -97,7 +97,7 @@ fun FinalGrid(state: GameUIState, model: BaseGameViewModel) {
                                 model = model,
                                 rowBackground = style.first.copy(alpha = if (index == 0) 0.15f else 0.08f),
                                 phase = state.phase,
-                                enabled= if (model is NearbyGameViewModel) model.connectionState.value.isHost == state.p1Turn else true
+                                enabled= true//if (model is NearbyGameViewModel) model.connectionState.value.isHost == state.p1Turn else true
                             )
                         }
                     }
@@ -267,12 +267,31 @@ fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp,enabled:Boo
                 detectTapGestures(
 
                     onTap = {
-                        if (!enabled) return@detectTapGestures
+                        if(model.uiState.value.phase is GamePhase.WaitingForOpponent){
+                            scope.launch {
+                                SnackBarController.sendEvent(
+                                    event = SnackBarEvent(
+                                        message = "Attendi che l'avversario finisca il suo turno"
+                                    )
+                                )
+                            }
+                            return@detectTapGestures
+                        }
                         if (!card.isRevealed) model.processIntent(GameIntent.CardClicked(cardId = card.name))
                     },
                     onLongPress = {
-                        if (!enabled) return@detectTapGestures
-                        if (model.uiState.value.phase !is  GamePhase.PlayerTurn){
+                        if(model.uiState.value.phase is GamePhase.WaitingForOpponent){
+                            scope.launch {
+                                SnackBarController.sendEvent(
+                                    event = SnackBarEvent(
+                                        message = "Attendi che l'avversario finisca il suo turno"
+                                    )
+                                )
+                            }
+                            return@detectTapGestures
+                        }
+
+                        if (model.uiState.value.phase !is GamePhase.PlayerTurn){
                             scope.launch {
                                 SnackBarController.sendEvent(
                                     event = SnackBarEvent(
@@ -282,6 +301,7 @@ fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp,enabled:Boo
                             }
                             return@detectTapGestures
                         }
+
                         //il 42 fa ridere ma è stato calcolato a mano
                         val scaled = imageBitmap.asAndroidBitmap().scale(sizePx / 2 + 42, sizePx, false)
                         val shadow = object : View.DragShadowBuilder() {

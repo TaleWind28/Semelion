@@ -61,7 +61,7 @@ abstract class BaseGameViewModel(
 
     //serve per mettere i dao nel viewmodel
 
-    fun validation(){
+    open fun validation(){
         viewModelScope.launch {
             for (cardId in validationQueue) {
                 delay(200)
@@ -300,7 +300,7 @@ abstract class BaseGameViewModel(
         return  errorMessage(positionValid,fairnessControl(card1,card2,state.p1Turn))
     }
 
-    fun validateState(cardId: String, state: GameUIState): GameUIState {
+    open fun validateState(cardId: String, state: GameUIState): GameUIState {
         Log.d("Validate", cardId)
         val card = findCard(cardId, state) ?: return state
         var modifiedState = state

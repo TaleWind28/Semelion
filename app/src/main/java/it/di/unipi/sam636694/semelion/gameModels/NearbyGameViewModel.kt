@@ -1,5 +1,6 @@
 package it.di.unipi.sam636694.semelion.gameModels
 
+import android.app.GameState
 import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -34,6 +35,7 @@ import sendMessage
 import com.google.android.gms.nearby.connection.*
 import it.di.unipi.sam636694.semelion.AudioPlayer
 import it.di.unipi.sam636694.semelion.serializeList
+import it.di.unipi.sam636694.semelion.ui.states.GameUIState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -116,8 +118,12 @@ class NearbyGameViewModel(
 
     fun disconnect() {
         connectionsClient?.stopAllEndpoints()
+        connectionsClient?.stopAdvertising()
+        connectionsClient?.stopDiscovery()
+        endpoint = null
+        remoteId = null
         _connectionState.update {
-            it.copy(connectedEndpointId = null, status = "Disconnesso")
+            ConnectionUiState() // reset completo
         }
     }
 
@@ -125,7 +131,7 @@ class NearbyGameViewModel(
         connectionsClient?.stopAdvertising()
         connectionsClient?.stopDiscovery()
         _connectionState.update {
-            it.copy(isSearching = false, status = "Ricerca annullata")
+            ConnectionUiState(status = "Ricerca annullata")
         }
     }
 
@@ -147,11 +153,15 @@ class NearbyGameViewModel(
     fun updateConnectionsInfo(connectionsClient: ConnectionsClient,endpoint: String?){
         this.connectionsClient = connectionsClient
         this.endpoint = endpoint
-        Log.d("send","${_connectionState.value.isHost}")
-        if (_connectionState.value.isHost) {
-            sendMessage("grid", _uiState.value.grid.serializeList(), connectionsClient, this.endpoint!!)
-            sendMessage("uncover", _uiState.value.uncoverDeck.serializeList(), connectionsClient, this.endpoint!!)
-            this.onSent()
+
+        if (_connectionState.value.isHost && endpoint != null) {
+            viewModelScope.launch {
+                Log.d("send","provo a mandare su $endpoint")
+                delay(300) // lascia stabilizzare la connessione
+                sendMessage("grid", _uiState.value.grid.serializeList(), connectionsClient, this@NearbyGameViewModel.endpoint!!)
+                sendMessage("uncover", _uiState.value.uncoverDeck.serializeList(), connectionsClient, this@NearbyGameViewModel.endpoint!!)
+                onSent()
+            }
         }
     }
 
@@ -187,6 +197,22 @@ class NearbyGameViewModel(
         return true
     }
 
+    override fun validateState(cardId: String, state: GameUIState): GameUIState{
+        val validatedState = super.validateState(cardId, state)
+        Log.d("validazionesotto","${validatedState.p1Turn}")
+        return if (
+            validatedState.p1Turn && !connectionState.value.isHost
+            ||
+            !validatedState.p1Turn && connectionState.value.isHost
+            ){
+            validatedState.copy(phase = GamePhase.WaitingForOpponent)
+        }else{
+            validatedState
+        }
+
+
+    }
+
     //mando messaggio al bro per replicare azione
     fun sendAction(intent: GameIntent){
         val action = intent.serialize()
@@ -220,6 +246,7 @@ class NearbyGameViewModel(
                         )
                     }
                     _connectionState.update { it.copy(received = true) }
+                    //_uiState.update { it.copy(phase = GamePhase.WaitingForOpponent) }
                 }
                 "gameaction:" -> produceAction(message)
                 else -> _connectionState.update { it.copy(status = "Ricevuto $message") }
@@ -248,8 +275,9 @@ class NearbyGameViewModel(
             if (result.status.isSuccess) {
                 connectionsClient?.stopAdvertising()
                 connectionsClient?.stopDiscovery()
+                updateConnectionsInfo(connectionsClient!!, endpointId)
             }
-            updateConnectionsInfo(connectionsClient!!, endpointId)
+
         }
 
         override fun onDisconnected(endpointId: String) {
