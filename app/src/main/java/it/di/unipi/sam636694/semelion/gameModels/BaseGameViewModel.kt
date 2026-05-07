@@ -72,16 +72,16 @@ abstract class BaseGameViewModel(
 
 
     protected fun handleCardClicked(cardId: String): Boolean {
-        if (_uiState.value.phase !is GamePhase.PlayerTurn) {
-            viewModelScope.launch {
-                SnackBarController.sendEvent(
-                    event = SnackBarEvent(
-                        message = "Risolvi prima l'effetto della figura"
-                    )
-                )
-            }
-            return false
-        }
+//        if (_uiState.value.phase !is GamePhase.PlayerTurn ) {
+//            viewModelScope.launch {
+//                SnackBarController.sendEvent(
+//                    event = SnackBarEvent(
+//                        message = "Risolvi prima l'effetto della figura"
+//                    )
+//                )
+//            }
+//            return false
+//        }
 
         val needsDelay = _uiState.value.grid
             .find { it.name == cardId }
@@ -111,16 +111,16 @@ abstract class BaseGameViewModel(
     }
 
     protected fun handleSwapCards(id1: String, id2: String): Boolean {
-        if (_uiState.value.phase !is GamePhase.PlayerTurn){
-            viewModelScope.launch {
-                SnackBarController.sendEvent(
-                    event = SnackBarEvent(
-                        message = "Risolvi prima l'effetto della figura"
-                    )
-                )
-            }
-            return false
-        }
+//        if (_uiState.value.phase !is GamePhase.PlayerTurn){
+//            viewModelScope.launch {
+//                SnackBarController.sendEvent(
+//                    event = SnackBarEvent(
+//                        message = "Risolvi prima l'effetto della figura"
+//                    )
+//                )
+//            }
+//            return false
+//        }
 
         val card1 = findCard(id1, _uiState.value) ?: return false
         val card2 = findCard(id2, _uiState.value) ?: return false
@@ -835,13 +835,6 @@ abstract class BaseGameViewModel(
     abstract fun setup()
     open fun processIntent(intent: GameIntent): Boolean {
         Log.d("MVI", "Intent: $intent | Phase: ${_uiState.value.phase}")
-        val c1 = intent is GameIntent.CardClicked
-        val c2 = intent is GameIntent.SwapCards
-        val c3 = intent is GameIntent.QueenDirectionChosen
-        val c4 = intent is GameIntent.KingDirectionChosen
-
-        Log.d("MVI","c1:$c1,c2:$c2,c3:$c3,c4:$c4")
-
         return when (intent) {
             is GameIntent.CardClicked -> handleCardClicked(intent.cardId)
             is GameIntent.SwapCards -> handleSwapCards(intent.id1, intent.id2)

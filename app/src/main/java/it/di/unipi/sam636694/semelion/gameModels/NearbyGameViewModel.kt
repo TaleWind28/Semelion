@@ -151,7 +151,10 @@ class NearbyGameViewModel(
     }
 
     fun updateConnectionsInfo(connectionsClient: ConnectionsClient,endpoint: String?){
-        this.connectionsClient = connectionsClient
+        if (this.connectionsClient == null){
+            this.connectionsClient = connectionsClient
+        }
+
         this.endpoint = endpoint
 
         if (_connectionState.value.isHost && endpoint != null) {
@@ -184,6 +187,7 @@ class NearbyGameViewModel(
 
     //overloading
      override fun processIntent(intent: GameIntent): Boolean {
+         //if (_uiState.value.phase is GamePhase.WaitingForOpponent) _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }
          val intent = if (intent is GameIntent.KingDirectionChosen && !this.connectionState.value.isHost){
             mapKingDirection(intent)
          }else{
@@ -198,19 +202,22 @@ class NearbyGameViewModel(
     }
 
     override fun validateState(cardId: String, state: GameUIState): GameUIState{
+
+        Log.d("validazionesotto","preValidate:${state.phase}")
         val validatedState = super.validateState(cardId, state)
-        Log.d("validazionesotto","${validatedState.p1Turn}")
+        Log.d("validazionesotto","postValidate${validatedState.phase}")
+        if (!(validatedState.phase is GamePhase.Validation || validatedState.phase is GamePhase.PlayerTurn)) return validatedState
+        Log.d("validazionesotto","sono passato con${validatedState.phase} ")
+
         return if (
             validatedState.p1Turn && !connectionState.value.isHost
             ||
-            !validatedState.p1Turn && connectionState.value.isHost
-            ){
+            !validatedState.p1Turn && connectionState.value.isHost)
+        {
             validatedState.copy(phase = GamePhase.WaitingForOpponent)
         }else{
             validatedState
         }
-
-
     }
 
     //mando messaggio al bro per replicare azione
@@ -246,7 +253,7 @@ class NearbyGameViewModel(
                         )
                     }
                     _connectionState.update { it.copy(received = true) }
-                    //_uiState.update { it.copy(phase = GamePhase.WaitingForOpponent) }
+                    _uiState.update { it.copy(phase = GamePhase.WaitingForOpponent) }
                 }
                 "gameaction:" -> produceAction(message)
                 else -> _connectionState.update { it.copy(status = "Ricevuto $message") }
@@ -275,8 +282,8 @@ class NearbyGameViewModel(
             if (result.status.isSuccess) {
                 connectionsClient?.stopAdvertising()
                 connectionsClient?.stopDiscovery()
-                updateConnectionsInfo(connectionsClient!!, endpointId)
             }
+            updateConnectionsInfo(connectionsClient!!, endpointId)
 
         }
 

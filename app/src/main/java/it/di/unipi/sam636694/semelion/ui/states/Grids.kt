@@ -267,6 +267,7 @@ fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp,enabled:Boo
                 detectTapGestures(
 
                     onTap = {
+                        Log.d("grid","fase:${model.uiState.value.phase}")
                         if(model.uiState.value.phase is GamePhase.WaitingForOpponent){
                             scope.launch {
                                 SnackBarController.sendEvent(
@@ -277,9 +278,20 @@ fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp,enabled:Boo
                             }
                             return@detectTapGestures
                         }
+                        if (model.uiState.value.phase !is GamePhase.PlayerTurn){
+                            scope.launch {
+                                SnackBarController.sendEvent(
+                                    event = SnackBarEvent(
+                                        message = "Risolvi Prima l'effetto della figura"
+                                    )
+                                )
+                            }
+                            return@detectTapGestures
+                        }
                         if (!card.isRevealed) model.processIntent(GameIntent.CardClicked(cardId = card.name))
                     },
                     onLongPress = {
+                        Log.d("grid","fase:${model.uiState.value.phase}")
                         if(model.uiState.value.phase is GamePhase.WaitingForOpponent){
                             scope.launch {
                                 SnackBarController.sendEvent(

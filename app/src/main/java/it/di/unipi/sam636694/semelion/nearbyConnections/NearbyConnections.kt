@@ -22,7 +22,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -96,10 +95,6 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
     LaunchedEffect(Unit) {
         permissionsLauncher.launch(requiredPermissions)
         nvm.updateConnectionsInfo(connectionsClient, null)
-    }
-
-    DisposableEffect(Unit) {
-        onDispose { connectionsClient.stopAllEndpoints() }
     }
 
     if (
