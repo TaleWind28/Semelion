@@ -56,7 +56,9 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                             matchStatisticsDao = db.matchStatisticsDao(),
                             playerStatisticsDao = db.playerStatisticsDao(),
                             userDao = db.userDao(),
-                            player= player
+                            player= player,
+                            userID=userID,
+                            secondPlayerId = "screenSharing"
                         )
                     )
 
@@ -71,7 +73,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                 }
 
                 is Route.SemelionConnections -> NavEntry(key) {
-                    SemelionConnectionsScreen(db,snackBarHostState,player)
+                    SemelionConnectionsScreen(db,snackBarHostState,player, userId = userID)
                 }
 
                 else ->error("Unknown NavKey:$key")
@@ -86,7 +88,6 @@ fun SemelionHomeScreen(
     modifier: Modifier = Modifier,
     destinations: Map<String, ()-> Unit>,
 ){
-
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(16.dp)
@@ -100,8 +101,6 @@ fun SemelionHomeScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-
         }
     }
-
 }

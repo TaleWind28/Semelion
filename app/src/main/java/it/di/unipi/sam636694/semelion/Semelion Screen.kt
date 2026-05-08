@@ -48,6 +48,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import it.di.unipi.sam636694.semelion.database.GameModes
 import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
 import it.di.unipi.sam636694.semelion.gameModels.NearbyGameViewModel
 import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
@@ -82,7 +83,11 @@ fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGam
     when(state.phase){
         is GamePhase.GameOver -> {
             LaunchedEffect(Unit) {
-                viewModel.matchEnd()
+                when(viewModel){
+                    is NearbyGameViewModel -> viewModel.matchEnd(GameModes.NearBy)
+                    is SemelionGameViewModel -> viewModel.matchEnd(GameModes.ScreenSharing)
+                    else -> {}
+                }
             }
             //victory fanfare ff7 a cappela
             viewModel.player.playFile(R.raw.victory_fanfare)

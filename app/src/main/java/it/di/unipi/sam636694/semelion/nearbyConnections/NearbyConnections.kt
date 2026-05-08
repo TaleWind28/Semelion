@@ -45,13 +45,21 @@ import it.di.unipi.sam636694.semelion.ui.states.GameUIState
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 
 @Composable
-fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostState,player: AudioPlayer) {
+fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostState,player: AudioPlayer,userId:String) {
 
     val SERVICE_ID = "com.tuaapp.semelion"
 
     val requiredPermissions = remember {
         buildList {
             add(Manifest.permission.ACCESS_FINE_LOCATION)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                add(Manifest.permission.BLUETOOTH_SCAN)
+                add(Manifest.permission.BLUETOOTH_ADVERTISE)
+                add(Manifest.permission.BLUETOOTH_CONNECT)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.NEARBY_WIFI_DEVICES)
+            }
         }.toTypedArray()
     }
 
@@ -63,7 +71,7 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
             playerStatisticsDao = db.playerStatisticsDao(),
             userDao = db.userDao(),
             player = player,
-            localId = Build.MODEL
+            localId = userId,
         )
     )
 

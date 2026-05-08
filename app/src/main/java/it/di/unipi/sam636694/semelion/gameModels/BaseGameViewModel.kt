@@ -13,11 +13,16 @@ import it.di.unipi.sam636694.semelion.SharedRepository
 import it.di.unipi.sam636694.semelion.UNCOVER_DECK_SIZE
 import it.di.unipi.sam636694.semelion.actionTemplate
 import it.di.unipi.sam636694.semelion.colorHouse
+import it.di.unipi.sam636694.semelion.database.GameModes
 import it.di.unipi.sam636694.semelion.database.MatchStatistics
 import it.di.unipi.sam636694.semelion.database.MatchStatisticsDao
+import it.di.unipi.sam636694.semelion.database.Matches
 import it.di.unipi.sam636694.semelion.database.MatchesDao
+import it.di.unipi.sam636694.semelion.database.Participations
 import it.di.unipi.sam636694.semelion.database.ParticipationsDao
+import it.di.unipi.sam636694.semelion.database.PlayerStatistics
 import it.di.unipi.sam636694.semelion.database.PlayerStatisticsDao
+import it.di.unipi.sam636694.semelion.database.User
 import it.di.unipi.sam636694.semelion.database.UserDao
 import it.di.unipi.sam636694.semelion.mapHouse
 import it.di.unipi.sam636694.semelion.toFunction
@@ -33,6 +38,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Locale.getDefault
 import kotlin.collections.chunked
 import kotlin.collections.find
 import kotlin.collections.plus
@@ -44,7 +50,9 @@ abstract class BaseGameViewModel(
     val matchStatisticsDao: MatchStatisticsDao,
     val playersStatisticsDao: PlayerStatisticsDao,
     val userDao: UserDao,
-    val player: AudioPlayer
+    val player: AudioPlayer,
+    val userID: String,
+    val secondPlayerId: String
 ) : ViewModel(){
 
     protected val _uiState = MutableStateFlow(GameUIState())
@@ -53,8 +61,8 @@ abstract class BaseGameViewModel(
     val validationQueue = Channel<String>(Channel.BUFFERED)
 
     protected val _matchSummary = MutableStateFlow(listOf(
-        MatchStatistics(matchId=3, userId= "123L",outcome = "still playing...",  figureRevealed = 0, winner = null,totalActions = 0),
-        MatchStatistics(matchId=3,userId= "124L",outcome = "still playing...",  figureRevealed = 0,winner = null,totalActions = 0)
+        MatchStatistics(matchId=3, userId= userID,outcome = "still playing...",  figureRevealed = 0, winner = null,totalActions = 0),
+        MatchStatistics(matchId=3,userId= secondPlayerId,outcome = "still playing...",  figureRevealed = 0,winner = null,totalActions = 0)
     ))
     val matchSummary = _matchSummary.asStateFlow()
 
@@ -835,6 +843,51 @@ abstract class BaseGameViewModel(
         }
     }
 
-    abstract fun matchEnd()
+    fun matchEnd(mode: GameModes){
+        val outcome = this._uiState.value.winner ?: "interrotta"
+
+        val winningUser =
+            if (outcome.lowercase(getDefault()).contains("Vince p1")) userID
+            else if (outcome.lowercase(getDefault()).contains("Vince p2")) secondPlayerId
+            else null
+
+        _matchSummary.update { lists -> lists.map { it.copy(outcome = outcome) } }
+
+        viewModelScope.launch {
+            val matchId = matchesDao.getNextMatchId() - 1
+            matchesDao.update(Matches(matchId = matchId,gameMode= mode,gameState=_uiState.value))
+            Log.d("DB","$matchId")
+            //update dei matchSummary
+            matchSummary.value.forEach { stats ->
+                val stat = stats.copy(matchId = matchId,outcome = outcome, winner = winningUser)
+                Log.d("DB","inserting data: $stat")
+                matchStatisticsDao.insert(stat)
+            }
+            //update dei playerSummary
+            listOf(userID,secondPlayerId).fold(0){ acc,userId ->
+                Log.d("DB","inserting data for user:$userId")
+                //se non ha delle statistiche le creo
+                val playerStats = playersStatisticsDao.getStatsByUser(userId) ?: PlayerStatistics(userId, matchesPlayed = 0, matchesWon = 0, matchesLost = 0)
+                val wins = if (winningUser == userId) playerStats.matchesWon.plus(1) else playerStats.matchesWon
+                val losses = if (winningUser != userId) playerStats.matchesLost.plus(1) else playerStats.matchesLost
+
+                if (playerStats.matchesPlayed == 0) playersStatisticsDao.insert(playerStats.copy(matchesPlayed = 1, matchesWon = wins, matchesLost = losses))
+                else playersStatisticsDao.update(playerStats.copy(matchesPlayed = playerStats.matchesPlayed + 1, matchesWon = wins, matchesLost = losses))
+                Log.d("DB","data userted for user:$userId")
+                acc
+            }
+        }
+    }
+
+    suspend fun matchStart(mode: GameModes){
+        //devo metterlo da un'altra parte
+        if (userDao.getUserById(userID) == null) userDao.insert(User(userID, nickName = "Semelion_User: $userID"))
+        if (userDao.getUserById(secondPlayerId) == null) userDao.insert(User(secondPlayerId, nickName = "Sora"))
+        //caso specifico di partita in ScreenSharing
+        val matchID = matchesDao.getNextMatchId()
+        matchesDao.insert(Matches(gameMode = mode, gameState = _uiState.value))
+        participationsDao.insert(Participations(matchId= matchID, userId = secondPlayerId, role = "Host"))
+        participationsDao.insert(Participations(matchId= matchID,userId = userID, role = "Guest"))
+    }
 
 }

@@ -23,7 +23,7 @@ import it.di.unipi.sam636694.semelion.database.User
 import it.di.unipi.sam636694.semelion.utilities.ObserveAsEvents
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.ui.theme.SemelionTheme
-import it.di.unipi.sam636694.semelion.AudioPlayer
+
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
 import java.util.UUID
@@ -31,8 +31,6 @@ import java.util.UUID
 class MainActivity : ComponentActivity() {
     private val db by lazy { SemelionDB.getDatabase(this) }
 
-//    private val prefs by lazy { this.getSharedPreferences("setting", Context.MODE_PRIVATE) }
-    // ✅ CORRETTO
     private lateinit var prefs: SharedPreferences
 
     private val player by lazy {

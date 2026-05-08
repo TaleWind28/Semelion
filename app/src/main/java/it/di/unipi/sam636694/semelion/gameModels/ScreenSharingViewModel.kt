@@ -30,8 +30,10 @@ class SemelionGameViewModel(
     matchStatisticsDao: MatchStatisticsDao,
     playersStatisticsDao: PlayerStatisticsDao,
     userDao: UserDao,
-    player: AudioPlayer
-) : BaseGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao, userDao,player) {
+    player: AudioPlayer,
+    userID:String,
+    secondPlayerId:String
+) : BaseGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao, userDao,player,userID,secondPlayerId) {
 
     init {
         setup()
@@ -46,55 +48,14 @@ class SemelionGameViewModel(
         )
         viewModelScope.launch {
             if (_uiState.value.phase is GamePhase.Loading){
-                //devo metterlo da un'altra parte
-                if (userDao.getUserById("123L") == null) userDao.insert(User("123L", nickName = "pino"))
-                if (userDao.getUserById("124L") == null) userDao.insert(User("124L", nickName = "pippo"))
-                //caso specifico di partita in ScreenSharing
-                val matchID = matchesDao.getNextMatchId()
-                matchesDao.insert(Matches(gameMode = GameModes.ScreenSharing, gameState = _uiState.value))
-                participationsDao.insert(Participations(matchId= matchID, userId = "124L", role = "Host"))
-                participationsDao.insert(Participations(matchId= matchID,userId = "123L", role = "Guest"))
+                matchStart(GameModes.ScreenSharing)
                 _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }
             }
         }
     }
 
     //DB FUNCTIONS
-    override fun matchEnd(){
-        val outcome = this._uiState.value.winner ?: "interrotta"
 
-        val winningUser =
-            if (outcome.lowercase(getDefault()).contains("p1 vince")) "123L"
-            else if (outcome.lowercase(getDefault()).contains("p2 vince")) "124L"
-                else null
-
-        _matchSummary.update { lists -> lists.map { it.copy(outcome = outcome) } }
-
-        viewModelScope.launch {
-            val matchId = matchesDao.getNextMatchId() - 1
-            matchesDao.update(Matches(matchId = matchId,gameMode= GameModes.ScreenSharing,gameState=_uiState.value))
-            Log.d("DB","$matchId")
-            //update dei matchSummary
-            matchSummary.value.forEach { stats ->
-                val stat = stats.copy(matchId = matchId,outcome = outcome, winner = winningUser)
-                Log.d("DB","inserting data: $stat")
-                matchStatisticsDao.insert(stat)
-            }
-            //update dei playerSummary
-            listOf("123L","124L").fold(0){ acc,userId ->
-                Log.d("DB","inserting data for user:$userId")
-                //se non ha delle statistiche le creo
-                val playerStats = playersStatisticsDao.getStatsByUser(userId) ?: PlayerStatistics(userId, matchesPlayed = 0, matchesWon = 0, matchesLost = 0)
-                val wins = if (winningUser == userId) playerStats.matchesWon.plus(1) else playerStats.matchesWon
-                val losses = if (winningUser != userId) playerStats.matchesLost.plus(1) else playerStats.matchesLost
-
-                if (playerStats.matchesPlayed == 0) playersStatisticsDao.insert(playerStats.copy(matchesPlayed = 1, matchesWon = wins, matchesLost = losses))
-                else playersStatisticsDao.update(playerStats.copy(matchesPlayed = playerStats.matchesPlayed + 1, matchesWon = wins, matchesLost = losses))
-                Log.d("DB","data userted for user:$userId")
-                acc
-            }
-        }
-    }
 
     companion object {
         fun factory(
@@ -103,7 +64,9 @@ class SemelionGameViewModel(
             matchStatisticsDao: MatchStatisticsDao,
             playerStatisticsDao: PlayerStatisticsDao,
             userDao: UserDao,
-            player: AudioPlayer
+            player: AudioPlayer,
+            userID:String,
+            secondPlayerId:String
         ): ViewModelProvider.Factory {
             return viewModelFactory {
                 initializer {
@@ -113,7 +76,9 @@ class SemelionGameViewModel(
                         matchStatisticsDao,
                         playersStatisticsDao = playerStatisticsDao,
                         userDao = userDao,
-                        player= player
+                        player= player,
+                        userID= userID,
+                        secondPlayerId= secondPlayerId
                         )
                 }
             }

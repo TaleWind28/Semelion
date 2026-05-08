@@ -40,6 +40,7 @@ import kotlinx.coroutines.launch
 import android.content.Context
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import com.google.android.gms.nearby.Nearby
+import it.di.unipi.sam636694.semelion.database.GameModes
 
 class NearbyGameViewModel(
     private val appContext: Context,
@@ -50,9 +51,9 @@ class NearbyGameViewModel(
     userDao: UserDao,
     player: AudioPlayer,
     var endpoint: String?,
-    var remoteId: String?,
+    var remoteId: String,
     val localId: String,
-) : BaseGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao, userDao, player) {
+) : BaseGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao, userDao, player,userID=localId,remoteId) {
 
     private val connectionsClient: ConnectionsClient = Nearby.getConnectionsClient(appContext)
 
@@ -124,7 +125,7 @@ class NearbyGameViewModel(
         connectionsClient.stopAdvertising()
         connectionsClient.stopDiscovery()
         endpoint = null
-        remoteId = null
+        remoteId = ""
         _connectionState.update {
             ConnectionUiState() // reset completo
         }
@@ -215,10 +216,6 @@ class NearbyGameViewModel(
         sendMessage("gameaction", action, clientConnectionsClient = connectionsClient, endpoint = endpoint!!)
     }
 
-    override fun matchEnd() {
-        // TODO("Not yet implemented")
-    }
-
     val payloadCallback = object : PayloadCallback() {
         override fun onPayloadReceived(endpointId: String, payload: Payload) {
             val raw = String(payload.asBytes()!!, Charsets.UTF_8)
@@ -226,7 +223,15 @@ class NearbyGameViewModel(
             val message = raw.substringAfter(":")
 
             when (messageType) {
-                "endpoint:" -> updateRemote(message)
+                "endpoint:" -> {
+
+                    updateRemote(message)
+
+                    viewModelScope.launch {  matchStart(GameModes.NearBy) }
+
+
+
+                }
                 "grid:" -> {
                     _uiState.update {
                         it.copy(grid = deserializeCardList(message))
@@ -297,7 +302,7 @@ class NearbyGameViewModel(
                         playersStatisticsDao = playerStatisticsDao,
                         userDao = userDao,
                         player = player,
-                        remoteId = null,
+                        remoteId = "",
                         localId = localId,
                         endpoint = null,
                     )
