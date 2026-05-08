@@ -72,6 +72,7 @@ fun SemelionScreen(
         is SemelionGameViewModel -> SinglePlayer(state = state, viewModel= viewModel, modifier = modifier)
         is NearbyGameViewModel -> MultiPlayer(state= state, viewModel= viewModel, modifier = modifier)
     }
+    Log.d("finder","${state.grid.indexOfFirst { it.value == 8 } }}")
 
     // Game over dialog
     Dialogs(state = state, viewModel = viewModel)

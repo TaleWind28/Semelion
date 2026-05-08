@@ -337,14 +337,14 @@ abstract class BaseGameViewModel(
 
         modifiedState = findWinner(modifiedState)
 
-        Log.d("validate","fase: ${modifiedState.phase}")
+        Log.d("validate","fase: ${modifiedState.phase}, seven?:${modifiedState.incorrectSevenReveled}")
 
         return if (modifiedState.phase == GamePhase.Validation) {
             modifiedState.copy(
                 phase = GamePhase.PlayerTurn
             )
         } else {
-            modifiedState  // mantiene FigurePending
+            modifiedState  // mantiene FigurePending solo se un 7 non è stato rivelato in posizione errata
         }
     }
 
@@ -361,6 +361,8 @@ abstract class BaseGameViewModel(
         val gridDeck = noFiguresDeck.drop(UNCOVER_DECK_SIZE) + specialDeck
 
         val uncoverDeck = noFiguresDeck.take(UNCOVER_DECK_SIZE).map { it.copy(isRevealed = true) }
+
+        //val uncoverDeckTest = listOf(CardUIStates(name = "7P", value = 7, house = "P",isRevealed = false) )
 
         return Pair(gridDeck.shuffled(), uncoverDeck.shuffled())
 
@@ -638,13 +640,16 @@ abstract class BaseGameViewModel(
 
     fun jackSwap(cardId: String, state: GameUIState): Boolean {
         if (_uiState.value.jackSwaps.isEmpty()){
-            _uiState.update { it.copy(phase = GamePhase.PlayerTurn)}
+            val usedActions = increaseUsedActions(state = state)
+            _uiState.update { it.copy(p1ActionsUsed = usedActions.first,p2ActionsUsed = usedActions.second,phase = GamePhase.PlayerTurn)}
             return false
         }
+        Log.d("jackSwap","passo")
         val swaps =
             _uiState.value.jackSwaps.fold(cardId to state) { (currentId, currentState), nextPosition ->
-            jackSwapStep(currentId, currentState, nextPosition)
-        }
+                jackSwapStep(currentId, currentState, nextPosition)
+            }
+
         val state = swaps.second.copy(phase = GamePhase.Validation)
 
         _uiState.update { validateState(cardId =swaps.first ,state=state) }
@@ -836,8 +841,7 @@ abstract class BaseGameViewModel(
                     return true
                 }
                 _uiState.update { it.copy(jackSwaps = intent.jackSwaps.drop(1)) }
-                jackSwap(cardId = card.name,state=_uiState.value)
-                return true
+                return jackSwap(cardId = card.name,state=_uiState.value)
             }
             else -> false
         }
