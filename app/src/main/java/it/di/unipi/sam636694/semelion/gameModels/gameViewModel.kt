@@ -33,8 +33,6 @@ class SemelionGameViewModel(
     player: AudioPlayer
 ) : BaseGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao, userDao,player) {
 
-
-
     init {
         setup()
     }
@@ -53,11 +51,9 @@ class SemelionGameViewModel(
                 if (userDao.getUserById(124L) == null) userDao.insert(User(124L, nickName = "pippo"))
                 //caso specifico di partita in ScreenSharing
                 val matchID = matchesDao.getNextMatchId()
-                Log.d("DB","nextId = $matchID")
                 matchesDao.insert(Matches(gameMode = GameModes.ScreenSharing, gameState = _uiState.value))
                 participationsDao.insert(Participations(matchId= matchID, userId = 124L, role = "Host"))
                 participationsDao.insert(Participations(matchId= matchID,userId = 123L, role = "Guest"))
-                Log.d("DB","Initializeds")
                 _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }
             }
         }
@@ -73,6 +69,7 @@ class SemelionGameViewModel(
                 else null
 
         _matchSummary.update { lists -> lists.map { it.copy(outcome = outcome) } }
+
         viewModelScope.launch {
             val matchId = matchesDao.getNextMatchId() - 1
             matchesDao.update(Matches(matchId = matchId,gameMode= GameModes.ScreenSharing,gameState=_uiState.value))

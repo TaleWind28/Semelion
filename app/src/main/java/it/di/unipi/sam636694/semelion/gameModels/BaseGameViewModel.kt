@@ -72,16 +72,6 @@ abstract class BaseGameViewModel(
 
 
     protected fun handleCardClicked(cardId: String): Boolean {
-//        if (_uiState.value.phase !is GamePhase.PlayerTurn ) {
-//            viewModelScope.launch {
-//                SnackBarController.sendEvent(
-//                    event = SnackBarEvent(
-//                        message = "Risolvi prima l'effetto della figura"
-//                    )
-//                )
-//            }
-//            return false
-//        }
 
         val needsDelay = _uiState.value.grid
             .find { it.name == cardId }
@@ -111,16 +101,6 @@ abstract class BaseGameViewModel(
     }
 
     protected fun handleSwapCards(id1: String, id2: String): Boolean {
-//        if (_uiState.value.phase !is GamePhase.PlayerTurn){
-//            viewModelScope.launch {
-//                SnackBarController.sendEvent(
-//                    event = SnackBarEvent(
-//                        message = "Risolvi prima l'effetto della figura"
-//                    )
-//                )
-//            }
-//            return false
-//        }
 
         val card1 = findCard(id1, _uiState.value) ?: return false
         val card2 = findCard(id2, _uiState.value) ?: return false
@@ -356,7 +336,7 @@ abstract class BaseGameViewModel(
                 phase = GamePhase.PlayerTurn
             )
         } else {
-            modifiedState  // mantiene QueenPending o KingPending
+            modifiedState  // mantiene FigurePending
         }
     }
 
