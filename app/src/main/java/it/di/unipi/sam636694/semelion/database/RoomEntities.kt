@@ -18,8 +18,8 @@ data class Matches(
 
 @Entity(tableName = "Utenti")
 data class User(
-    @PrimaryKey(autoGenerate = true)
-    val userId: Long = 0,
+    @PrimaryKey
+    val userId: String,
     val nickName: String,
 )
 
@@ -40,7 +40,7 @@ data class User(
     indices = [Index("matchId"), Index("userId")]                                                                                                                           )
 data class Participations(
     val matchId: Long= 0,
-    val userId: Long= 0,
+    val userId: String,
     val role: String
 )
 
@@ -60,10 +60,10 @@ data class Participations(
 ],
     indices = [Index("matchId"), Index("userId")])
 data class MatchStatistics(
-    val userId: Long= 0,
+    val userId: String,
     val matchId: Long= 0,
     val outcome: String,
-    val winner: Long?,
+    val winner: String?,
     val figureRevealed:Int,
     val totalActions: Int,
 )
@@ -75,8 +75,8 @@ data class MatchStatistics(
     onDelete = ForeignKey.CASCADE
 )])
 data class PlayerStatistics(
-    @PrimaryKey(autoGenerate = true)
-    val userId: Long= 0,
+    @PrimaryKey(autoGenerate = false)
+    val userId: String,
     val matchesPlayed: Int = 0,
     val matchesWon: Int = 0,
     val matchesLost: Int= 0

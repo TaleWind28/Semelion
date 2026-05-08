@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface UserDao{
     @Insert
-    suspend fun insert(user: User): Long
+    suspend fun insert(user: User)
 
     @Update
     suspend fun update(user: User)
@@ -19,13 +19,16 @@ interface UserDao{
     suspend fun delete(user: User)
 
     @Query("SELECT * FROM Utenti WHERE userId == :userId")
-    suspend fun getUserById(userId: Long): User?
+    suspend fun getUserById(userId: String): User?
 
-    @Query("SELECT * FROM utenti WHERE  nickName == :nickname")
+    @Query("SELECT * FROM Utenti WHERE  nickName == :nickname")
     suspend fun getUserByNickname(nickname:String): User?
 
     @Query("SELECT * FROM Utenti")
     fun getAllUsers(): Flow<List<User>>
+
+    @Query("SELECT COUNT(*) FROM Utenti")
+    suspend fun getUserCount(): Int
 
 }
 
@@ -49,7 +52,7 @@ interface MatchesDao {
 
     // per riprendere una partita interrotta
     @Query("SELECT * FROM Partite WHERE matchId IN (SELECT matchId FROM Partecipazioni WHERE userId = :userId)")
-    fun getMatchesByUser(userId: Long): Flow<List<Matches>>
+    fun getMatchesByUser(userId: String): Flow<List<Matches>>
 }
 
 @Dao
@@ -65,7 +68,7 @@ interface ParticipationsDao {
     suspend fun getParticipationsByMatch(matchId: Long): List<Participations>
 
     @Query("SELECT * FROM Partecipazioni WHERE userId = :userId")
-    suspend fun getParticipationsByUser(userId: Long): List<Participations>
+    suspend fun getParticipationsByUser(userId: String): List<Participations>
 }
 
 @Dao
@@ -81,7 +84,7 @@ interface MatchStatisticsDao {
     suspend fun getStatsByMatch(matchId: Long): List<MatchStatistics>
 
     @Query("SELECT * FROM StatistichePartite WHERE userId = :userId")
-    fun getStatsByUser(userId: Long): Flow<List<MatchStatistics>>
+    fun getStatsByUser(userId: String): Flow<List<MatchStatistics>>
 }
 
 @Dao
@@ -94,5 +97,6 @@ interface PlayerStatisticsDao {
     suspend fun update(stats: PlayerStatistics)
 
     @Query("SELECT * FROM StatisticheGiocatori WHERE userId = :userId")
-    suspend fun getStatsByUser(userId: Long): PlayerStatistics?
+    suspend fun getStatsByUser(userId: String): PlayerStatistics?
+
 }

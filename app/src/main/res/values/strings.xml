@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Semelion</string>
+    <string name="screenSharingOpponent" translatable="false">Sora</string>
 </resources>
