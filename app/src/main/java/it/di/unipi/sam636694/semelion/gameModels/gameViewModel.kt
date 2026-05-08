@@ -47,13 +47,13 @@ class SemelionGameViewModel(
         viewModelScope.launch {
             if (_uiState.value.phase is GamePhase.Loading){
                 //devo metterlo da un'altra parte
-                if (userDao.getUserById(123L) == null) userDao.insert(User(123L, nickName = "pino"))
-                if (userDao.getUserById(124L) == null) userDao.insert(User(124L, nickName = "pippo"))
+                if (userDao.getUserById("123L") == null) userDao.insert(User("123L", nickName = "pino"))
+                if (userDao.getUserById("124L") == null) userDao.insert(User("124L", nickName = "pippo"))
                 //caso specifico di partita in ScreenSharing
                 val matchID = matchesDao.getNextMatchId()
                 matchesDao.insert(Matches(gameMode = GameModes.ScreenSharing, gameState = _uiState.value))
-                participationsDao.insert(Participations(matchId= matchID, userId = 124L, role = "Host"))
-                participationsDao.insert(Participations(matchId= matchID,userId = 123L, role = "Guest"))
+                participationsDao.insert(Participations(matchId= matchID, userId = "124L", role = "Host"))
+                participationsDao.insert(Participations(matchId= matchID,userId = "123L", role = "Guest"))
                 _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }
             }
         }
@@ -64,8 +64,8 @@ class SemelionGameViewModel(
         val outcome = this._uiState.value.winner ?: "interrotta"
 
         val winningUser =
-            if (outcome.lowercase(getDefault()).contains("p1 vince")) 123L
-            else if (outcome.lowercase(getDefault()).contains("p2 vince")) 124L
+            if (outcome.lowercase(getDefault()).contains("p1 vince")) "123L"
+            else if (outcome.lowercase(getDefault()).contains("p2 vince")) "124L"
                 else null
 
         _matchSummary.update { lists -> lists.map { it.copy(outcome = outcome) } }
@@ -81,7 +81,7 @@ class SemelionGameViewModel(
                 matchStatisticsDao.insert(stat)
             }
             //update dei playerSummary
-            listOf(123L,124L).fold(0){ acc,userId ->
+            listOf("123L","124L").fold(0){ acc,userId ->
                 Log.d("DB","inserting data for user:$userId")
                 //se non ha delle statistiche le creo
                 val playerStats = playersStatisticsDao.getStatsByUser(userId) ?: PlayerStatistics(userId, matchesPlayed = 0, matchesWon = 0, matchesLost = 0)

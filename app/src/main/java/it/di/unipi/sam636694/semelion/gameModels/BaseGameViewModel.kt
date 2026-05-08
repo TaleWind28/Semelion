@@ -53,8 +53,8 @@ abstract class BaseGameViewModel(
     val validationQueue = Channel<String>(Channel.BUFFERED)
 
     protected val _matchSummary = MutableStateFlow(listOf(
-        MatchStatistics(matchId=3, userId= 123L,outcome = "still playing...",  figureRevealed = 0, winner = null,totalActions = 0),
-        MatchStatistics(matchId=3,userId= 124L,outcome = "still playing...",  figureRevealed = 0,winner = null,totalActions = 0)
+        MatchStatistics(matchId=3, userId= "123L",outcome = "still playing...",  figureRevealed = 0, winner = null,totalActions = 0),
+        MatchStatistics(matchId=3,userId= "124L",outcome = "still playing...",  figureRevealed = 0,winner = null,totalActions = 0)
     ))
     val matchSummary = _matchSummary.asStateFlow()
 

@@ -27,7 +27,7 @@ import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
 
 
 @Composable
-fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, player: AudioPlayer){
+fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, player: AudioPlayer,userID:String){
 
     val backStack = rememberNavBackStack(Route.Home)
 

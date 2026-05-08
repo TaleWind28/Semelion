@@ -23,7 +23,7 @@ import it.di.unipi.sam636694.semelion.database.User
 import it.di.unipi.sam636694.semelion.utilities.ObserveAsEvents
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.ui.theme.SemelionTheme
-import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
+import it.di.unipi.sam636694.semelion.AudioPlayer
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
 import java.util.UUID
@@ -88,7 +88,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    SemelionNavigation(snackBarHostState,db, player,deviceUser)
+                    SemelionNavigation(snackBarHostState,db, player=player,userID=deviceUser)
                 }
             }
         }
