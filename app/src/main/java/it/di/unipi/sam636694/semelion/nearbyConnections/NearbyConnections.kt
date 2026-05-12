@@ -1,6 +1,5 @@
 import android.Manifest
 import android.os.Build
-import android.provider.Settings
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -32,20 +31,32 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.android.gms.nearby.Nearby
 import com.google.android.gms.nearby.connection.Payload
 import com.google.android.gms.nearby.connection.*
 import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.gameModels.NearbyGameViewModel
 import it.di.unipi.sam636694.semelion.serializeList
 import androidx.compose.runtime.collectAsState
+import androidx.navigation3.runtime.NavKey
 import it.di.unipi.sam636694.semelion.AudioPlayer
+import it.di.unipi.sam636694.semelion.Route
 import it.di.unipi.sam636694.semelion.ui.states.ConnectionUiState
+import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
+import it.di.unipi.sam636694.semelion.utilities.AppDestinations
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 
 @Composable
-fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostState,player: AudioPlayer,userId:String) {
+fun SemelionConnectionsScreen(
+    db: SemelionDB,
+    snackbarHostState: SnackbarHostState,
+    player: AudioPlayer,
+    userId: String,
+    onBack: () -> Unit,
+    navigateTo: (NavKey) -> Boolean
+) {
+
+    Log.d("nav","entro")
 
     val SERVICE_ID = "com.tuaapp.semelion"
 
@@ -72,6 +83,7 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
             userDao = db.userDao(),
             player = player,
             localId = userId,
+            context = LocalContext.current
         )
     )
 
@@ -90,14 +102,14 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
     //richiesta permessi
     LaunchedEffect(Unit) {
         permissionsLauncher.launch(requiredPermissions)
-        //nvm.updateConnectionsInfo(connectionsClient, null)
     }
-
+    Log.d("conn","${connectionState.gameStarted}")
     if (
+        !connectionState.gameStarted &&(
         gameState.grid.isEmpty() ||
-        (connectionState.connectedEndpointId == null && !connectionState.sent && connectionState.isHost) ||
-        (connectionState.connectedEndpointId == null && !connectionState.received && !connectionState.isHost)
-        ){
+        (connectionState.connectedEndpointId == null  && connectionState.isHost) ||
+        (!connectionState.received && !connectionState.isHost)
+        )){
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -157,7 +169,7 @@ fun SemelionConnectionsScreen(db: SemelionDB, snackbarHostState: SnackbarHostSta
         }
     }
     else {
-        NavigationUIApp(snackBarHostState = snackbarHostState, db = db, nvm,player=player)
+        NavigationUIApp(snackBarHostState = snackbarHostState, db = db, nvm,player=player, onNavigateBack = onBack)
     }
 }
 
@@ -165,7 +177,7 @@ fun sendMessage(messageType:String,message:String, clientConnectionsClient: Conn
     val formattedMessage = "$messageType:$message"
     val payload = Payload.fromBytes(formattedMessage.toByteArray(Charsets.UTF_8))
     clientConnectionsClient.sendPayload(endpoint,payload)
-    Log.d("Payload","Message: $message sent")
+    Log.d("Payload","Message: $formattedMessage sent")
 }
 
 @Composable

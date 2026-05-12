@@ -40,11 +40,11 @@ import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
 enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
-    val screen: @Composable (PaddingValues, SemelionDB, BaseGameViewModel, AudioPlayer) -> Unit  // ← aggiunto
+    val screen: @Composable (PaddingValues, SemelionDB, BaseGameViewModel, AudioPlayer, ()->Unit ) -> Unit  // ← aggiunto
 ) {
-    HOME("Home", Icons.Default.Home, { padding,_, viewModel,player -> SemelionScreen(padding = padding, viewModel = viewModel,player=player) }),
-    FAVORITES("Rules", Icons.Default.Favorite, { padding, _,_,_-> PdfViewerScreen(padding = padding) }),
-    PROFILE("Profile", Icons.Default.AccountBox, { padding, _,_,_ -> LogScreen(padding = padding)}),
+    HOME("Home", Icons.Default.Home, { padding,_, viewModel,player,onBack -> SemelionScreen(padding = padding, viewModel = viewModel,player=player, onBack = onBack) }),
+    FAVORITES("Rules", Icons.Default.Favorite, { padding, _,_,_,_-> PdfViewerScreen(padding = padding) }),
+    PROFILE("Profile", Icons.Default.AccountBox, { padding, _,_,_,_ -> LogScreen(padding = padding)}),
 }
 
 @Composable
@@ -59,7 +59,7 @@ fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel = viewModel
 }
 
 @Composable
-fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewModel: BaseGameViewModel,player: AudioPlayer) {
+fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewModel: BaseGameViewModel,player: AudioPlayer, onNavigateBack: () -> Unit) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     NavigationSuiteScaffold(
         navigationSuiteItems = {
@@ -79,7 +79,7 @@ fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewMo
             containerColor = Color.White,
             contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { innerPadding ->
-            currentDestination.screen(innerPadding,db, viewModel, player)
+            currentDestination.screen(innerPadding,db, viewModel, player, onNavigateBack)
         }
     }
 }

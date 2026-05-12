@@ -54,6 +54,10 @@ class SemelionGameViewModel(
         }
     }
 
+    override fun destroy() {
+
+    }
+
     //DB FUNCTIONS
 
 

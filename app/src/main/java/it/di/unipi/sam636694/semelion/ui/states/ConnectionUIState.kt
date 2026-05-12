@@ -7,4 +7,5 @@ data class ConnectionUiState(
     val status: String = "Scegli un ruolo per iniziare",
     val sent: Boolean = false,
     val received: Boolean = false,
+    val gameStarted: Boolean = false
 )

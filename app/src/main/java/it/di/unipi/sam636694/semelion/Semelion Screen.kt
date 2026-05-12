@@ -1,6 +1,7 @@
 package it.di.unipi.sam636694.semelion
 import android.content.res.Configuration
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -42,7 +43,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalConfiguration
@@ -62,25 +67,90 @@ fun SemelionScreen(
     modifier: Modifier = Modifier,
     padding: PaddingValues,
     viewModel: BaseGameViewModel = viewModel(),
-    player: AudioPlayer
+    player: AudioPlayer,
+    onBack : () -> Unit
 ){
 
     val state by viewModel.uiState.collectAsState()
+    val dbOperationCompleted by viewModel.isDBOperationComplete.collectAsState()
+    val goBack by viewModel.wantsToGoBack.collectAsState()
 
+    var showExitDialog by remember { mutableStateOf(false) }
 
+    LaunchedEffect(dbOperationCompleted, goBack) {
+        if (dbOperationCompleted && showExitDialog){
+            viewModel.destroy()
+            onBack()
+        }
+    }
+
+    Log.d("message","${state.phase}")
     when(viewModel){
         is SemelionGameViewModel -> SinglePlayer(state = state, viewModel= viewModel, modifier = modifier)
         is NearbyGameViewModel -> MultiPlayer(state= state, viewModel= viewModel, modifier = modifier)
     }
-    Log.d("finder","${state.grid.indexOfFirst { it.value == 8 } }}")
+
+    Log.d("finder","$dbOperationCompleted")
+
+    BackHandler(enabled = !showExitDialog && dbOperationCompleted) {
+        showExitDialog = true
+    }
+
+    if (showExitDialog){
+        BasicAlertDialog(onDismissRequest = {}) {
+            Surface(shape = RoundedCornerShape(16.dp)) {
+                Column{
+                    Text(
+                        text = "Vuoi terminare la partita verrà terminata oppure sospenderla e riprenderla più tardi?",
+                        modifier = Modifier.padding(24.dp),
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Row() {
+                        //Interruzione partita
+                        Button(onClick = {endMatch(viewModel, onBack = onBack)}, enabled = dbOperationCompleted) {
+                            Text("Interrompi")
+                        }
+                        //Richiesta interruzione
+                        Button(onClick = {interruptMatch(viewModel)}, enabled = viewModel is SemelionGameViewModel && dbOperationCompleted) {
+                            Text("Sospendi")
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     // Game over dialog
-    Dialogs(state = state, viewModel = viewModel)
+    Dialogs(state = state, viewModel = viewModel, onBack = onBack)
+}
+
+fun endMatch(viewModel: BaseGameViewModel,onBack:() -> Unit){
+    when(viewModel){
+        is SemelionGameViewModel -> viewModel.matchEnd(GameModes.ScreenSharing)
+        is NearbyGameViewModel ->{
+            viewModel.matchEnd(GameModes.NearBy)
+            viewModel.destroy()
+            onBack()
+        }
+        else -> {}
+    }
+}
+
+fun interruptMatch(viewModel: BaseGameViewModel){
+    when(viewModel){
+        is SemelionGameViewModel -> {
+            viewModel.interruptMatch(GameModes.ScreenSharing)
+        }
+        is NearbyGameViewModel -> viewModel.matchEnd(GameModes.NearBy,viewModel.localId)
+        else -> {}
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGameViewModel) {
+fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
+
+
     when(state.phase){
         is GamePhase.GameOver -> {
             LaunchedEffect(Unit) {
@@ -90,16 +160,28 @@ fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGam
                     else -> {}
                 }
             }
-            //victory fanfare ff7 a cappela
-            viewModel.player.playFile(R.raw.victory_fanfare)
 
-            BasicAlertDialog(onDismissRequest = {viewModel.setup()}) {
+            //victory fanfare ff7 a cappela
+            if (state.winner == viewModel.userID) viewModel.player.playFile(R.raw.victory_fanfare)
+            else viewModel.player.playFile(R.raw.gameover)
+
+            BasicAlertDialog(onDismissRequest = {}) {
                 Surface(shape = RoundedCornerShape(16.dp)) {
-                    Text(
-                        text = "${state.winner}",
-                        modifier = Modifier.padding(24.dp),
-                        style = MaterialTheme.typography.titleLarge
-                    )
+                    Column{
+                        Text(
+                            text = "${state.winner}",
+                            modifier = Modifier.padding(24.dp),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Row{
+                            if (viewModel is SemelionGameViewModel){
+                                Button(onClick = {viewModel.setup()}) {
+                                    Text(text = "Gioca ancora")
+                                }
+                            }
+                            Button(onClick = {onBack()}) { Text(text="chiudi")}
+                        }
+                    }
                 }
             }
         }

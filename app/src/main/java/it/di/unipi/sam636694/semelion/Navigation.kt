@@ -14,7 +14,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
@@ -24,6 +26,7 @@ import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 import kotlin.collections.listOf
 import kotlin.collections.mapOf
 import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
+import it.di.unipi.sam636694.semelion.utilities.AppDestinations
 
 
 @Composable
@@ -34,7 +37,10 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
 
     NavDisplay(
         modifier = Modifier,
-        entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
+        entryDecorators = listOf(
+            rememberSaveableStateHolderNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator()
+        ),
         backStack = backStack,
         entryProvider = { key ->
             when(key){
@@ -67,13 +73,22 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                     if (uiState.phase is GamePhase.Loading) {
                         Text(text = "Loading..")
                     } else {
-                        NavigationUIApp(snackBarHostState = snackBarHostState, db = db, viewModel,player)
+                        NavigationUIApp(snackBarHostState = snackBarHostState, db = db, viewModel,player,onNavigateBack = { backStack.removeLastOrNull()})
                     }
 
                 }
 
                 is Route.SemelionConnections -> NavEntry(key) {
-                    SemelionConnectionsScreen(db,snackBarHostState,player, userId = userID)
+
+
+                    SemelionConnectionsScreen(
+                        db=db,
+                        snackBarHostState,
+                        player=player,
+                        userId = userID,
+                        onBack = { backStack.removeLastOrNull()},
+                        navigateTo = { route: NavKey -> backStack.add(route)}
+                    )
                 }
 
                 else ->error("Unknown NavKey:$key")

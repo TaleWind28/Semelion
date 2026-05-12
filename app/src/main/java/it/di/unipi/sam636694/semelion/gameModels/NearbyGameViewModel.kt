@@ -77,9 +77,10 @@ class NearbyGameViewModel(
     }
 
     fun onDisconnected() {
+        val gameStarted = _connectionState.value.gameStarted
         disconnect()
         _connectionState.update {
-            it.copy(connectedEndpointId = null, status = "Disconnesso")
+            it.copy(connectedEndpointId = null, status = "Disconnesso", gameStarted = gameStarted)
         }
     }
 
@@ -125,10 +126,11 @@ class NearbyGameViewModel(
         connectionsClient.stopAdvertising()
         connectionsClient.stopDiscovery()
         endpoint = null
-        remoteId = ""
+        wantsToGoBack.value = true
         _connectionState.update {
             ConnectionUiState() // reset completo
         }
+
     }
 
     fun cancelSearch() {
@@ -149,9 +151,6 @@ class NearbyGameViewModel(
         setup()
     }
 
-    fun updateRemote(remoteId: String) {
-        this.remoteId = remoteId
-    }
 
     fun sendGrid(endpointId: String) {
         viewModelScope.launch {
@@ -164,6 +163,7 @@ class NearbyGameViewModel(
     }
 
     fun produceAction(command: String) {
+        if (_uiState.value.phase is GamePhase.GameOver) return
         Log.d("PayloadReceived", "actionCommand:$command")
         val action = command.toGameIntent()
         Log.d("PayloadReceived", "action:$action")
@@ -181,6 +181,10 @@ class NearbyGameViewModel(
     }
 
     override fun processIntent(intent: GameIntent): Boolean {
+        if (_connectionState.value.connectedEndpointId == null){
+            _uiState.update { it.copy(phase = GamePhase.GameOver)}
+            return false
+        }
 
         val mappedIntent = if (intent is GameIntent.KingDirectionChosen && !this.connectionState.value.isHost) {
             mapKingDirection(intent)
@@ -216,21 +220,28 @@ class NearbyGameViewModel(
         sendMessage("gameaction", action, clientConnectionsClient = connectionsClient, endpoint = endpoint!!)
     }
 
+    fun updateRemoteId(remoteId: String){
+        this.remoteId = remoteId
+        super.updateSecondPlayer(remoteId)
+    }
+
     val payloadCallback = object : PayloadCallback() {
         override fun onPayloadReceived(endpointId: String, payload: Payload) {
             val raw = String(payload.asBytes()!!, Charsets.UTF_8)
             val messageType = raw.substringBefore(":") + ":"
             val message = raw.substringAfter(":")
 
+            Log.d("message","$messageType$message,${messageType ==  "endpoint:"} ")
             when (messageType) {
                 "endpoint:" -> {
+                    Log.d("endpoint","endpoint Ottenuto")
 
-                    updateRemote(message)
-
-                    viewModelScope.launch {  matchStart(GameModes.NearBy) }
-
-
-
+                    viewModelScope.launch {
+                        updateRemoteId(message)
+                        matchStart(GameModes.NearBy)
+                        Log.d("endpoint","match iniziato")
+                    }
+                    Log.d("endpoint","endpoint Ottenuto")
                 }
                 "grid:" -> {
                     _uiState.update {
@@ -241,9 +252,13 @@ class NearbyGameViewModel(
                     _uiState.update {
                         it.copy(uncoverDeck = deserializeCardList(message))
                     }
-                    _connectionState.update { it.copy(received = true) }
+                    _connectionState.update { it.copy(received = true, gameStarted = true) }
                 }
                 "gameaction:" -> produceAction(message)
+                "destruction:" -> {
+                    _uiState.update { it.copy(phase = GamePhase.GameOver, winner = userID) }
+                    Log.d("message","fase post destruction:${_uiState.value.phase}")
+                }
                 else -> _connectionState.update { it.copy(status = "Ricevuto $message") }
             }
         }
@@ -272,6 +287,7 @@ class NearbyGameViewModel(
                 endpoint = endpointId
                 if (_connectionState.value.isHost) {
                     sendGrid(endpointId)
+                    _connectionState.update { it.copy(gameStarted = true) }
                 }
             }
         }
@@ -279,6 +295,11 @@ class NearbyGameViewModel(
         override fun onDisconnected(endpointId: String) {
             onDisconnected()
         }
+    }
+
+    override fun destroy() {
+        sendMessage("destruction","player gave up",this.connectionsClient,this.endpoint!!)
+        disconnect()
     }
 
     companion object {
@@ -289,13 +310,13 @@ class NearbyGameViewModel(
             playerStatisticsDao: PlayerStatisticsDao,
             player: AudioPlayer,
             userDao: UserDao,
-            localId: String
+            localId: String,
+            context: Context
         ): ViewModelProvider.Factory {
             return viewModelFactory {
                 initializer {
-                    val app = this[APPLICATION_KEY]!!
                     NearbyGameViewModel(
-                        appContext = app.applicationContext,
+                        appContext = context,
                         matchesDao = matchesDao,
                         participationsDao = participationsDao,
                         matchStatisticsDao = matchStatisticsDao,

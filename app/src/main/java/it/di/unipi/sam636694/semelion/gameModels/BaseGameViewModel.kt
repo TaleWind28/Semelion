@@ -52,11 +52,15 @@ abstract class BaseGameViewModel(
     val userDao: UserDao,
     val player: AudioPlayer,
     val userID: String,
-    val secondPlayerId: String
+    var secondPlayerId: String
 ) : ViewModel(){
 
     protected val _uiState = MutableStateFlow(GameUIState())
     val uiState = _uiState.asStateFlow()
+
+    val isDBOperationComplete = MutableStateFlow(true)
+
+    val wantsToGoBack = MutableStateFlow(false)
 
     val validationQueue = Channel<String>(Channel.BUFFERED)
 
@@ -79,6 +83,7 @@ abstract class BaseGameViewModel(
     }
 
 
+    //HANDLER PER GESTIRE EVENTI RELATIVI ALLA UI
     protected fun handleCardClicked(cardId: String): Boolean {
 
         val needsDelay = _uiState.value.grid
@@ -192,20 +197,6 @@ abstract class BaseGameViewModel(
         return true
     }
 
-    fun generateJackChain(state: GameUIState,jackHouse:String,swapCount:Int):List<Int>{
-        val validPositions = (0..27).filter { colorHouse(state.grid[it].house) == colorHouse(jackHouse) }
-        val positions = mutableListOf<Int>()
-        Log.d("jackSwap","numeri: $swapCount")
-        repeat(swapCount) {
-            val last = positions.lastOrNull()
-            positions.add(validPositions.filter { it != last }.random())
-        }
-        Log.d("jackSwap","posizioni: $positions")
-        positions.forEach { Log.d("jackSwap","${state.grid[it]}") }
-        return positions
-    }
-
-
     protected fun handleQueenDirection(direction: (Int, Int) -> Int): Boolean {
         if (_uiState.value.phase !is GamePhase.QueenPending) return false
 
@@ -265,6 +256,21 @@ abstract class BaseGameViewModel(
         }
 
         return true
+    }
+
+    //FUNZIONI HELPER PER GLI HANDLER
+
+    fun generateJackChain(state: GameUIState,jackHouse:String,swapCount:Int):List<Int>{
+        val validPositions = (0..27).filter { colorHouse(state.grid[it].house) == colorHouse(jackHouse) }
+        val positions = mutableListOf<Int>()
+        Log.d("jackSwap","numeri: $swapCount")
+        repeat(swapCount) {
+            val last = positions.lastOrNull()
+            positions.add(validPositions.filter { it != last }.random())
+        }
+        Log.d("jackSwap","posizioni: $positions")
+        positions.forEach { Log.d("jackSwap","${state.grid[it]}") }
+        return positions
     }
 
     fun canSwap(card1: CardUIStates,card2: CardUIStates,state: GameUIState): String?{
@@ -334,6 +340,7 @@ abstract class BaseGameViewModel(
         return  errorMessage(positionValid,fairnessControl(card1,card2,state.p1Turn))
     }
 
+    //FUNZIONE DI VALIDAZIONE
     open fun validateState(cardId: String, state: GameUIState): GameUIState {
         Log.d("validate", cardId)
 
@@ -848,26 +855,38 @@ abstract class BaseGameViewModel(
     }
 
 
+    fun calculateOutcome(loser:String?,state: GameUIState):Pair<String,String>{
+        val outcome = loser ?: state.winner ?: "interrotta"
+        return when(loser){
+            userID -> "vince $secondPlayerId" to secondPlayerId
+            secondPlayerId -> "vince $userID" to userID
+            else -> {
+                if (outcome.lowercase(getDefault()).contains("Vince p1")) outcome to userID
+                else if (outcome.lowercase(getDefault()).contains("Vince p2")) outcome to secondPlayerId
+                else outcome to "caso messo solo per esaustività pattern matching"
+            }
+        }
+    }
 
-    fun matchEnd(mode: GameModes){
-        val outcome = this._uiState.value.winner ?: "interrotta"
+    fun matchEnd(mode: GameModes,loser:String? = null){
+        Log.d("pippo","chiamata")
 
-        val winningUser =
-            if (outcome.lowercase(getDefault()).contains("Vince p1")) userID
-            else if (outcome.lowercase(getDefault()).contains("Vince p2")) secondPlayerId
-            else null
+        //calcolo l'outcome della partita
+        val (outcome,winningUser) = calculateOutcome(loser,_uiState.value)
+
+        isDBOperationComplete.value = false
 
         _matchSummary.update { lists -> lists.map { it.copy(outcome = outcome) } }
 
         viewModelScope.launch {
             val matchId = matchesDao.getNextMatchId() - 1
-            matchesDao.update(Matches(matchId = matchId,gameMode= mode,gameState=_uiState.value))
+            matchesDao.update(Matches(matchId = matchId,gameMode= mode,gameState=_uiState.value, isCompleted = true))
             Log.d("DB","$matchId")
             //update dei matchSummary
             matchSummary.value.forEach { stats ->
                 val stat = stats.copy(matchId = matchId,outcome = outcome, winner = winningUser)
                 Log.d("DB","inserting data: $stat")
-                matchStatisticsDao.insert(stat)
+                matchStatisticsDao.upsert(stat)
             }
             //update dei playerSummary
             listOf(userID,secondPlayerId).fold(0){ acc,userId ->
@@ -879,21 +898,60 @@ abstract class BaseGameViewModel(
 
                 if (playerStats.matchesPlayed == 0) playersStatisticsDao.insert(playerStats.copy(matchesPlayed = 1, matchesWon = wins, matchesLost = losses))
                 else playersStatisticsDao.update(playerStats.copy(matchesPlayed = playerStats.matchesPlayed + 1, matchesWon = wins, matchesLost = losses))
-                Log.d("DB","data userted for user:$userId")
+                Log.d("DB","data inserted for user:$userId")
                 acc
             }
+            isDBOperationComplete.value = true
         }
+    }
+
+    open fun interruptMatch(mode: GameModes){
+        isDBOperationComplete.value = false
+        viewModelScope.launch {
+            val matchId = matchesDao.getNextMatchId() - 1
+
+            matchesDao.update(Matches(matchId = matchId,gameMode= mode,gameState=_uiState.value,isCompleted = false))
+            Log.d("DB","$matchId")
+            //salvataggio matchSummary in caso di ripresa della partita
+            matchSummary.value.forEach { stats ->
+                val stat = stats.copy(matchId = matchId,outcome = "interrupted", winner = "none")
+                Log.d("DB","inserting data: $stat")
+                matchStatisticsDao.upsert(stat)
+            }
+            //update dei playerSummary
+            listOf(userID,secondPlayerId).fold(0){ acc,userId ->
+                Log.d("DB","inserting data for user:$userId")
+                //se non ha delle statistiche le creo
+                val playerStats = playersStatisticsDao.getStatsByUser(userId) ?: PlayerStatistics(userId, matchesPlayed = 0, matchesWon = 0, matchesLost = 0)
+
+                if (playerStats.matchesPlayed == 0) playersStatisticsDao.insert(playerStats.copy(matchesPlayed = 1))
+                else playersStatisticsDao.update(playerStats.copy(matchesPlayed = playerStats.matchesPlayed + 1))
+                Log.d("DB","data inserted for user:$userId")
+                acc
+            }
+            isDBOperationComplete.value = true
+        }
+
+
     }
 
     suspend fun matchStart(mode: GameModes){
         //devo metterlo da un'altra parte
         if (userDao.getUserById(userID) == null) userDao.insert(User(userID, nickName = "Semelion_User: $userID"))
         if (userDao.getUserById(secondPlayerId) == null) userDao.insert(User(secondPlayerId, nickName = "Sora"))
+        Log.d("DB","secondPlayerID:$secondPlayerId")
         //caso specifico di partita in ScreenSharing
         val matchID = matchesDao.getNextMatchId()
-        matchesDao.insert(Matches(gameMode = mode, gameState = _uiState.value))
+        matchesDao.insert(Matches(gameMode = mode, gameState = _uiState.value, isCompleted = false))
         participationsDao.insert(Participations(matchId= matchID, userId = secondPlayerId, role = "Host"))
         participationsDao.insert(Participations(matchId= matchID,userId = userID, role = "Guest"))
+        isDBOperationComplete.value = true
     }
 
+
+    protected fun updateSecondPlayer(secondPlayerId: String){
+        this.secondPlayerId = secondPlayerId
+    }
+
+    abstract fun destroy()
 }

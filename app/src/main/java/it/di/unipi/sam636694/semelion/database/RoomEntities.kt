@@ -13,7 +13,8 @@ data class Matches(
     @PrimaryKey(autoGenerate = true)
     val matchId: Long= 0,
     val gameMode: GameModes,
-    val gameState: GameUIState
+    val gameState: GameUIState,
+    val isCompleted: Boolean
 )
 
 @Entity(tableName = "Utenti")

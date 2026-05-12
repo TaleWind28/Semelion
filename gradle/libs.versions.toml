@@ -39,6 +39,7 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3",
 # Navigation3
 androidx-navigatin3-runtime = {module = "androidx.navigation3:navigation3-runtime",version.ref="navigation3"}
 androidx-navigation3-ui = {module = "androidx.navigation3:navigation3-ui",version.ref="navigation3"}
+androidx-navigation3-lifecycle = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleRuntimeKtx" }
 
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundationVersion" }

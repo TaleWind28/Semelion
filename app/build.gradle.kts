@@ -102,6 +102,8 @@ dependencies {
 
     // optional - Paging 3 Integration
     implementation("androidx.room:room-paging:$room_version")
+
+    implementation(libs.androidx.navigation3.lifecycle)
     // Glide
     implementation(libs.compose)
 }

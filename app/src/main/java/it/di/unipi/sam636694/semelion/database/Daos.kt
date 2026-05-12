@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -79,6 +80,9 @@ interface MatchStatisticsDao {
 
     @Update
     suspend fun update(stats: MatchStatistics)
+
+    @Upsert
+    suspend fun upsert(stats: MatchStatistics)
 
     @Query("SELECT * FROM StatistichePartite WHERE matchId = :matchId")
     suspend fun getStatsByMatch(matchId: Long): List<MatchStatistics>
