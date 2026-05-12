@@ -65,14 +65,13 @@ abstract class BaseGameViewModel(
     val validationQueue = Channel<String>(Channel.BUFFERED)
 
     protected val _matchSummary = MutableStateFlow(listOf(
-        MatchStatistics(matchId=3, userId= userID,outcome = "still playing...",  figureRevealed = 0, winner = null,totalActions = 0),
-        MatchStatistics(matchId=3,userId= secondPlayerId,outcome = "still playing...",  figureRevealed = 0,winner = null,totalActions = 0)
+        MatchStatistics(matchId=-1, userId= userID,outcome = "still playing...",  figureRevealed = 0, winner = null,totalActions = 0),
+        MatchStatistics(matchId=-1,userId= secondPlayerId,outcome = "still playing...",  figureRevealed = 0,winner = null,totalActions = 0)
     ))
     val matchSummary = _matchSummary.asStateFlow()
 
 
     //serve per mettere i dao nel viewmodel
-
     open fun validation(){
         viewModelScope.launch {
             for (cardId in validationQueue) {
@@ -863,7 +862,7 @@ abstract class BaseGameViewModel(
             else -> {
                 if (outcome.lowercase(getDefault()).contains("Vince p1")) outcome to userID
                 else if (outcome.lowercase(getDefault()).contains("Vince p2")) outcome to secondPlayerId
-                else outcome to "caso messo solo per esaustività pattern matching"
+                else outcome to "none"
             }
         }
     }
@@ -951,6 +950,7 @@ abstract class BaseGameViewModel(
 
     protected fun updateSecondPlayer(secondPlayerId: String){
         this.secondPlayerId = secondPlayerId
+        _matchSummary.update { listOf(it.first(),it.last().copy(userId=secondPlayerId)) }
     }
 
     abstract fun destroy()

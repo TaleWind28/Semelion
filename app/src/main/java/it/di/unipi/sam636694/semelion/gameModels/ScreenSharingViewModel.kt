@@ -48,9 +48,7 @@ class SemelionGameViewModel(
         )
         viewModelScope.launch {
             if (_uiState.value.phase is GamePhase.Loading){
-                Log.d("pino","prima del get")
                 val suspendedMatch = matchesDao.getSuspendedMatch()
-                Log.d("pino","prima del controllo")
                 if ( suspendedMatch == null) matchStart(GameModes.ScreenSharing)
                 else resumeMatch(suspendedMatch)
                 _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }

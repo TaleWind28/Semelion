@@ -234,10 +234,10 @@ class NearbyGameViewModel(
             Log.d("message","$messageType$message,${messageType ==  "endpoint:"} ")
             when (messageType) {
                 "endpoint:" -> {
-                    Log.d("endpoint","endpoint Ottenuto")
-
                     viewModelScope.launch {
+                        Log.d("endpoint","endpoint Ottenuto")
                         updateRemoteId(message)
+                        Log.d("endpoint","Remote settato")
                         matchStart(GameModes.NearBy)
                         Log.d("endpoint","match iniziato")
                     }
@@ -286,6 +286,7 @@ class NearbyGameViewModel(
                 connectionsClient.stopDiscovery()
                 endpoint = endpointId
                 if (_connectionState.value.isHost) {
+                    sendMessage("endpoint", localId, connectionsClient, endpointId)
                     sendGrid(endpointId)
                     _connectionState.update { it.copy(gameStarted = true) }
                 }
