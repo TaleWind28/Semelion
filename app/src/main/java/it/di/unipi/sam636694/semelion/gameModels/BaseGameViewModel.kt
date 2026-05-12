@@ -160,6 +160,52 @@ abstract class BaseGameViewModel(
 
     }
 
+    protected fun handleJackMadness(swaps:List<Int>):Boolean{
+       if (_uiState.value.phase !is GamePhase.JackMadness) return false
+
+        val cardId = _uiState.value.grid[swaps.first()].name
+        val position = swaps.first()
+        //droppo il primo elemento che è la posizione attuale del jack
+        val jackSwaps = swaps.drop(1)
+        //se non ho altre pozioni termino
+        if (jackSwaps.isEmpty()){
+            val usedActions = increaseUsedActions(state = _uiState.value)
+            _uiState.update { it.copy(p1ActionsUsed = usedActions.first,p2ActionsUsed = usedActions.second,phase = GamePhase.PlayerTurn)}
+            return false
+        }
+
+        Log.d("jackSwap","passo")
+
+        val swapped =
+            swaps.fold(cardId to _uiState.value) { (currentId, currentState), nextPosition ->
+                val nextCard = currentState.grid[nextPosition]
+
+                val currentPos = currentState.grid.indexOfFirst { it.name == currentId }
+
+                Log.d("jackSwap", "from: $currentPos card: $currentId, to: $nextPosition, nextCard: ${nextCard.name}")
+
+                currentId to figureSwap(currentId, nextCard.name, currentState, "Jack' chain")
+            }
+
+        _uiState.update { validateState(cardId =swapped.second.grid[position].name ,state=swapped.second.copy(phase = GamePhase.Validation)) }
+
+        return true
+    }
+
+    fun generateJackChain(state: GameUIState,jackHouse:String,swapCount:Int):List<Int>{
+        val validPositions = (0..27).filter { colorHouse(state.grid[it].house) == colorHouse(jackHouse) }
+        val positions = mutableListOf<Int>()
+        Log.d("jackSwap","numeri: $swapCount")
+        repeat(swapCount) {
+            val last = positions.lastOrNull()
+            positions.add(validPositions.filter { it != last }.random())
+        }
+        Log.d("jackSwap","posizioni: $positions")
+        positions.forEach { Log.d("jackSwap","${state.grid[it]}") }
+        return positions
+    }
+
+
     protected fun handleQueenDirection(direction: (Int, Int) -> Int): Boolean {
         if (_uiState.value.phase !is GamePhase.QueenPending) return false
 
@@ -289,9 +335,12 @@ abstract class BaseGameViewModel(
     }
 
     open fun validateState(cardId: String, state: GameUIState): GameUIState {
-        Log.d("Validate", cardId)
+        Log.d("validate", cardId)
+
         val card = findCard(cardId, state) ?: return state
         var modifiedState = state
+
+        Log.d("validate", cardId)
 
         if (card.isRevealed) {
             //controlla se la carta rivelata è una figura
@@ -319,6 +368,8 @@ abstract class BaseGameViewModel(
             coverCard(card.name, state)
         }
 
+        Log.d("validate", "calcolo azioni: $cardId")
+
         if (modifiedState.phase is GamePhase.Validation){
             //aggiorna azioni
             val (p1Actions, p2Actions) = increaseUsedActions(modifiedState)
@@ -337,7 +388,7 @@ abstract class BaseGameViewModel(
 
         modifiedState = findWinner(modifiedState)
 
-        Log.d("validate","fase: ${modifiedState.phase}, seven?:${modifiedState.incorrectSevenReveled}")
+        Log.d("validate","cardId:$cardId\nfase: ${modifiedState.phase}\nseven?:${modifiedState.incorrectSevenReveled}")
 
         return if (modifiedState.phase == GamePhase.Validation) {
             modifiedState.copy(
@@ -637,49 +688,6 @@ abstract class BaseGameViewModel(
 
         return modifiedState
     }
-
-    fun jackSwap(cardId: String, state: GameUIState): Boolean {
-        if (_uiState.value.jackSwaps.isEmpty()){
-            val usedActions = increaseUsedActions(state = state)
-            _uiState.update { it.copy(p1ActionsUsed = usedActions.first,p2ActionsUsed = usedActions.second,phase = GamePhase.PlayerTurn)}
-            return false
-        }
-        Log.d("jackSwap","passo")
-        val swaps =
-            _uiState.value.jackSwaps.fold(cardId to state) { (currentId, currentState), nextPosition ->
-                jackSwapStep(currentId, currentState, nextPosition)
-            }
-
-        val state = swaps.second.copy(phase = GamePhase.Validation)
-
-        _uiState.update { validateState(cardId =swaps.first ,state=state) }
-
-        return true
-    }
-
-    fun generateJackChain(state: GameUIState,jackHouse:String,swapCount:Int):List<Int>{
-        val validPositions = (0..27).filter { colorHouse(state.grid[it].house) == colorHouse(jackHouse) }
-        val positions = mutableListOf<Int>()
-        Log.d("jackSwap","numeri: $swapCount")
-        repeat(swapCount) {
-            val last = positions.lastOrNull()
-            positions.add(validPositions.filter { it != last }.random())
-        }
-        Log.d("jackSwap","posizioni: $positions")
-        positions.forEach { Log.d("jackSwap","${state.grid[it]}") }
-        return positions
-    }
-
-    fun jackSwapStep(currentId: String, currentState: GameUIState, nextPosition: Int): Pair<String, GameUIState> {
-        val nextCard = currentState.grid[nextPosition]
-
-        val currentPos = currentState.grid.indexOfFirst { it.name == currentId }
-
-        Log.d("jackSwap", "from: $currentPos card: $currentId, to: $nextPosition, nextCard: ${nextCard.name}")
-
-        return currentId to figureSwap(currentId, nextCard.name, currentState, "Jack' chain")
-    }
-
     fun replaceCard(state: GameUIState, cardID: String): GameUIState {
         val card = findCard(cardID, state) ?: return state
         if (!card.isRevealed) return state
@@ -720,6 +728,7 @@ abstract class BaseGameViewModel(
             )
         }
 
+        Log.d("counter","p1,7")
         //se p2 ha rivelato un 7 passa
         if (!state.p1Turn && state.incorrectSevenReveled) {
             return state.copy(
@@ -730,7 +739,7 @@ abstract class BaseGameViewModel(
                 incorrectSevenReveled = false
             )
         }
-
+        Log.d("counter","p2,7")
         //fine turno p1
         if (p1Actions - state.p1ActionsUsed <= 0 && state.p1Turn) {
             sendScreenMessage(
@@ -745,7 +754,7 @@ abstract class BaseGameViewModel(
                 p1Turn = false
             )
         }
-
+        Log.d("counter","p1, fine azioni")
         //fine turno p2
         if (p2Actions - state.p2ActionsUsed <= 0) {
             sendScreenMessage(
@@ -761,7 +770,7 @@ abstract class BaseGameViewModel(
                 p1Turn = true
             )
         }
-
+        Log.d("counter","p2,fine azioni")
         //continuo il turno
         return state.copy(
             p1Actions = p1Actions,
@@ -833,19 +842,12 @@ abstract class BaseGameViewModel(
             is GameIntent.SwapCards -> handleSwapCards(intent.id1, intent.id2)
             is GameIntent.QueenDirectionChosen -> handleQueenDirection(intent.direction.toFunction(intent.colIndex))
             is GameIntent.KingDirectionChosen -> handleKingDirection(intent.rowIndex, intent.direction.toFunction(intent.rowIndex))
-            is GameIntent.JackMadness -> {
-                Log.d("madness","$intent")
-                val card = _uiState.value.grid[intent.jackSwaps.first()]
-                if(intent.jackSwaps.isEmpty()){
-                    _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }
-                    return true
-                }
-                _uiState.update { it.copy(jackSwaps = intent.jackSwaps.drop(1)) }
-                return jackSwap(cardId = card.name,state=_uiState.value)
-            }
+            is GameIntent.JackMadness -> handleJackMadness(swaps=intent.jackSwaps)
             else -> false
         }
     }
+
+
 
     fun matchEnd(mode: GameModes){
         val outcome = this._uiState.value.winner ?: "interrotta"
