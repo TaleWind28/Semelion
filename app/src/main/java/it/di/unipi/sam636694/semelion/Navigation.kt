@@ -72,6 +72,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
 
                     if (uiState.phase is GamePhase.Loading) {
                         Text(text = "Loading..")
+
                     } else {
                         NavigationUIApp(snackBarHostState = snackBarHostState, db = db, viewModel,player,onNavigateBack = { backStack.removeLastOrNull()})
                     }
@@ -79,8 +80,6 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                 }
 
                 is Route.SemelionConnections -> NavEntry(key) {
-
-
                     SemelionConnectionsScreen(
                         db=db,
                         snackBarHostState,

@@ -40,3 +40,4 @@ sealed class GamePhase {
 
     object WaitingForOpponent : GamePhase()
 }
+

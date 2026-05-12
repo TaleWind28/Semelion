@@ -6,7 +6,16 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonDeserializationContext
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonElement
+import com.google.gson.JsonPrimitive
+import com.google.gson.JsonSerializationContext
+import com.google.gson.JsonSerializer
+import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
+import java.lang.reflect.Type
 
 @Entity(tableName = "Partite")
 data class Matches(
@@ -88,8 +97,11 @@ enum class GameModes{
     NearBy
 }
 
+
 class Converters {
-    private val gson = Gson()
+    private val gson = GsonBuilder()
+        .registerTypeAdapter(GamePhase::class.java, GamePhaseAdapter())
+        .create()
 
     @TypeConverter
     fun fromGameUIState(value: GameUIState): String = gson.toJson(value)
@@ -102,4 +114,25 @@ class Converters {
 
     @TypeConverter
     fun toGameModes(value: String): GameModes = GameModes.valueOf(value)
+}
+
+class GamePhaseAdapter : JsonSerializer<GamePhase>, JsonDeserializer<GamePhase> {
+    override fun serialize(src: GamePhase, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
+        return JsonPrimitive(src::class.simpleName)
+    }
+
+    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): GamePhase {
+        // gestisce sia {"phase":"PlayerTurn"} che {"phase":{}} (vecchi record nel db)
+        val name = if (json.isJsonPrimitive) json.asString else json.asJsonObject.get("type")?.asString
+        return when (name) {
+            "PlayerTurn" -> GamePhase.PlayerTurn
+            "QueenPending" -> GamePhase.QueenPending
+            "KingPending" -> GamePhase.KingPending
+            "JackMadness" -> GamePhase.JackMadness
+            "Validation" -> GamePhase.Validation
+            "GameOver" -> GamePhase.GameOver
+            "WaitingForOpponent" -> GamePhase.WaitingForOpponent
+            else -> GamePhase.Loading
+        }
+    }
 }
