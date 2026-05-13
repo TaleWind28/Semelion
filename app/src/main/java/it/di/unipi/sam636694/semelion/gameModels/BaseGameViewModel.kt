@@ -792,7 +792,8 @@ abstract class BaseGameViewModel(
         return 1 + rows.sumOf { row ->
             val revealed = row.filter { it.isRevealed }
             if (revealed.size < 2) return@sumOf 0
-            row.getPredominantOrder().sumOf { triple -> max(triple.second, triple.third) / 2 }
+            val houseActions = row.getBonusActions()
+            houseActions.sumOf { triple ->  triple.second / 2 + triple.third / 2}
         }
     }
 

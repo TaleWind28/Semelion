@@ -1,6 +1,7 @@
 package it.di.unipi.sam636694.semelion
 
 import SemelionConnectionsScreen
+import android.util.Log
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,6 +27,9 @@ import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 import kotlin.collections.listOf
 import kotlin.collections.mapOf
 import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
+import it.di.unipi.sam636694.semelion.gameModels.findMax
+import it.di.unipi.sam636694.semelion.gameModels.houseRowOrder
+import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 import it.di.unipi.sam636694.semelion.utilities.AppDestinations
 
 

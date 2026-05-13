@@ -182,7 +182,10 @@ fun List<CardUIStates>.getPredominantOrder():List<Triple<String,Int,Int>>{
 
     val triples: MutableList<Triple<String,Int,Int>> = mutableListOf()
 
-    houses.forEach { house -> triples.add(houseRowOrder(house,this)) }
+    houses.forEach { house ->
+        Log.d("HRO","seme:$house")
+        triples.add(houseRowOrder(house,this))
+    }
 
     if (triples.isEmpty()) return emptyList()
 
@@ -200,4 +203,20 @@ fun List<CardUIStates>.getPredominantOrder():List<Triple<String,Int,Int>>{
             return order
         }
     }
+}
+
+fun List<CardUIStates>.getBonusActions():List<Triple<String,Int,Int>>{
+    //considero solo le carte rivelate
+    val revealed = filter { it.isRevealed }
+    val houses = mutableSetOf<String>()
+
+    revealed.forEach { card -> houses.add(card.house) }
+
+    val triples: MutableList<Triple<String,Int,Int>> = mutableListOf()
+
+    houses.forEach { house ->
+        Log.d("HRO","seme:$house")
+        triples.add(houseRowOrder(house,this))
+    }
+    return triples
 }
