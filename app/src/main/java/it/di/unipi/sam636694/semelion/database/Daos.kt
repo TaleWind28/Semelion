@@ -57,6 +57,12 @@ interface MatchesDao {
     // per riprendere una partita interrotta
     @Query("SELECT * FROM Partite WHERE matchId IN (SELECT matchId FROM Partecipazioni WHERE userId = :userId)")
     fun getMatchesByUser(userId: String): Flow<List<Matches>>
+
+    @Query("SELECT COUNT(*) FROM Partite WHERE isCompleted=:completion")
+    suspend fun getSuspendedCount(completion: Boolean=false): Int
+
+    @Query("DELETE FROM Partite WHERE Partite.matchId != (SELECT MAX(Partite.matchId) FROM Partite)")
+    suspend fun deleteAllExceptLast(): Int
 }
 
 @Dao

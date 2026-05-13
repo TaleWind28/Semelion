@@ -883,6 +883,7 @@ abstract class BaseGameViewModel(
 
         viewModelScope.launch {
             val matchId = matchesDao.getNextMatchId() - 1
+            //inserisco il match nel db
             matchesDao.update(Matches(matchId = matchId,gameMode= mode,gameState=_uiState.value, isCompleted = true))
             Log.d("DB","$matchId")
             //update dei matchSummary
@@ -912,9 +913,11 @@ abstract class BaseGameViewModel(
         isDBOperationComplete.value = false
         viewModelScope.launch {
             val matchId = matchesDao.getNextMatchId() - 1
-
             matchesDao.update(Matches(matchId = matchId,gameMode= mode,gameState=_uiState.value,isCompleted = false))
             Log.d("DB","$matchId")
+            //controllo che non ci siano altre partite sospese
+            val suspendedMatches = matchesDao.getSuspendedCount()
+            if (suspendedMatches >1) matchesDao.deleteAllExceptLast()
             //salvataggio matchSummary in caso di ripresa della partita
             matchSummary.value.forEach { stats ->
                 val stat = stats.copy(matchId = matchId,outcome = "interrupted", winner = "none")
@@ -934,8 +937,6 @@ abstract class BaseGameViewModel(
             }
             isDBOperationComplete.value = true
         }
-
-
     }
 
     suspend fun matchStart(mode: GameModes){
@@ -945,9 +946,12 @@ abstract class BaseGameViewModel(
         Log.d("DB","secondPlayerID:$secondPlayerId")
         //caso specifico di partita in ScreenSharing
         val matchID = matchesDao.getNextMatchId()
+        //inserisco il match nel db
         matchesDao.insert(Matches(gameMode = mode, gameState = _uiState.value, isCompleted = false))
-        participationsDao.insert(Participations(matchId= matchID, userId = secondPlayerId, role = "Host"))
-        participationsDao.insert(Participations(matchId= matchID,userId = userID, role = "Guest"))
+        //inserisco le partecipazioni nel db
+        participationsDao.insert(Participations(matchId= matchID, userId = secondPlayerId, role = "Guest"))
+        participationsDao.insert(Participations(matchId= matchID,userId = userID, role = "Host"))
+        //flag per consentire modifiche in sicurezza nella UI
         isDBOperationComplete.value = true
     }
 

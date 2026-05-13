@@ -50,7 +50,9 @@ class SemelionGameViewModel(
             if (_uiState.value.phase is GamePhase.Loading){
                 val suspendedMatch = matchesDao.getSuspendedMatch()
                 if ( suspendedMatch == null) matchStart(GameModes.ScreenSharing)
-                else resumeMatch(suspendedMatch)
+                else{
+                    resumeMatch(suspendedMatch)
+                }
                 _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }
             }
         }
@@ -63,11 +65,7 @@ class SemelionGameViewModel(
     }
 
     override fun destroy() {
-
     }
-
-    //DB FUNCTIONS
-
 
     companion object {
         fun factory(

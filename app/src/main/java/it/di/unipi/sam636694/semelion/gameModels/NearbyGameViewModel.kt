@@ -235,11 +235,11 @@ class NearbyGameViewModel(
             when (messageType) {
                 "endpoint:" -> {
                     viewModelScope.launch {
-                        Log.d("endpoint","endpoint Ottenuto")
+                        //Log.d("endpoint","endpoint Ottenuto")
                         updateRemoteId(message)
-                        Log.d("endpoint","Remote settato")
+                        //Log.d("endpoint","Remote settato")
                         matchStart(GameModes.NearBy)
-                        Log.d("endpoint","match iniziato")
+                        //Log.d("endpoint","match iniziato")
                     }
                     Log.d("endpoint","endpoint Ottenuto")
                 }
@@ -250,7 +250,7 @@ class NearbyGameViewModel(
                 }
                 "uncover:" -> {
                     _uiState.update {
-                        it.copy(uncoverDeck = deserializeCardList(message))
+                        it.copy(uncoverDeck = deserializeCardList(message), phase = GamePhase.WaitingForOpponent)
                     }
                     _connectionState.update { it.copy(received = true, gameStarted = true) }
                 }
@@ -276,7 +276,7 @@ class NearbyGameViewModel(
         override fun onConnectionInitiated(endpointId: String, info: ConnectionInfo) {
             _connectionState.update { it.copy(status = "Connessione in arrivo da ${info.endpointName}...") }
             connectionsClient.acceptConnection(endpointId, payloadCallback)
-            sendMessage("endpoint", localId, connectionsClient, endpointId)
+            //sendMessage("endpoint", localId, connectionsClient, endpointId)
         }
 
         override fun onConnectionResult(endpointId: String, result: ConnectionResolution) {
@@ -289,6 +289,7 @@ class NearbyGameViewModel(
                 if (_connectionState.value.isHost) {
                     sendGrid(endpointId)
                     _connectionState.update { it.copy(gameStarted = true) }
+                    //_uiState.update { it.copy() }
                 }
             }
         }

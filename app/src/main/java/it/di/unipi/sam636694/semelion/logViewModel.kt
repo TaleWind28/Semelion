@@ -16,7 +16,6 @@ class LogViewModel: ViewModel() {
         viewModelScope.launch{
             SharedRepository.channel.collect{ message ->
                 registerAction(action = message, state = _uiState.value)
-
             }
         }
     }
