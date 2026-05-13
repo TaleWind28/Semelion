@@ -86,7 +86,6 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                         player=player,
                         userId = userID,
                         onBack = { backStack.removeLastOrNull()},
-                        navigateTo = { route: NavKey -> backStack.add(route)}
                     )
                 }
 

@@ -285,8 +285,8 @@ class NearbyGameViewModel(
                 connectionsClient.stopAdvertising()
                 connectionsClient.stopDiscovery()
                 endpoint = endpointId
+                sendMessage("endpoint", localId, connectionsClient, endpointId)
                 if (_connectionState.value.isHost) {
-                    sendMessage("endpoint", localId, connectionsClient, endpointId)
                     sendGrid(endpointId)
                     _connectionState.update { it.copy(gameStarted = true) }
                 }

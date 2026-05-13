@@ -53,7 +53,6 @@ fun SemelionConnectionsScreen(
     player: AudioPlayer,
     userId: String,
     onBack: () -> Unit,
-    navigateTo: (NavKey) -> Boolean
 ) {
 
     Log.d("nav","entro")
