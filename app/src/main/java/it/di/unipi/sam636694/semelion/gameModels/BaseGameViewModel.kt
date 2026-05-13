@@ -166,6 +166,7 @@ abstract class BaseGameViewModel(
 
     protected fun handleJackMadness(swaps:List<Int>):Boolean{
        if (_uiState.value.phase !is GamePhase.JackMadness) return false
+        player.playFile(R.raw.jack)
 
         val cardId = _uiState.value.grid[swaps.first()].name
         val position = swaps.first()
@@ -198,6 +199,7 @@ abstract class BaseGameViewModel(
 
     protected fun handleQueenDirection(direction: (Int, Int) -> Int): Boolean {
         if (_uiState.value.phase !is GamePhase.QueenPending) return false
+        player.playFile(R.raw.queen)
 
         _uiState.update { state ->
             state.copy(
@@ -223,6 +225,7 @@ abstract class BaseGameViewModel(
     protected fun handleKingDirection(rowIndex:Int, direction: (Int, Int) -> Int) : Boolean {
         //controllo di essere nello stato giusto
         if (_uiState.value.phase !is GamePhase.KingPending) return false
+        player.playFile(R.raw.king)
         //controllo che il giocatore non abbia selezionato una riga potente
         if (_uiState.value.grid.chunked(7)[rowIndex].findPowerRow() == 1){
             viewModelScope.launch {
@@ -494,7 +497,7 @@ abstract class BaseGameViewModel(
 
         sendScreenMessage("covered",relevantCards,outcome)
 
-        player.playFile(R.raw.there)
+        player.playFile(R.raw.seven)
 
         return state.copy(
             grid = revealOnGrid(revealedCards, state),
@@ -658,7 +661,7 @@ abstract class BaseGameViewModel(
 
         when {
             cardId.contains("8") -> { //circular swap
-                player.playFile(R.raw.aieio)
+                player.playFile(R.raw.jackannouncer)
                 modifiedState = modifiedState.copy(
                     jackSwaps =  listOf(position) + generateJackChain(modifiedState,card.house,modifiedState.uncoverDeck.first().value-1),
                     phase = GamePhase.JackMadness
@@ -666,14 +669,14 @@ abstract class BaseGameViewModel(
             }
 
             cardId.contains("9") -> { //swipe column
-                player.playFile(R.raw.nana)
+                player.playFile(R.raw.queenannouncer)
                 modifiedState = modifiedState.copy(
                     phase = GamePhase.QueenPending
                 )
             }
 
             cardId.contains("10") ->{//swipe row
-                player.playFile(R.raw.kingddd)
+                player.playFile(R.raw.kingannouncer)
                 modifiedState = modifiedState.copy(
                     phase = GamePhase.KingPending
                 )

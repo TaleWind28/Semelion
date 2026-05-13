@@ -46,6 +46,7 @@ dependencies {
     implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
     implementation(libs.play.services.nearby)
     implementation(libs.androidx.compose.runtime)
+    implementation(libs.foundation)
     val composeBom = platform("androidx.compose:compose-bom:2026.01.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)

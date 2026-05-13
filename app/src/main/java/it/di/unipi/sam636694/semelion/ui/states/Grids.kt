@@ -7,6 +7,16 @@ import android.graphics.Canvas
 import android.graphics.Point
 import android.util.Log
 import android.view.View
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
@@ -29,6 +39,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -97,7 +108,8 @@ fun FinalGrid(state: GameUIState, model: BaseGameViewModel) {
                                 model = model,
                                 rowBackground = style.first.copy(alpha = if (index == 0) 0.15f else 0.08f),
                                 phase = state.phase,
-                                enabled= true//if (model is NearbyGameViewModel) model.connectionState.value.isHost == state.p1Turn else true
+                                enabled= true,//if (model is NearbyGameViewModel) model.connectionState.value.isHost == state.p1Turn else true
+                                grid=state.grid
                             )
                         }
                     }
@@ -148,7 +160,7 @@ fun produceConfigs(state: GameUIState,viewModel: BaseGameViewModel):List<Triple<
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewModel, rowBackground: Color, phase: GamePhase, enabled:Boolean) {
+fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewModel, rowBackground: Color, phase: GamePhase, enabled:Boolean,grid: List<CardUIStates>) {
     //preparazione misure
     var cardSize by remember{ mutableStateOf(48.dp)}
     val density = LocalDensity.current
@@ -237,12 +249,23 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
                     .anchoredDraggable(colState, orientation = Orientation.Vertical))
                 {
                     // CARTE
-                    FinalCard(card = card, model = model, size = cardSize, enabled= enabled)
+                    //FinalCard(card = card, model = model, size = cardSize, enabled= enabled)
+                    val (cardRow, cardCol) = remember(card.name, grid) {
+                        gridPositionOf(card.name, grid)
+                    }
+                    RevealCard(card = card, model = model, size = cardSize, enabled= enabled)
+                    //AnimationCard(card=card, model = model, size = cardSize, enabled = enabled,row=cardRow,col=cardCol)
                 }
             }
         }
     }
 }
+// Calcola riga e colonna di una carta nella griglia flat (28 carte, 7 per riga)
+fun gridPositionOf(cardName: String, grid: List<CardUIStates>): Pair<Int, Int> {
+    val index = grid.indexOfFirst { it.name == cardName }
+    return if (index < 0) Pair(0, 0) else Pair(index / 7, index % 7)
+}
+
 @Composable
 fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp,enabled:Boolean) {
     //context densità e size in pixel
@@ -353,4 +376,279 @@ fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp,enabled:Boo
         painter = painterResource(id = imageResId),
         contentDescription = "Carta Semelion"
     )
+}
+
+
+@Composable
+fun AnimationCard(card: CardUIStates, model: BaseGameViewModel, size: Dp,enabled:Boolean,row:Int,col:Int) {
+    //context densità e size in pixel
+    val density = LocalDensity.current
+    val sizePx = with(density) { size.toPx().toInt()}
+
+    val offsetX = remember(card.name) { Animatable(0f) }
+    val offsetY = remember(card.name) { Animatable(0f) }
+
+    // tiene traccia della posizione precedente
+    var prevRow by remember(card.name) { mutableIntStateOf(row) }
+    var prevCol by remember(card.name) { mutableIntStateOf(col) }
+
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(row, col) {
+        Log.d("animate","$row,$col")
+        // scatta solo se la posizione è davvero cambiata
+        if (prevRow == row && prevCol == col) return@LaunchedEffect
+
+        val deltaX = (prevCol - col) * sizePx   // da dove veniva
+        val deltaY = (prevRow - row) * sizePx
+
+        prevRow = row
+        prevCol = col
+
+        // parte dalla vecchia posizione...
+        offsetX.snapTo(deltaX.toFloat())
+        offsetY.snapTo(deltaY.toFloat())
+
+        // ...e vola verso 0 (la posizione attuale nel layout)
+        launch {
+            offsetX.animateTo(
+                0f,
+                spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
+            )
+        }
+        launch {
+            offsetY.animateTo(
+                0f,
+                spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
+            )
+        }
+    }
+
+    val imageResId = if (card.isRevealed)
+        (cardImageMap[card.name]) ?: R.drawable.purple_back
+    else
+        R.drawable.purple_back
+
+    val view = LocalView.current
+
+    val imageBitmap = ImageBitmap.imageResource(id = imageResId)
+
+//    val scope = rememberCoroutineScope()
+
+    Image(
+        modifier = Modifier
+            .size(size)
+            .pointerInput(card.name, card.isRevealed) {
+                detectTapGestures(
+
+                    onTap = {
+                        //Log.d("grid","fase:${model.uiState.value.phase}")
+                        if(model.uiState.value.phase is GamePhase.WaitingForOpponent){
+                            scope.launch {
+                                SnackBarController.sendEvent(
+                                    event = SnackBarEvent(
+                                        message = "Attendi che l'avversario finisca il suo turno"
+                                    )
+                                )
+                            }
+                            return@detectTapGestures
+                        }
+                        if (model.uiState.value.phase !is GamePhase.PlayerTurn){
+                            scope.launch {
+                                SnackBarController.sendEvent(
+                                    event = SnackBarEvent(
+                                        message = "Risolvi Prima l'effetto della figura"
+                                    )
+                                )
+                            }
+                            return@detectTapGestures
+                        }
+                        if (!card.isRevealed) model.processIntent(GameIntent.CardClicked(cardId = card.name))
+                    },
+                    onLongPress = {
+                        Log.d("grid","fase:${model.uiState.value.phase}")
+                        if(model.uiState.value.phase is GamePhase.WaitingForOpponent){
+                            scope.launch {
+                                SnackBarController.sendEvent(
+                                    event = SnackBarEvent(
+                                        message = "Attendi che l'avversario finisca il suo turno"
+                                    )
+                                )
+                            }
+                            return@detectTapGestures
+                        }
+
+                        if (model.uiState.value.phase !is GamePhase.PlayerTurn){
+                            scope.launch {
+                                SnackBarController.sendEvent(
+                                    event = SnackBarEvent(
+                                        message = "Risolvi Prima l'effetto della figura"
+                                    )
+                                )
+                            }
+                            return@detectTapGestures
+                        }
+
+                        //il 42 fa ridere ma è stato calcolato a mano
+                        val scaled = imageBitmap.asAndroidBitmap().scale(sizePx / 2 + 42, sizePx, false)
+                        val shadow = object : View.DragShadowBuilder() {
+                            override fun onProvideShadowMetrics(outShadowSize: Point, outShadowTouchPoint: Point) {
+                                outShadowSize.set(scaled.width, scaled.height)
+                                outShadowTouchPoint.set(scaled.width / 2, scaled.height / 2)
+                            }
+
+                            override fun onDrawShadow(canvas: Canvas) {
+                                canvas.drawBitmap(scaled, 0f, 0f, null)
+                            }
+                        }
+                        val clipData = ClipData.newPlainText(card.name, card.name)
+
+                        view.startDragAndDrop(clipData, shadow, card.name, 0)
+                    }
+                )
+
+            }
+            .dragAndDropTarget(
+                shouldStartDragAndDrop = { event ->
+                    event.mimeTypes().contains(ClipDescription.MIMETYPE_TEXT_PLAIN)
+                },
+                target = remember(card.name) {
+                    object : DragAndDropTarget {
+                        override fun onDrop(event: DragAndDropEvent): Boolean {
+                            val text = (event.toAndroidDragEvent()
+                                .clipData?.getItemAt(0)?.text ?: "") as String
+                            if (text == card.name) return false
+                            model.processIntent(GameIntent.SwapCards(text,card.name))
+                            return true
+                        }
+                    }
+                }
+            )
+        ,
+        painter = painterResource(id = imageResId),
+        contentDescription = "Carta Semelion"
+    )
+}
+
+@Composable
+fun RevealCard(card: CardUIStates, model: BaseGameViewModel, size: Dp,enabled:Boolean){
+
+    //context densità e size in pixel
+    val density = LocalDensity.current
+    val sizePx = with(density) { size.toPx().toInt()}
+    AnimatedContent(
+        targetState = card.isRevealed,
+        transitionSpec = {
+            (scaleIn(initialScale = 0.75f) + fadeIn(tween(180))) togetherWith
+                    (scaleOut(targetScale = 0.75f) + fadeOut(tween(120)))
+        },
+        label = "card_reveal_${card.name}"
+    ) { isRevealed ->
+        val imageResId = if (card.isRevealed)
+            (cardImageMap[card.name]) ?: R.drawable.purple_back
+        else
+            R.drawable.purple_back
+
+        val view = LocalView.current
+
+        val imageBitmap = ImageBitmap.imageResource(id = imageResId)
+
+        val scope = rememberCoroutineScope()
+
+        Image(
+            modifier = Modifier
+                .size(size)
+                .pointerInput(card.name, card.isRevealed) {
+                    detectTapGestures(
+
+                        onTap = {
+                            Log.d("grid","fase:${model.uiState.value.phase}")
+                            if(model.uiState.value.phase is GamePhase.WaitingForOpponent){
+                                scope.launch {
+                                    SnackBarController.sendEvent(
+                                        event = SnackBarEvent(
+                                            message = "Attendi che l'avversario finisca il suo turno"
+                                        )
+                                    )
+                                }
+                                return@detectTapGestures
+                            }
+                            if (model.uiState.value.phase !is GamePhase.PlayerTurn){
+                                scope.launch {
+                                    SnackBarController.sendEvent(
+                                        event = SnackBarEvent(
+                                            message = "Risolvi Prima l'effetto della figura"
+                                        )
+                                    )
+                                }
+                                return@detectTapGestures
+                            }
+                            if (!card.isRevealed) model.processIntent(GameIntent.CardClicked(cardId = card.name))
+                        },
+                        onLongPress = {
+                            Log.d("grid","fase:${model.uiState.value.phase}")
+                            if(model.uiState.value.phase is GamePhase.WaitingForOpponent){
+                                scope.launch {
+                                    SnackBarController.sendEvent(
+                                        event = SnackBarEvent(
+                                            message = "Attendi che l'avversario finisca il suo turno"
+                                        )
+                                    )
+                                }
+                                return@detectTapGestures
+                            }
+
+                            if (model.uiState.value.phase !is GamePhase.PlayerTurn){
+                                scope.launch {
+                                    SnackBarController.sendEvent(
+                                        event = SnackBarEvent(
+                                            message = "Risolvi Prima l'effetto della figura"
+                                        )
+                                    )
+                                }
+                                return@detectTapGestures
+                            }
+
+                            //il 42 fa ridere ma è stato calcolato a mano
+                            val scaled = imageBitmap.asAndroidBitmap().scale(sizePx / 2 + 42, sizePx, false)
+                            val shadow = object : View.DragShadowBuilder() {
+                                override fun onProvideShadowMetrics(outShadowSize: Point, outShadowTouchPoint: Point) {
+                                    outShadowSize.set(scaled.width, scaled.height)
+                                    outShadowTouchPoint.set(scaled.width / 2, scaled.height / 2)
+                                }
+
+                                override fun onDrawShadow(canvas: Canvas) {
+                                    canvas.drawBitmap(scaled, 0f, 0f, null)
+                                }
+                            }
+                            val clipData = ClipData.newPlainText(card.name, card.name)
+
+                            view.startDragAndDrop(clipData, shadow, card.name, 0)
+                        }
+                    )
+
+                }
+                .dragAndDropTarget(
+                    shouldStartDragAndDrop = { event ->
+                        event.mimeTypes().contains(ClipDescription.MIMETYPE_TEXT_PLAIN)
+                    },
+                    target = remember(card.name) {
+                        object : DragAndDropTarget {
+                            override fun onDrop(event: DragAndDropEvent): Boolean {
+                                val text = (event.toAndroidDragEvent()
+                                    .clipData?.getItemAt(0)?.text ?: "") as String
+                                if (text == card.name) return false
+                                model.processIntent(GameIntent.SwapCards(text,card.name))
+                                return true
+                            }
+                        }
+                    }
+                )
+            ,
+            painter = painterResource(id = imageResId),
+            contentDescription = "Carta Semelion"
+        )
+
+    }
+
 }

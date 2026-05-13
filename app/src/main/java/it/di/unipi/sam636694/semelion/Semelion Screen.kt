@@ -275,7 +275,7 @@ fun Landscape(state: GameUIState, viewModel: BaseGameViewModel) {
             )
 
             FinalGrid(state = state, model = viewModel)
-
+           // PlayerGrid(state=)
             Text(
                 text = "il giocatore 1 ha: ${state.p1Actions - state.p1ActionsUsed} azioni Rimanenti",
                 color = Color.Black,
