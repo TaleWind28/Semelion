@@ -54,10 +54,7 @@ fun SemelionConnectionsScreen(
     userId: String,
     onBack: () -> Unit,
 ) {
-
-    Log.d("nav","entro")
-
-    val SERVICE_ID = "com.tuaapp.semelion"
+    val SERVICE_ID = "semelion_nearbyConnections"
 
     val requiredPermissions = remember {
         buildList {
@@ -168,7 +165,7 @@ fun SemelionConnectionsScreen(
         }
     }
     else {
-        NavigationUIApp(snackBarHostState = snackbarHostState, db = db, nvm,player=player, onNavigateBack = onBack)
+        NavigationUIApp(snackBarHostState = snackbarHostState, db = db, nvm, onNavigateBack = onBack)
     }
 }
 

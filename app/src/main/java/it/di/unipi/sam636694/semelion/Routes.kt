@@ -15,12 +15,18 @@ sealed interface Route: NavKey {
     data object NearbyLobby : Route
 
     @Serializable
-    data class ScreenSharingGame(val userId: Long): Route
+    data object ScreenSharingGame: Route
 
     @Serializable
     data object Home: Route
 
     @Serializable
     data object SemelionConnections : Route
+
+    @Serializable
+    data object RulesPage : Route
+
+    @Serializable
+    data object ProfilePage : Route
 
 }

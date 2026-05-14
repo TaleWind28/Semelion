@@ -75,8 +75,6 @@ fun SemelionScreen(
     modifier: Modifier = Modifier,
     padding: PaddingValues,
     viewModel: BaseGameViewModel = viewModel(),
-    //logModel: LogViewModel,
-    player: AudioPlayer,
     onBack : () -> Unit
 ){
 
@@ -110,7 +108,7 @@ fun SemelionScreen(
             Surface(shape = RoundedCornerShape(16.dp)) {
                 Column{
                     Text(
-                        text = "Vuoi terminare la partita verrà terminata oppure sospenderla e riprenderla più tardi?",
+                        text = "Vuoi terminare la partita oppure sospenderla e riprenderla più tardi?",
                         modifier = Modifier.padding(24.dp),
                         style = MaterialTheme.typography.titleLarge
                     )
@@ -158,8 +156,6 @@ fun interruptMatch(viewModel: BaseGameViewModel){
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
-
-
     when(state.phase){
         is GamePhase.GameOver -> {
             LaunchedEffect(Unit) {

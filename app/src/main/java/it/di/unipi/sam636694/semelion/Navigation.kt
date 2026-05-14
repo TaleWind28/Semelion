@@ -1,24 +1,30 @@
 package it.di.unipi.sam636694.semelion
 
 import SemelionConnectionsScreen
-import android.util.Log
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import it.di.unipi.sam636694.semelion.database.SemelionDB
@@ -27,11 +33,6 @@ import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 import kotlin.collections.listOf
 import kotlin.collections.mapOf
 import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
-import it.di.unipi.sam636694.semelion.gameModels.findMax
-import it.di.unipi.sam636694.semelion.gameModels.houseRowOrder
-import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
-import it.di.unipi.sam636694.semelion.utilities.AppDestinations
-
 
 @Composable
 fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, player: AudioPlayer,userID:String){
@@ -52,11 +53,20 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                     NavEntry(key){
                         SemelionHomeScreen(
                             destinations =  mapOf(
-                                "Quick Play" to {backStack.add(Route.ScreenSharingGame(123L))},
-                                "Connections" to {backStack.add(Route.SemelionConnections)}
-                                )
+                                "Quick Play" to {backStack.add(Route.ScreenSharingGame)},
+                                "Connections" to {backStack.add(Route.SemelionConnections)},
+                            ),
+                            navigationFun= {route -> backStack.add(route)}
                         )
                     }
+
+                is Route.RulesPage -> NavEntry(key){
+                    SemelionRules()
+                }
+
+                is Route.ProfilePage -> NavEntry(key){
+                    ProfilePage()
+                }
 
                 is Route.ScreenSharingGame -> NavEntry(key){
                     val viewModel: SemelionGameViewModel = viewModel(
@@ -78,7 +88,11 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                         Text(text = "Loading..")
 
                     } else {
-                        NavigationUIApp(snackBarHostState = snackBarHostState, db = db, viewModel,player,onNavigateBack = { backStack.removeLastOrNull()})
+                        NavigationUIApp(
+                            snackBarHostState = snackBarHostState,
+                            db = db,
+                            viewModel,
+                            onNavigateBack = { backStack.removeLastOrNull()})
                     }
 
                 }
@@ -104,7 +118,37 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
 fun SemelionHomeScreen(
     modifier: Modifier = Modifier,
     destinations: Map<String, ()-> Unit>,
+    navigationFun: (route: NavKey) -> Unit
 ){
+
+    val buttonList = listOf(
+        IconButton(
+            "Regole",
+            "Consulta le regole di Semelion",
+            "icona di regole",
+            R.drawable.article_24px,
+            goTo = {navigationFun(Route.RulesPage)}
+        ),
+        IconButton(
+            "Profile",
+            "Profile Page",
+            "icona del profilo",
+            R.drawable.account_circle_24px,
+            goTo = {navigationFun(Route.ProfilePage)}
+        )
+
+    )
+
+    Column(){
+        GreetingsBox(destinations = destinations)
+        buttonList.forEach { button ->
+            DestinationButton(button = button)
+        }
+    }
+}
+
+@Composable
+fun GreetingsBox(modifier: Modifier = Modifier,destinations: Map<String, ()-> Unit>,) {
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(16.dp)
@@ -120,4 +164,72 @@ fun SemelionHomeScreen(
             }
         }
     }
+
+}
+
+data class IconButton(
+    val title: String,
+    val subtitle:String,
+    val contentDescription:String,
+    val resId: Int,
+    val goTo: () -> Unit
+)
+@Composable
+fun DestinationButton(modifier: Modifier = Modifier,button:IconButton){
+    Row{
+        Button(
+            modifier = Modifier
+                .padding(8.dp)
+                .fillMaxWidth(),
+            onClick = {button.goTo()}
+        ){
+            Icon(painter = painterResource(button.resId), contentDescription = button.contentDescription)
+            Column{
+                Text(text = button.title)
+                Text(text = button.subtitle)
+            }
+        }
+    }
+}
+
+//fun SemelionRules(modifier: Modifier = Modifier) {
+//    LazyColumn() {
+//        item{
+//            Text("Semelion")
+//            Purpose()
+//            HowToPlay()
+//            ValidPosition()
+//            SpecialCards()
+//        }
+//    }
+//}
+
+@Composable
+fun SpecialCards(modifier: Modifier = Modifier) {
+    
+}
+
+@Composable
+fun Purpose(modifier: Modifier = Modifier) {
+    
+}
+
+@Composable
+fun HowToPlay(modifier: Modifier = Modifier) {
+
+}
+
+@Composable
+fun ValidPosition(modifier: Modifier = Modifier) {
+    
+}
+
+@Composable
+fun SemelionStats(modifier: Modifier = Modifier) {
+    
+}
+
+@Composable
+fun ProfilePage(modifier: Modifier = Modifier) {
+    
 }
