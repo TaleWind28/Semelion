@@ -188,7 +188,14 @@ fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGam
                                     Text(text = "Gioca ancora")
                                 }
                             }
-                            Button(onClick = {onBack()}) { Text(text="chiudi")}
+                            Button(
+                                onClick = {
+                                    if (viewModel is NearbyGameViewModel) viewModel.disconnect();
+                                    onBack()
+                                }
+                            ) {
+                                Text(text="chiudi")
+                            }
                         }
                     }
                 }

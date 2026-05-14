@@ -871,8 +871,8 @@ abstract class BaseGameViewModel(
         }
     }
 
-    fun matchEnd(mode: GameModes,loser:String? = null){
-        Log.d("pippo","chiamata")
+    open fun matchEnd(mode: GameModes,loser:String? = null){
+        //Log.d("pippo","chiamata")
 
         //calcolo l'outcome della partita
         val (outcome,winningUser) = calculateOutcome(loser,_uiState.value)
