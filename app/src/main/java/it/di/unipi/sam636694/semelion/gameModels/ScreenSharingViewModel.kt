@@ -49,6 +49,7 @@ class SemelionGameViewModel(
         viewModelScope.launch {
             if (_uiState.value.phase is GamePhase.Loading){
                 val suspendedMatch = matchesDao.getSuspendedMatch()
+                Log.d("Suspended","$suspendedMatch")
                 if ( suspendedMatch == null) matchStart(GameModes.ScreenSharing)
                 else{
                     resumeMatch(suspendedMatch)
