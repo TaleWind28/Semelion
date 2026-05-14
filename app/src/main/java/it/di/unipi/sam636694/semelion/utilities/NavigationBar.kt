@@ -44,7 +44,7 @@ enum class AppDestinations(
 ) {
     HOME("Home", Icons.Default.Home, { padding,_, viewModel,player,onBack -> SemelionScreen(padding = padding, viewModel = viewModel,player=player, onBack = onBack) }),
     FAVORITES("Rules", Icons.Default.Favorite, { padding, _,_,_,_-> PdfViewerScreen(padding = padding) }),
-    PROFILE("Profile", Icons.Default.AccountBox, { padding, _,_,_,_ -> LogScreen(padding = padding)}),
+    //PROFILE("Profile", Icons.Default.AccountBox, { padding, _,_,_,_ -> LogScreen(padding = padding)}),
 }
 
 @Composable

@@ -1,7 +1,9 @@
 package it.di.unipi.sam636694.semelion
 import android.content.res.Configuration
 import android.util.Log
+import android.widget.Space
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -10,26 +12,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import it.di.unipi.sam636694.semelion.ui.states.GameUIState
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -41,25 +33,41 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import it.di.unipi.sam636694.semelion.database.GameModes
+import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
 import it.di.unipi.sam636694.semelion.gameModels.NearbyGameViewModel
 import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
-import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
+import it.di.unipi.sam636694.semelion.ui.states.GamePhase
+import it.di.unipi.sam636694.semelion.ui.states.GameUIState
+import it.di.unipi.sam636694.semelion.utilities.LogScreen
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,6 +75,7 @@ fun SemelionScreen(
     modifier: Modifier = Modifier,
     padding: PaddingValues,
     viewModel: BaseGameViewModel = viewModel(),
+    //logModel: LogViewModel,
     player: AudioPlayer,
     onBack : () -> Unit
 ){
@@ -86,7 +95,7 @@ fun SemelionScreen(
 
     Log.d("message","${state.phase}")
     when(viewModel){
-        is SemelionGameViewModel -> SinglePlayer(state = state, viewModel= viewModel, modifier = modifier)
+        is SemelionGameViewModel -> SinglePlayer(state = state, viewModel= viewModel, modifier = modifier, padding=padding)
         is NearbyGameViewModel -> MultiPlayer(state= state, viewModel= viewModel, modifier = modifier)
     }
 
@@ -203,36 +212,22 @@ fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGam
     }
 }
 @Composable
-fun Portrait(state: GameUIState, viewModel: BaseGameViewModel){
-
-    OpponentHeader(actionsUsed=state.p2ActionsUsed, actionsTotal =state.p2Actions, isWaiting = state.p1Turn )
-
-    FinalGrid(state = state, model = viewModel)
-
-    Column{
-        ActionsPanel(state = state)
-
-        PlayerFooter(isYourTurn = state.p1Turn)
-    }
-}
-
-@Composable
-fun SinglePlayer(modifier: Modifier = Modifier,state: GameUIState,viewModel: SemelionGameViewModel) {
+fun SinglePlayer(modifier: Modifier = Modifier,state: GameUIState,viewModel: SemelionGameViewModel,padding: PaddingValues) {
     val configuration = LocalConfiguration.current
+    //var showLogScreen by remember { mutableStateOf(false) }
     when (configuration.orientation) {
         Configuration.ORIENTATION_LANDSCAPE -> {
-            Landscape(state = state, viewModel = viewModel)
+            Landscape(
+                modifier = Modifier.wrapContentWidth(),
+                state = state,
+                viewModel = viewModel
+            )
         }
         else -> {
-            Column(
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Portrait(state = state,viewModel = viewModel)
-            }
-
+                Portrait(
+                    state = state,
+                    viewModel = viewModel
+                )
         }
     }
 }
@@ -243,7 +238,7 @@ fun MultiPlayer(modifier: Modifier = Modifier,state: GameUIState,viewModel: Near
     val configuration = LocalConfiguration.current
     when (configuration.orientation) {
         Configuration.ORIENTATION_LANDSCAPE -> {
-            Landscape(state = state, viewModel = viewModel)
+            Landscape(state = state, viewModel = viewModel, modifier=Modifier)
         }
         else -> {
             Column(
@@ -258,86 +253,64 @@ fun MultiPlayer(modifier: Modifier = Modifier,state: GameUIState,viewModel: Near
         }
     }
 }
+
 @Composable
-fun Landscape(state: GameUIState, viewModel: BaseGameViewModel) {
+fun Portrait(state: GameUIState, viewModel: BaseGameViewModel){
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ){
+        Spacer(Modifier.size(10.dp))
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column {
-            Text(
-                text = "il giocatore 2 ha: ${state.p2Actions - state.p2ActionsUsed} azioni Rimanenti",
-                color = Color.Black,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .rotate(180f)
-            )
+        OpponentHeader(
+            actionsUsed=state.p2ActionsUsed,
+            actionsTotal =state.p2Actions,
+            isWaiting = state.p1Turn,
+            playerName = viewModel.secondPlayerId
+        )
 
-            FinalGrid(state = state, model = viewModel)
-           // PlayerGrid(state=)
-            Text(
-                text = "il giocatore 1 ha: ${state.p1Actions - state.p1ActionsUsed} azioni Rimanenti",
-                color = Color.Black,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
-        }
+        FinalGrid(state = state, model = viewModel)
+
+        OpponentHeader(
+            actionsUsed = state.p1ActionsUsed,
+            actionsTotal = state.p1Actions,
+            isWaiting = !state.p1Turn,
+            playerName = viewModel.userID
+        )
+
+        Spacer(Modifier.size(10.dp))
     }
-
 }
 @Composable
-fun SemelionTopBar() {
-    Surface(
-        color = Color.White,
-        shadowElevation = 2.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .height(56.dp)
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+fun Landscape(state: GameUIState, viewModel: BaseGameViewModel,modifier: Modifier) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = TextPrimary)
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = "Semelion",
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                color = TextPrimary,
-                modifier = Modifier.weight(1f)
-            )
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    "TURN",
-                    fontSize = 10.sp,
-                    color = GreenAccent,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    "YOU (Player 1)",
-                    fontSize = 12.sp,
-                    color = GreenAccent,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = TextPrimary)
+            OpponentHeader(actionsUsed=state.p2ActionsUsed, actionsTotal =state.p2Actions, isWaiting = state.p1Turn,viewModel.secondPlayerId )
+            FinalGrid(state = state, model = viewModel,cardSize= CardSize.LARGE)
+            OpponentHeader(actionsUsed = state.p1ActionsUsed, actionsTotal = state.p1Actions, isWaiting = !state.p1Turn,viewModel.userID)
         }
-    }
 }
 
 @Composable
 fun OpponentHeader(
     actionsUsed: Int,
     actionsTotal: Int,
-    isWaiting: Boolean
+    isWaiting: Boolean,
+    playerName: String
 ) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFE8F5E9),
-        modifier = Modifier.fillMaxWidth()
+        shape = RoundedCornerShape(20.dp),
+        color = if (!isWaiting) Color.White else Color(0xFFF5F5F5),
+        border = if (!isWaiting) BorderStroke(
+            2.dp,
+            GreenAccent
+        ) else null,
+        modifier = Modifier.wrapContentWidth(),
+        shadowElevation = if (!isWaiting) 4.dp else 1.dp,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -361,14 +334,24 @@ fun OpponentHeader(
 
             Spacer(Modifier.width(10.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    "OPPONENT",
-                    fontSize = 10.sp,
-                    color = TextSecondary,
-                    fontWeight = FontWeight.Bold
-                )
+            Column(modifier = Modifier.wrapContentWidth()) {
+                if (playerName.length < 20)
+                    Text(
+                        playerName,
+                        fontSize = 10.sp,
+                        color = TextSecondary,
+                        fontWeight = FontWeight.Bold
+                    )
+                else
+                    Text(
+                        playerName.chunked(10)[0],
+                        fontSize = 10.sp,
+                        color = TextSecondary,
+                        fontWeight = FontWeight.Bold
+                    )
             }
+
+            Spacer(Modifier.width(30.dp))
 
             Column(horizontalAlignment = Alignment.End) {
                 // Pallini azioni
@@ -405,7 +388,7 @@ fun OpponentHeader(
 @Composable
 fun ActionsPanel(state: GameUIState) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.wrapContentWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         // Azioni
@@ -418,7 +401,7 @@ fun ActionsPanel(state: GameUIState) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.wrapContentWidth()
                 ) {
                     Text(
                         "ACTIONS",
@@ -456,7 +439,7 @@ fun ActionsPanel(state: GameUIState) {
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = GreenAccent),
                         modifier = Modifier
-                            .weight(1f)
+                            //.weight(1f)
                             .height(56.dp),
                         enabled = state.p1Turn && state.p1ActionsUsed < state.p1Actions
                     ) {
@@ -481,7 +464,7 @@ fun ActionsPanel(state: GameUIState) {
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = GreenAccent),
                         modifier = Modifier
-                            .weight(1f)
+                            //.weight(1f)
                             .height(56.dp),
                         enabled = state.p1Turn && state.p1ActionsUsed < state.p1Actions
                     ) {
@@ -514,11 +497,11 @@ fun PlayerFooter(isYourTurn: Boolean) {
             2.dp,
             GreenAccent
         ) else null,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier,
         shadowElevation = if (isYourTurn) 4.dp else 1.dp
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp).wrapContentWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -538,7 +521,7 @@ fun PlayerFooter(isYourTurn: Boolean) {
 
             Spacer(Modifier.width(10.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.wrapContentWidth()) {
                 Text(
                     "YOU",
                     fontSize = 10.sp,
@@ -547,24 +530,25 @@ fun PlayerFooter(isYourTurn: Boolean) {
                 )
             }
 
+            Spacer(Modifier.width(50.dp))
             if (isYourTurn) {
-                Button(
-                    onClick = {},
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = GreenAccent)
-                ) {
-                    Text(
-                        "YOUR TURN",
-                        color = Color.Black,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
-                    )
-                }
-            }
+                    Button(
+                        onClick = {},
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = GreenAccent)
+                    ) {
+                        Text(
+                            "YOUR TURN",
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+                    //ActionsPanel(state = state)
+        }
         }
     }
 }
-
 
 @Composable
 fun UncoverDeck(state: GameUIState){
@@ -612,6 +596,75 @@ fun UncoverDeck(state: GameUIState){
                     Text("—", color = TextSecondary, fontSize = 20.sp)
                 }
             }
+        }
+    }
+}
+
+//@Preview(
+//    showBackground = true,
+//    showSystemUi = false,
+//    device = Devices.TABLET
+//    )
+//@Composable
+//fun PreviewScreen(){
+//    val context = LocalContext.current
+//    val db = SemelionDB.getDatabase(context)
+//    val viewModel = SemelionGameViewModel(
+//        db.matchesDao(),
+//        db.participationsDao(),
+//        db.matchStatisticsDao(),
+//        db.playerStatisticsDao(),
+//        db.userDao(),
+//        AudioPlayer(context),
+//        userID = "Sora",
+//        secondPlayerId = "TaleWind"
+//        )
+//    SemelionScreen(
+//        padding = PaddingValues(4.dp),
+//        viewModel = viewModel,
+//        player = AudioPlayer(context),
+//    ) { }
+//}
+
+@Composable
+fun SemelionTopBar() {
+    Surface(
+        color = Color.White,
+        shadowElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .height(56.dp)
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = TextPrimary)
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = "Semelion",
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                color = TextPrimary,
+                modifier = Modifier.weight(1f)
+            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    "TURN",
+                    fontSize = 10.sp,
+                    color = GreenAccent,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "YOU (Player 1)",
+                    fontSize = 12.sp,
+                    color = GreenAccent,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = TextPrimary)
         }
     }
 }

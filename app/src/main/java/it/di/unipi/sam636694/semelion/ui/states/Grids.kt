@@ -28,12 +28,17 @@ import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -62,6 +67,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.scale
+import it.di.unipi.sam636694.semelion.CardSize
 import it.di.unipi.sam636694.semelion.Direction
 import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
@@ -73,12 +79,9 @@ import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun FinalGrid(state: GameUIState, model: BaseGameViewModel) {
-    //griglia di gioco
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        ) {
-
+fun FinalGrid(state: GameUIState, model: BaseGameViewModel,cardSize: CardSize = CardSize.SMALL) {
+    //width(cardSize*7 + 0.5.dp*6)
+    Box(modifier= Modifier.wrapContentWidth()) {
         val attentionModifier = Modifier.border(
             color = Color(0xFF3BFF7C),
             width = 6.dp,
@@ -92,7 +95,7 @@ fun FinalGrid(state: GameUIState, model: BaseGameViewModel) {
         val playerConfigs = produceConfigs(state = state, viewModel = model)
 
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.wrapContentWidth(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             playerConfigs.forEachIndexed { index, (isActive, playerRows, style) ->
@@ -109,7 +112,8 @@ fun FinalGrid(state: GameUIState, model: BaseGameViewModel) {
                                 rowBackground = style.first.copy(alpha = if (index == 0) 0.15f else 0.08f),
                                 phase = state.phase,
                                 enabled= true,//if (model is NearbyGameViewModel) model.connectionState.value.isHost == state.p1Turn else true
-                                grid=state.grid
+                                grid=state.grid,
+                                cardSize = cardSize.dp
                             )
                         }
                     }
@@ -160,9 +164,9 @@ fun produceConfigs(state: GameUIState,viewModel: BaseGameViewModel):List<Triple<
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewModel, rowBackground: Color, phase: GamePhase, enabled:Boolean,grid: List<CardUIStates>) {
+fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewModel, rowBackground: Color, phase: GamePhase, enabled:Boolean,grid: List<CardUIStates>, cardSize:Dp) {
     //preparazione misure
-    var cardSize by remember{ mutableStateOf(48.dp)}
+//    var cardSize by remember{ mutableStateOf(48.dp)}
     val density = LocalDensity.current
 
     val draggableState = remember {
@@ -186,7 +190,6 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
 
     Surface(
         modifier = Modifier
-            .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 8.dp),
         shape = RoundedCornerShape(12.dp),
         color = rowBackground,
@@ -195,12 +198,12 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
+                //.fillMaxWidth()
                 .onSizeChanged { size ->
-                    with(density) {
-                        val totalSpacingPx = 0.50.dp.toPx() * 6  // 6 gap tra 7 carte
-                        cardSize = ((size.width - totalSpacingPx) / 7).toDp()
-                    }
+//                    with(density) {
+//                        val totalSpacingPx = 0.50.dp.toPx() * 6  // 6 gap tra 7 carte
+//                        cardSize = ((size.width - totalSpacingPx) / 7).toDp()
+//                    }
 
                     draggableState.updateAnchors(
                     newAnchors = DraggableAnchors {
@@ -250,9 +253,9 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
                 {
                     // CARTE
                     //FinalCard(card = card, model = model, size = cardSize, enabled= enabled)
-                    val (cardRow, cardCol) = remember(card.name, grid) {
-                        gridPositionOf(card.name, grid)
-                    }
+//                    val (cardRow, cardCol) = remember(card.name, grid) {
+//                        gridPositionOf(card.name, grid)
+//                    }
                     RevealCard(card = card, model = model, size = cardSize, enabled= enabled)
                     //AnimationCard(card=card, model = model, size = cardSize, enabled = enabled,row=cardRow,col=cardCol)
                 }

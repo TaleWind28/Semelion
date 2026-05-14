@@ -2,6 +2,8 @@ package it.di.unipi.sam636694.semelion
 
 import android.util.Log
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 
@@ -165,4 +167,10 @@ fun Direction.toFunction(rowIndex:Int): (Int, Int) -> Int = when (this) {
     Direction.RIGHT -> { i:Int, inc:Int -> 7*rowIndex + (6-i) - inc}
     Direction.UP -> { i, inc -> rowIndex + 7 * i + inc }
     Direction.DOWN -> { i, inc -> rowIndex + 7 * (3 - i) - inc }
+}
+
+enum class CardSize(val dp: Dp) {
+    SMALL(48.dp),
+    MEDIUM(120.dp),
+    LARGE(150.dp)
 }
