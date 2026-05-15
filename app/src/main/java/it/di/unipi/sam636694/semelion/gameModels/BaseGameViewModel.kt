@@ -397,7 +397,7 @@ abstract class BaseGameViewModel(
 
         modifiedState = findWinner(modifiedState)
 
-        Log.d("validate","cardId:$cardId\nfase: ${modifiedState.phase}\nseven?:${modifiedState.incorrectSevenReveled}")
+        Log.d("outcome","winner:${modifiedState.winner}")
 
         return if (modifiedState.phase == GamePhase.Validation) {
             modifiedState.copy(
@@ -858,23 +858,21 @@ abstract class BaseGameViewModel(
         }
     }
 
-
     fun calculateOutcome(loser:String?,state: GameUIState):Pair<String,String>{
         val outcome = loser ?: state.winner ?: "interrotta"
+        Log.d("outcome","$outcome, ${state.winner}")
         return when(loser){
             userID -> "vince $secondPlayerId" to secondPlayerId
             secondPlayerId -> "vince $userID" to userID
             else -> {
-                if (outcome.lowercase(getDefault()).contains("Vince p1")) outcome to userID
-                else if (outcome.lowercase(getDefault()).contains("Vince p2")) outcome to secondPlayerId
+                if (outcome.lowercase(getDefault()).contains("vince p1")) outcome to userID
+                else if (outcome.lowercase(getDefault()).contains("vince p2")) outcome to secondPlayerId
                 else outcome to "none"
             }
         }
     }
 
     open fun matchEnd(mode: GameModes,loser:String? = null){
-        //Log.d("pippo","chiamata")
-
         //calcolo l'outcome della partita
         val (outcome,winningUser) = calculateOutcome(loser,_uiState.value)
 

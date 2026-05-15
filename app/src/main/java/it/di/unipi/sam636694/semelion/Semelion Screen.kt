@@ -133,9 +133,9 @@ fun SemelionScreen(
 
 fun endMatch(viewModel: BaseGameViewModel,onBack:() -> Unit){
     when(viewModel){
-        is SemelionGameViewModel -> viewModel.matchEnd(GameModes.ScreenSharing)
+        is SemelionGameViewModel -> viewModel.matchEnd(GameModes.ScreenSharing, loser = viewModel.userID)
         is NearbyGameViewModel ->{
-            viewModel.matchEnd(GameModes.NearBy)
+            viewModel.matchEnd(GameModes.NearBy, loser = if (viewModel.connectionState.value.isHost) viewModel.userID else viewModel.secondPlayerId)
             viewModel.destroy()
             onBack()
         }

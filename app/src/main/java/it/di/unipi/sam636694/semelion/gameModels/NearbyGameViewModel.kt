@@ -41,6 +41,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import com.google.android.gms.nearby.Nearby
 import it.di.unipi.sam636694.semelion.database.GameModes
+import kotlinx.coroutines.Job
 
 class NearbyGameViewModel(
     private val appContext: Context,
@@ -60,6 +61,11 @@ class NearbyGameViewModel(
     private val _connectionState = MutableStateFlow(ConnectionUiState())
     val connectionState: StateFlow<ConnectionUiState> = _connectionState.asStateFlow()
 
+    private var heartbeatJob: Job? = null
+    private var lastHeartbeat = System.currentTimeMillis()
+    private val HEARTBEAT_INTERVAL = 1000L
+    private val HEARTBEAT_TIMEOUT = 8000L
+
     fun onConnectionResult(endpointId: String, success: Boolean) {
         if (success) {
             _connectionState.update {
@@ -78,7 +84,9 @@ class NearbyGameViewModel(
 
     fun onDisconnected() {
         val gameStarted = _connectionState.value.gameStarted
+
         disconnect()
+
         _connectionState.update {
             it.copy(connectedEndpointId = null, status = "Disconnesso", gameStarted = gameStarted)
         }
@@ -170,6 +178,13 @@ class NearbyGameViewModel(
         super.processIntent(action)
     }
 
+    fun sendAction(intent: GameIntent) {
+        val action = intent.serialize()
+        Log.d("nvm", "$endpoint:$connectionsClient")
+        if (endpoint == null) return
+        sendMessage("gameaction", action, clientConnectionsClient = connectionsClient, endpoint = endpoint!!)
+    }
+
     fun mapKingDirection(intent: GameIntent.KingDirectionChosen): GameIntent {
         return when (intent.rowIndex) {
             0 -> GameIntent.KingDirectionChosen(rowIndex = 2, direction = intent.direction)
@@ -213,12 +228,6 @@ class NearbyGameViewModel(
         }
     }
 
-    fun sendAction(intent: GameIntent) {
-        val action = intent.serialize()
-        Log.d("nvm", "$endpoint:$connectionsClient")
-        if (endpoint == null) return
-        sendMessage("gameaction", action, clientConnectionsClient = connectionsClient, endpoint = endpoint!!)
-    }
 
     fun updateRemoteId(remoteId: String){
         this.remoteId = remoteId
@@ -259,6 +268,12 @@ class NearbyGameViewModel(
                     _uiState.update { it.copy(phase = GamePhase.GameOver, winner = userID) }
                     Log.d("message","fase post destruction:${_uiState.value.phase}")
                 }
+                "ping:" -> {
+                    sendMessage("pong", "", connectionsClient, endpointId)
+                }
+                "pong:" -> {
+                    lastHeartbeat = System.currentTimeMillis()
+                }
                 else -> _connectionState.update { it.copy(status = "Ricevuto $message") }
             }
         }
@@ -276,7 +291,6 @@ class NearbyGameViewModel(
         override fun onConnectionInitiated(endpointId: String, info: ConnectionInfo) {
             _connectionState.update { it.copy(status = "Connessione in arrivo da ${info.endpointName}...") }
             connectionsClient.acceptConnection(endpointId, payloadCallback)
-            //sendMessage("endpoint", localId, connectionsClient, endpointId)
         }
 
         override fun onConnectionResult(endpointId: String, result: ConnectionResolution) {
@@ -286,10 +300,10 @@ class NearbyGameViewModel(
                 connectionsClient.stopDiscovery()
                 endpoint = endpointId
                 sendMessage("endpoint", localId, connectionsClient, endpointId)
+                startHeartbeat(endpointId)
                 if (_connectionState.value.isHost) {
                     sendGrid(endpointId)
                     _connectionState.update { it.copy(gameStarted = true) }
-                    //_uiState.update { it.copy() }
                 }
             }
         }
@@ -299,8 +313,34 @@ class NearbyGameViewModel(
         }
     }
 
+    fun startHeartbeat(endpointId: String) {
+        lastHeartbeat = System.currentTimeMillis()
+        heartbeatJob = viewModelScope.launch {
+            while (true) {
+                delay(HEARTBEAT_INTERVAL)
+                sendMessage("ping", "", connectionsClient, endpointId)
+
+                // Controlla se l'ultimo heartbeat ricevuto è troppo vecchio
+                if (System.currentTimeMillis() - lastHeartbeat > HEARTBEAT_TIMEOUT) {
+                    destroy()
+                    break
+                }
+            }
+        }
+    }
+
+    fun stopHeartbeat() {
+        heartbeatJob?.cancel()
+        heartbeatJob = null
+    }
+
     override fun destroy() {
-        sendMessage("destruction","player gave up",this.connectionsClient,this.endpoint!!)
+        endpoint?.let {
+            sendMessage("destruction", "player gave up", connectionsClient, it)
+        }
+        if (endpoint == null){
+            matchEnd(GameModes.NearBy,"Connection Lost")
+        }
         disconnect()
     }
 
