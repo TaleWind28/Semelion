@@ -737,7 +737,7 @@ abstract class BaseGameViewModel(
             )
         }
 
-        Log.d("counter","p1,7")
+        //Log.d("counter","p1,7")
         //se p2 ha rivelato un 7 passa
         if (!state.p1Turn && state.incorrectSevenReveled) {
             return state.copy(
@@ -748,7 +748,7 @@ abstract class BaseGameViewModel(
                 incorrectSevenReveled = false
             )
         }
-        Log.d("counter","p2,7")
+        //Log.d("counter","p2,7")
         //fine turno p1
         if (p1Actions - state.p1ActionsUsed <= 0 && state.p1Turn) {
             sendScreenMessage(
@@ -763,7 +763,7 @@ abstract class BaseGameViewModel(
                 p1Turn = false
             )
         }
-        Log.d("counter","p1, fine azioni")
+        //Log.d("counter","p1, fine azioni")
         //fine turno p2
         if (p2Actions - state.p2ActionsUsed <= 0) {
             sendScreenMessage(
@@ -779,7 +779,7 @@ abstract class BaseGameViewModel(
                 p1Turn = true
             )
         }
-        Log.d("counter","p2,fine azioni")
+        //Log.d("counter","p2,fine azioni")
         //continuo il turno
         return state.copy(
             p1Actions = p1Actions,
@@ -795,8 +795,9 @@ abstract class BaseGameViewModel(
         return 1 + rows.sumOf { row ->
             val revealed = row.filter { it.isRevealed }
             if (revealed.size < 2) return@sumOf 0
-            val houseActions = row.getBonusActions()
-            houseActions.sumOf { triple ->  triple.second / 2 + triple.third / 2}
+            //val houseActions = row.getBonusActions()
+            //houseActions.sumOf { triple ->  triple.second / 2 + triple.third / 2}
+            row.getPredominantOrder().sumOf { triple -> max(triple.second, triple.third) / 2 }
         }
     }
 
