@@ -265,6 +265,7 @@ class NearbyGameViewModel(
                 }
                 "gameaction:" -> produceAction(message)
                 "destruction:" -> {
+                    stopHeartbeat()
                     _uiState.update { it.copy(phase = GamePhase.GameOver, winner = userID) }
                     Log.d("message","fase post destruction:${_uiState.value.phase}")
                 }

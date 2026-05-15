@@ -13,8 +13,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,12 +31,16 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import it.di.unipi.sam636694.semelion.database.PlayerStatistics
 import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 import kotlin.collections.listOf
 import kotlin.collections.mapOf
 import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
+import it.di.unipi.sam636694.semelion.ui.screens.ProfilePage
+import it.di.unipi.sam636694.semelion.ui.screens.SemelionHome
+import it.di.unipi.sam636694.semelion.ui.screens.UserData
 
 @Composable
 fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, player: AudioPlayer,userID:String){
@@ -51,13 +59,20 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
             when(key){
                 is Route.Home ->
                     NavEntry(key){
-                        SemelionHomeScreen(
+                        SemelionHome(
                             destinations =  mapOf(
                                 "Quick Play" to {backStack.add(Route.ScreenSharingGame)},
                                 "Connections" to {backStack.add(Route.SemelionConnections)},
                             ),
-                            navigationFun= {route -> backStack.add(route)}
+                                navigationFun= {route -> backStack.add(route)}
                         )
+//                        SemelionHomeScreen(
+//                            destinations =  mapOf(
+//                                "Quick Play" to {backStack.add(Route.ScreenSharingGame)},
+//                                "Connections" to {backStack.add(Route.SemelionConnections)},
+//                            ),
+//                            navigationFun= {route -> backStack.add(route)}
+//                        )
                     }
 
                 is Route.RulesPage -> NavEntry(key){
@@ -65,7 +80,31 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                 }
 
                 is Route.ProfilePage -> NavEntry(key){
-                    ProfilePage()
+                    var user by remember {  mutableStateOf<PlayerStatistics?>(null)  }
+
+                    LaunchedEffect(userID) {
+                        user = db.playerStatisticsDao().getStatsByUser(userID)
+                    }
+
+
+                    val profileData = if (user == null) UserData(userID,0f,0,0,0, losses = 0, draws = 0, wins = 0)
+                        else
+                            UserData(
+                                username = "pino",user!!.matchesWon.toFloat()/user!!.matchesPlayed.toFloat() * 100,
+                                gamesPlayed=user!!.matchesPlayed,
+                                winStreak=user!!.currentStreak,
+                                bestWinStreak=user!!.bestStreak,
+                                wins = user!!.matchesWon,
+                                losses = user!!.matchesLost,
+                                draws = if (user!!.matchesWon != 0 && user!!.matchesLost != 0)
+                                    user!!.matchesWon- user!!.matchesLost
+                                else 0
+                            )
+                    ProfilePage(
+                        profile = profileData,
+                        onEditProfile = {},
+                        onViewAllMatches = {}
+                    )
                 }
 
                 is Route.ScreenSharingGame -> NavEntry(key){
@@ -190,46 +229,4 @@ fun DestinationButton(modifier: Modifier = Modifier,button:IconButton){
             }
         }
     }
-}
-
-//fun SemelionRules(modifier: Modifier = Modifier) {
-//    LazyColumn() {
-//        item{
-//            Text("Semelion")
-//            Purpose()
-//            HowToPlay()
-//            ValidPosition()
-//            SpecialCards()
-//        }
-//    }
-//}
-
-@Composable
-fun SpecialCards(modifier: Modifier = Modifier) {
-    
-}
-
-@Composable
-fun Purpose(modifier: Modifier = Modifier) {
-    
-}
-
-@Composable
-fun HowToPlay(modifier: Modifier = Modifier) {
-
-}
-
-@Composable
-fun ValidPosition(modifier: Modifier = Modifier) {
-    
-}
-
-@Composable
-fun SemelionStats(modifier: Modifier = Modifier) {
-    
-}
-
-@Composable
-fun ProfilePage(modifier: Modifier = Modifier) {
-    
 }

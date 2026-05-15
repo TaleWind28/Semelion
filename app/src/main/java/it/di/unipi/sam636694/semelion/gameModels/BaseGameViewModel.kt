@@ -1,6 +1,7 @@
 package it.di.unipi.sam636694.semelion.gameModels
 
 import android.util.Log
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import it.di.unipi.sam636694.semelion.AudioPlayer
@@ -35,7 +36,10 @@ import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale.getDefault
@@ -43,6 +47,7 @@ import kotlin.collections.chunked
 import kotlin.collections.find
 import kotlin.collections.plus
 import kotlin.math.max
+import kotlin.time.Duration.Companion.minutes
 
 abstract class BaseGameViewModel(
     val matchesDao: MatchesDao,
@@ -867,6 +872,8 @@ abstract class BaseGameViewModel(
             else -> {
                 if (outcome.lowercase(getDefault()).contains("vince p1")) outcome to userID
                 else if (outcome.lowercase(getDefault()).contains("vince p2")) outcome to secondPlayerId
+                else if (outcome == userID) outcome to userID
+                else if (outcome == secondPlayerId) outcome to secondPlayerId
                 else outcome to "none"
             }
         }
@@ -895,9 +902,31 @@ abstract class BaseGameViewModel(
             listOf(userID,secondPlayerId).fold(0){ acc,userId ->
                 Log.d("DB","inserting data for user:$userId")
                 //se non ha delle statistiche le creo
-                val playerStats = playersStatisticsDao.getStatsByUser(userId) ?: PlayerStatistics(userId, matchesPlayed = 0, matchesWon = 0, matchesLost = 0)
+                var playerStats: PlayerStatistics? = playersStatisticsDao.getStatsByUser(userId)
+
+                if (playerStats == null ){
+                    playersStatisticsDao.insert(PlayerStatistics(userId,1,0,0,0,0))
+                    playerStats = playersStatisticsDao.getStatsByUser(userId) ?: return@fold acc
+                }
+
                 val wins = if (winningUser == userId) playerStats.matchesWon.plus(1) else playerStats.matchesWon
-                val losses = if (winningUser != userId) playerStats.matchesLost.plus(1) else playerStats.matchesLost
+
+                val losses = if (winningUser != userId)playerStats.matchesLost.plus(1) else playerStats.matchesLost
+
+                if (winningUser == userId){
+                    val currStr = playerStats.currentStreak + 1
+                    Log.d("DB","pre update:\nstreak:$currStr\nbest:${playerStats.bestStreak}")
+                    if (currStr > playerStats.bestStreak){
+                        Log.d("DB","pre update:\nstreak:$currStr\nbest:${playerStats.bestStreak}")
+                        playerStats = playerStats.copy(currentStreak = currStr, bestStreak = currStr)
+                    }
+                    Log.d("DB","pre update:$playerStats\nstreak:$currStr")
+                }else{
+                    playerStats = playerStats.copy(currentStreak = 0)
+                }
+
+                Log.d("DB","esterno:$playerStats")
+
 
                 if (playerStats.matchesPlayed == 0) playersStatisticsDao.insert(playerStats.copy(matchesPlayed = 1, matchesWon = wins, matchesLost = losses))
                 else playersStatisticsDao.update(playerStats.copy(matchesPlayed = playerStats.matchesPlayed + 1, matchesWon = wins, matchesLost = losses))

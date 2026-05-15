@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import it.di.unipi.sam636694.semelion.LogViewModel
 import it.di.unipi.sam636694.semelion.PdfViewerScreen
+import it.di.unipi.sam636694.semelion.Route
+import it.di.unipi.sam636694.semelion.SemelionRules
 import it.di.unipi.sam636694.semelion.SemelionScreen
 import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
@@ -42,7 +44,7 @@ enum class AppDestinations(
     val screen: @Composable (PaddingValues, SemelionDB, BaseGameViewModel, ()->Unit ) -> Unit  // ← aggiunto
 ) {
     HOME("Home", Icons.Default.Home, { padding,_, viewModel,onBack -> SemelionScreen(padding = padding, viewModel = viewModel, onBack = onBack) }),
-    FAVORITES("Rules", Icons.Default.Favorite, { padding, _,_,_-> PdfViewerScreen(padding = padding) }),
+    FAVORITES("Rules", Icons.Default.Favorite, { _, _,_,_-> SemelionRules() }),
     PROFILE("Profile", Icons.Default.AccountBox, { padding, _,_,_ -> LogScreen(padding = padding)}),
 }
 

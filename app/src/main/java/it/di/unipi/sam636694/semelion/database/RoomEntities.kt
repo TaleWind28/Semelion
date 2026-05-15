@@ -89,7 +89,9 @@ data class PlayerStatistics(
     val userId: String,
     val matchesPlayed: Int = 0,
     val matchesWon: Int = 0,
-    val matchesLost: Int= 0
+    val matchesLost: Int= 0,
+    val currentStreak: Int = 0,
+    val bestStreak: Int = 0
 )
 
 enum class GameModes{

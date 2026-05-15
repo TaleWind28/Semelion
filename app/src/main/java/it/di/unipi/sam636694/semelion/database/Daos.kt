@@ -97,7 +97,7 @@ interface MatchStatisticsDao {
     suspend fun getStatsByMatch(matchId: Long): List<MatchStatistics>
 
     @Query("SELECT * FROM StatistichePartite WHERE userId = :userId")
-    fun getStatsByUser(userId: String): Flow<List<MatchStatistics>>
+    fun getStatsByUser(userId: String): MatchStatistics
 }
 
 @Dao
