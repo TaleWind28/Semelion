@@ -81,16 +81,17 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
 
                 is Route.ProfilePage -> NavEntry(key){
                     var user by remember {  mutableStateOf<PlayerStatistics?>(null)  }
-
+                    var username by remember { mutableStateOf("none") }
                     LaunchedEffect(userID) {
                         user = db.playerStatisticsDao().getStatsByUser(userID)
+                        username = db.userDao().getUserById(userID)?.nickName ?: "none"
                     }
 
 
                     val profileData = if (user == null) UserData(userID,0f,0,0,0, losses = 0, draws = 0, wins = 0)
                         else
                             UserData(
-                                username = "pino",user!!.matchesWon.toFloat()/user!!.matchesPlayed.toFloat() * 100,
+                                username = username,user!!.matchesWon.toFloat()/user!!.matchesPlayed.toFloat() * 100,
                                 gamesPlayed=user!!.matchesPlayed,
                                 winStreak=user!!.currentStreak,
                                 bestWinStreak=user!!.bestStreak,

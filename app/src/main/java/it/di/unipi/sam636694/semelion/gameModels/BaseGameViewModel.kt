@@ -863,7 +863,7 @@ abstract class BaseGameViewModel(
         }
     }
 
-    fun calculateOutcome(loser:String?,state: GameUIState):Pair<String,String>{
+    open fun calculateOutcome(loser:String?,state: GameUIState):Pair<String,String>{
         val outcome = loser ?: state.winner ?: "interrotta"
         Log.d("outcome","$outcome, ${state.winner}")
         return when(loser){
@@ -925,7 +925,7 @@ abstract class BaseGameViewModel(
                     playerStats = playerStats.copy(currentStreak = 0)
                 }
 
-                Log.d("DB","esterno:$playerStats")
+                //Log.d("DB","esterno:$playerStats")
 
 
                 if (playerStats.matchesPlayed == 0) playersStatisticsDao.insert(playerStats.copy(matchesPlayed = 1, matchesWon = wins, matchesLost = losses))

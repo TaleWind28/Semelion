@@ -42,6 +42,7 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import com.google.android.gms.nearby.Nearby
 import it.di.unipi.sam636694.semelion.database.GameModes
 import kotlinx.coroutines.Job
+import java.util.Locale.getDefault
 
 class NearbyGameViewModel(
     private val appContext: Context,
@@ -284,6 +285,36 @@ class NearbyGameViewModel(
                 PayloadTransferUpdate.Status.SUCCESS -> Log.d("Payload", "inviato")
                 PayloadTransferUpdate.Status.FAILURE -> Log.d("Payload", "fallito")
                 PayloadTransferUpdate.Status.IN_PROGRESS -> Log.d("Payload", "trasferimento...")
+            }
+        }
+    }
+
+    override fun calculateOutcome(loser:String?,state: GameUIState):Pair<String,String>{
+        val outcome = loser ?: state.winner ?: "interrotta"
+        Log.d("outcome","$outcome, ${state.winner}")
+        if (connectionState.value.isHost)
+            return when(loser){
+                userID -> "vince $secondPlayerId" to secondPlayerId
+                secondPlayerId -> "vince $userID" to userID
+                else -> {
+                    if (outcome.lowercase(getDefault()).contains("vince p1")) outcome to userID
+                    else if (outcome.lowercase(getDefault()).contains("vince p2")) outcome to secondPlayerId
+                    else if (outcome == userID) outcome to userID
+                    else if (outcome == secondPlayerId) outcome to secondPlayerId
+                    else outcome to "none"
+                }
+            }
+        else{
+            return when(loser){
+                userID -> "vince $secondPlayerId" to secondPlayerId
+                secondPlayerId -> "vince $userID" to userID
+                else -> {
+                    if (outcome.lowercase(getDefault()).contains("vince p1")) outcome to secondPlayerId
+                    else if (outcome.lowercase(getDefault()).contains("vince p2")) outcome to userID
+                    else if (outcome == userID) outcome to userID
+                    else if (outcome == secondPlayerId) outcome to secondPlayerId
+                    else outcome to "none"
+                }
             }
         }
     }
