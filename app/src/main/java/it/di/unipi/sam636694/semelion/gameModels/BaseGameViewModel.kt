@@ -860,18 +860,18 @@ abstract class BaseGameViewModel(
         }
     }
 
-    open fun calculateOutcome(loser:String?,state: GameUIState):Pair<String,String>{
+    open fun calculateOutcome(loser:String?,state: GameUIState):Pair<String,Boolean?>{
         val outcome = loser ?: state.winner ?: "interrotta"
         Log.d("outcome","$outcome, ${state.winner}")
         return when(loser){
-            userID -> "vince $secondPlayerId" to secondPlayerId
-            secondPlayerId -> "vince $userID" to userID
+            userID -> "vince $secondPlayerId" to false
+            secondPlayerId -> "vince $userID" to true
             else -> {
-                if (outcome.lowercase(getDefault()).contains("vince p1")) outcome to userID
-                else if (outcome.lowercase(getDefault()).contains("vince p2")) outcome to secondPlayerId
-                else if (outcome == userID) outcome to userID
-                else if (outcome == secondPlayerId) outcome to secondPlayerId
-                else outcome to "none"
+                if (outcome.lowercase(getDefault()).contains("vince p1")) outcome to true
+                else if (outcome.lowercase(getDefault()).contains("vince p2")) outcome to false
+                else if (outcome == userID) outcome to true
+                else if (outcome == secondPlayerId) outcome to false
+                else outcome to null
             }
         }
     }
@@ -904,12 +904,12 @@ abstract class BaseGameViewModel(
                 var stats = PlayerStatistics(
                     userId= userId,
                     matchesPlayed = 1,
-                    matchesWon = if (winningUser == userId) 1 else 0,
-                    matchesLost=if (winningUser == secondPlayerId) 1 else 0,
-                    matchesDrawn = if ((winningUser != userId) && (winningUser != secondPlayerId)) 1 else 0
+                    matchesWon = if (outcome.contains(userId)) 1 else 0,
+                    matchesLost=if (!outcome.contains(userId)) 1 else 0,
+                    matchesDrawn = if (!outcome.contains(userID) && !outcome.contains(secondPlayerId)) 1 else 0
                 )
 
-                if (winningUser == userId){
+                if (outcome.contains(userId)){
                     val currStr = stats.currentStreak + 1
                     Log.d("DB","pre update:\nstreak:$currStr\nbest:${stats.bestStreak}")
                     if (currStr > stats.bestStreak){
@@ -953,30 +953,34 @@ abstract class BaseGameViewModel(
 
     open fun interruptMatch(mode: GameModes){
         isDBOperationComplete.value = false
+
         viewModelScope.launch {
             val matchId = matchesDao.getNextMatchId() - 1
+
             matchesDao.update(Matches(matchId = matchId,gameMode= mode,gameState=_uiState.value,isCompleted = false))
             Log.d("DB","$matchId")
+
             //controllo che non ci siano altre partite sospese
             val suspendedMatches = matchesDao.getSuspendedCount()
             if (suspendedMatches >1) matchesDao.deleteAllExceptLast()
+
             //salvataggio matchSummary in caso di ripresa della partita
             matchSummary.value.forEach { stats ->
-                val stat = stats.copy(matchId = matchId,outcome = "interrupted", winner = "none")
+                val stat = stats.copy(matchId = matchId,outcome = "interrupted", winner = null)
                 Log.d("DB","inserting data: $stat")
                 matchStatisticsDao.upsert(stat)
             }
             //update dei playerSummary
-            listOf(userID,secondPlayerId).fold(0){ acc,userId ->
-                Log.d("DB","inserting data for user:$userId")
-                //se non ha delle statistiche le creo
-                val playerStats = playersStatisticsDao.getStatsByUser(userId) ?: PlayerStatistics(userId, matchesPlayed = 0, matchesWon = 0, matchesLost = 0)
-
-                if (playerStats.matchesPlayed == 0) playersStatisticsDao.insert(playerStats.copy(matchesPlayed = 1))
-                else playersStatisticsDao.update(playerStats.copy(matchesPlayed = playerStats.matchesPlayed + 1))
-                Log.d("DB","data inserted for user:$userId")
-                acc
-            }
+//            listOf(userID,secondPlayerId).fold(0){ acc,userId ->
+//                Log.d("DB","inserting data for user:$userId")
+//                //se non ha delle statistiche le creo
+////                val playerStats = playersStatisticsDao.getStatsByUser(userId) ?: PlayerStatistics(userId, matchesPlayed = 0, matchesWon = 0, matchesLost = 0)
+////
+////                if (playerStats.matchesPlayed == 0) playersStatisticsDao.insert(playerStats.copy(matchesPlayed = 1))
+////                else playersStatisticsDao.update(playerStats.copy(matchesPlayed = playerStats.matchesPlayed + 1))
+//                Log.d("DB","data inserted for user:$userId")
+//                acc
+//            }
             isDBOperationComplete.value = true
         }
     }

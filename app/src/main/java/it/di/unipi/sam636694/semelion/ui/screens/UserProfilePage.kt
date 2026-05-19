@@ -37,6 +37,7 @@ private val CardBg         = Color(0xFFECF4EC)
 private val TextPrimary    = Color(0xFF1A1A1A)
 private val TextSecondary  = Color(0xFF6B6B6B)
 private val WinColor       = Color(0xFF2E7D32)
+private val DrawColor = Color(0xFF1565C0)
 private val LossColor      = Color(0xFFC62828)
 private val OrangeAccent   = Color(0xFFBF6020)
  
@@ -77,15 +78,14 @@ data class RecentMatch(
     val opponent: String,
     val date: String,
     val time: String,
-    val isWin: Boolean,
-    val rankChange: Int
+    val isWin: Boolean?,
 )
 
 val mockMatches = listOf(
-    RecentMatch("Shadow_Pulse",  "Nov 24, 2023", "14:20", isWin = true,  rankChange = 15),
-    RecentMatch("Card_King_99",  "Nov 23, 2023", "09:15", isWin = false, rankChange = -12),
-    RecentMatch("Neon_Striker",  "Nov 22, 2023", "18:45", isWin = true,  rankChange = 18),
-    RecentMatch("Ghost_Dealer",  "Nov 21, 2023", "11:30", isWin = true,  rankChange = 10),
+    RecentMatch("Shadow_Pulse",  "Nov 24, 2023", "14:20", isWin = true),
+    RecentMatch("Card_King_99",  "Nov 23, 2023", "09:15", isWin = false),
+    RecentMatch("Neon_Striker",  "Nov 22, 2023", "18:45", isWin = true),
+    RecentMatch("Ghost_Dealer",  "Nov 21, 2023", "11:30", isWin = true),
 )
  
 // ════════════════════════════════════════════════════════════
@@ -119,7 +119,6 @@ fun ProfilePage(
 fun ProfileCard(profile: UserData, onEdit: (String) -> Unit) {
     var isEditing by remember { mutableStateOf(false) }
     var nicknameInput by remember { mutableStateOf(profile.username) }
-    Log.d("nick","nick:$nicknameInput")
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = GreenLight,
@@ -207,29 +206,6 @@ fun ProfileCard(profile: UserData, onEdit: (String) -> Unit) {
                         Icon(Icons.Filled.Edit, contentDescription = "Modifica username", tint = TextSecondary)
                     }
                 }
-
-            // Nome utente + edit
-//            Row(
-//                verticalAlignment = Alignment.CenterVertically,
-//                horizontalArrangement = Arrangement.spacedBy(6.dp)
-//            ) {
-//                Text(
-//                    text = profile.username,
-//                    fontSize = 20.sp,
-//                    fontWeight = FontWeight.Bold,
-//                    color = TextPrimary
-//                )
-//                IconButton(
-//                    onClick = onEdit,
-//                    modifier = Modifier.size(24.dp)
-//                ) {
-//                    Icon(
-//                        imageVector = Icons.Filled.Edit,
-//                        contentDescription = "Modifica username",
-//                        tint = TextSecondary,
-//                        modifier = Modifier.size(16.dp)
-//                    )
-//                }
             }
         }
     }
@@ -425,8 +401,8 @@ fun RecentMatchesSection(
  
 @Composable
 fun MatchRow(match: RecentMatch) {
-    val accentColor = if (match.isWin) GreenPrimary else LossColor
- 
+    val accentColor = if (match.isWin == null) DrawColor  else if (match.isWin) WinColor else LossColor
+
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = Color.White,
@@ -458,8 +434,8 @@ fun MatchRow(match: RecentMatch) {
                 Box(
                     modifier = Modifier
                         .size(44.dp)
-                        .clip(CircleShape)
-                        .background(if (match.isWin) GreenPrimary else Color(0xFFBDBDBD)),
+                        .clip(CircleShape),
+//                        .background(if (match.isWin == true) GreenPrimary else if (match.isWin == false) Color(0xFFBDBDBD) else ) ,
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -488,15 +464,10 @@ fun MatchRow(match: RecentMatch) {
                 // Risultato
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = if (match.isWin) "WIN" else "LOSS",
+                        text = if (match.isWin == null) "WIN" else "LOSS",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = accentColor
-                    )
-                    Text(
-                        text = "${if (match.rankChange > 0) "+" else ""}${match.rankChange} Rank",
-                        fontSize = 12.sp,
-                        color = TextSecondary
                     )
                 }
             }

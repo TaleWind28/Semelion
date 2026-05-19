@@ -296,7 +296,7 @@ class NearbyGameViewModel(
         }
     }
 
-    override fun calculateOutcome(loser:String?,state: GameUIState):Pair<String,String>{
+    override fun calculateOutcome(loser:String?,state: GameUIState):Pair<String,Boolean?>{
         val outcome = loser ?: state.winner ?: "interrotta"
         Log.d("outcome","$outcome, ${state.winner}")
 
@@ -307,13 +307,13 @@ class NearbyGameViewModel(
             secondPlayerId to userID
 
         return when {
-            loser == userID       -> "vince $secondPlayerId" to secondPlayerId
-            loser == secondPlayerId -> "vince $userID" to userID
-            outcome.lowercase(getDefault()).contains("vince p1") -> outcome to p1Id
-            outcome.lowercase(getDefault()).contains("vince p2") -> outcome to p2Id
-            outcome == userID       -> outcome to userID
-            outcome == secondPlayerId -> outcome to secondPlayerId
-            else -> outcome to "none"
+            loser == userID       -> "vince $secondPlayerId" to false
+            loser == secondPlayerId -> "vince $userID" to true
+            outcome.lowercase(getDefault()).contains("vince p1") -> outcome to true
+            outcome.lowercase(getDefault()).contains("vince p2") -> outcome to false
+            outcome == userID       -> outcome to true
+            outcome == secondPlayerId -> outcome to false
+            else -> outcome to null
         }
     }
 

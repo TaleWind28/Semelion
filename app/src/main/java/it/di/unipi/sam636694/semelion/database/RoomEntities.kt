@@ -73,7 +73,7 @@ data class MatchStatistics(
     val userId: String,
     val matchId: Long= 0,
     val outcome: String,
-    val winner: String?,
+    val winner: Boolean?,
     val wasFirstPLayer: Boolean,
     val figureRevealed:Int,
     val totalActions: Int,

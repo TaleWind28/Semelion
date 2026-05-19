@@ -61,7 +61,44 @@ import kotlin.String
 fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, player: AudioPlayer,userID:String){
 
     val backStack = rememberNavBackStack(Route.Home)
+    var user by remember {  mutableStateOf<PlayerStatistics?>(null)  }
+    var username by remember { mutableStateOf("none") }
+    var matches by remember { mutableStateOf(emptyList<Matches?>()) }
+    var recentMatches by remember {  mutableStateOf(emptyList<RecentMatch>()) }
+    val scope = rememberCoroutineScope()
 
+    LaunchedEffect(userID) {
+
+        user = db.playerStatisticsDao().getStatsByUser(userID)
+
+        username = db.userDao().getUserById(userID)?.nickName ?: "not in db"
+
+        Log.d("DBMS","username:$username, user: ${db.userDao().getUserById(userID)}")
+
+        if (username == "not in db") db.userDao().insert(User(userId = userID, nickName = "Semelion User: $userID"))
+        username = db.userDao().getUserById(userID)?.nickName ?: "not in db"
+
+        Log.d("nick","preComp:$username")
+
+        matches = db.matchesDao().getMatchesByUser(userID)
+        recentMatches = matches.map { match ->
+            val matchStats =  db.matchesDao().getMatchStats(match?.matchId!!)
+            val opponentMatch = matchStats.firstOrNull{ it.userId != userID }
+            val date = SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).format(
+                Date(opponentMatch?.date!!)
+            )
+            val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(opponentMatch.date))
+            val opponentName = db.userDao().getUserById(opponentMatch.userId)?.nickName
+            Log.d("DBMS","${opponentMatch.userId}\n $opponentName")
+
+            RecentMatch(
+                opponent = opponentName?: opponentMatch.userId,
+                date = date,
+                time = time,
+                isWin = opponentMatch.winner
+            )
+        }
+    }
 
     NavDisplay(
         modifier = Modifier,
@@ -74,6 +111,8 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
             when(key){
                 is Route.Home ->
                     NavEntry(key){
+
+
                         SemelionHome(
                             destinations =  mapOf(
                                 "Quick Play" to {backStack.add(Route.ScreenSharingGame)},
@@ -88,41 +127,9 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                 }
 
                 is Route.ProfilePage -> NavEntry(key){
-
-                    var user by remember {  mutableStateOf<PlayerStatistics?>(null)  }
-                    var username by remember { mutableStateOf("none") }
-                    var matches by remember { mutableStateOf(emptyList<Matches?>()) }
-                    var recentMatches by remember {  mutableStateOf(emptyList<RecentMatch>()) }
-                    val scope = rememberCoroutineScope()
-
-                    LaunchedEffect(userID) {
-                        user = db.playerStatisticsDao().getStatsByUser(userID)
-                        username = db.userDao().getUserById(userID)?.nickName ?: "none"
-                        Log.d("nick","preComp:$username")
-                        matches = db.matchesDao().getMatchesByUser(userID)
-                        recentMatches = matches.map { match ->
-                            val matchStats =  db.matchesDao().getMatchStats(match?.matchId!!)
-                            val opponentMatch = matchStats.firstOrNull{ it.userId != userID }
-                            val date = SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).format(
-                                Date(opponentMatch?.date!!)
-                            )
-                            val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(opponentMatch.date))
-                            val opponentName = db.userDao().getUserById(opponentMatch.userId)?.nickName
-                            Log.d("DBMS","${opponentMatch.userId}\n $opponentName")
-
-                            RecentMatch(
-                                opponent = opponentName?: opponentMatch.userId,
-                                date = date,
-                                time = time,
-                                isWin = opponentMatch.winner != opponentMatch.userId,
-                                rankChange = 0
-                            )
-                        }
-//                        recentMatches.forEach { Log.d("DB","$it") }
-                    }
-
-
-                    val profileData = if (user == null) UserData(userID,0f,0,0,0, losses = 0, draws = 0, wins = 0)
+                    val profileData =
+                        if (user == null)
+                            UserData(userID,0f,0,0,0, losses = 0, draws = 0, wins = 0)
                         else
                             UserData(
                                 username = username,
@@ -136,14 +143,16 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                                     user!!.matchesWon- user!!.matchesLost
                                 else 0
                             )
+                    Log.d("DBMS","preProfile: $username\n $profileData")
                     ProfilePage(
-                        profile = profileData,
+                        profile = profileData.copy(username = username),
                         matches = recentMatches,
                         onEditProfile = { nickname:String ->
                             scope.launch {
                                 db.userDao().update(User(userId = userID, nickName = nickname))
                                 //forza la recomposition
                                 username = nickname
+                                Log.d("nick","nicck:$nickname")
                             }
                         },
                         onViewAllMatches = {}
@@ -195,86 +204,4 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
         }
 
     )
-}
-@Composable
-fun SemelionHomeScreen(
-    modifier: Modifier = Modifier,
-    destinations: Map<String, ()-> Unit>,
-    navigationFun: (route: NavKey) -> Unit
-){
-
-    val buttonList = listOf(
-        IconButton(
-            "Regole",
-            "Consulta le regole di Semelion",
-            "icona di regole",
-            R.drawable.article_24px,
-            goTo = {navigationFun(Route.RulesPage)}
-        ),
-        IconButton(
-            "Profile",
-            "Profile Page",
-            "icona del profilo",
-            R.drawable.account_circle_24px,
-            goTo = {navigationFun(Route.ProfilePage)}
-        )
-
-    )
-
-    Column(){
-        GreetingsBox(destinations = destinations)
-        buttonList.forEach { button ->
-            DestinationButton(button = button)
-        }
-    }
-}
-
-@Composable
-fun GreetingsBox(modifier: Modifier = Modifier,destinations: Map<String, ()-> Unit>,) {
-    LazyColumn(
-        modifier = modifier,
-        contentPadding = PaddingValues(16.dp)
-    ) {
-        items(destinations.toList()){ (key,value) ->
-            Button(
-                onClick = value
-            ) {
-                Text(
-                    text = key,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
-    }
-
-}
-
-data class IconButton(
-    val title: String,
-    val subtitle:String,
-    val contentDescription:String,
-    val resId: Int,
-    val goTo: () -> Unit
-)
-@Composable
-fun DestinationButton(modifier: Modifier = Modifier,button:IconButton){
-    Row{
-        Button(
-            modifier = Modifier
-                .padding(8.dp)
-                .fillMaxWidth(),
-            onClick = {button.goTo()}
-        ){
-            Icon(painter = painterResource(button.resId), contentDescription = button.contentDescription)
-            Column{
-                Text(text = button.title)
-                Text(text = button.subtitle)
-            }
-        }
-    }
-}
-
-fun getMatchesData(matches:List<Matches?>): List<RecentMatch>{
-    if (matches.isEmpty()) return listOf(RecentMatch(opponent = "null","null","null",false,0))
-    return listOf(RecentMatch(opponent = "null","null","null",false,0))
 }
