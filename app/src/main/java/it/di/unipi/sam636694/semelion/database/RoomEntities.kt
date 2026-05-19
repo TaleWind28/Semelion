@@ -74,8 +74,10 @@ data class MatchStatistics(
     val matchId: Long= 0,
     val outcome: String,
     val winner: String?,
+    val wasFirstPLayer: Boolean,
     val figureRevealed:Int,
     val totalActions: Int,
+    val date: Long,
 )
 
 @Entity(tableName = "StatisticheGiocatori", foreignKeys = [ForeignKey(
@@ -90,6 +92,7 @@ data class PlayerStatistics(
     val matchesPlayed: Int = 0,
     val matchesWon: Int = 0,
     val matchesLost: Int= 0,
+    val matchesDrawn: Int = 0,
     val currentStreak: Int = 0,
     val bestStreak: Int = 0
 )

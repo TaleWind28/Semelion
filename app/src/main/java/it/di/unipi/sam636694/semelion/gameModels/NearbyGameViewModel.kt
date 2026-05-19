@@ -245,11 +245,9 @@ class NearbyGameViewModel(
             when (messageType) {
                 "endpoint:" -> {
                     viewModelScope.launch {
-                        //Log.d("endpoint","endpoint Ottenuto")
                         updateRemoteId(message)
-                        //Log.d("endpoint","Remote settato")
+                        updateFirstPlayer()
                         matchStart(GameModes.NearBy)
-                        //Log.d("endpoint","match iniziato")
                     }
                     Log.d("endpoint","endpoint Ottenuto")
                 }
@@ -292,30 +290,21 @@ class NearbyGameViewModel(
     override fun calculateOutcome(loser:String?,state: GameUIState):Pair<String,String>{
         val outcome = loser ?: state.winner ?: "interrotta"
         Log.d("outcome","$outcome, ${state.winner}")
-        if (connectionState.value.isHost)
-            return when(loser){
-                userID -> "vince $secondPlayerId" to secondPlayerId
-                secondPlayerId -> "vince $userID" to userID
-                else -> {
-                    if (outcome.lowercase(getDefault()).contains("vince p1")) outcome to userID
-                    else if (outcome.lowercase(getDefault()).contains("vince p2")) outcome to secondPlayerId
-                    else if (outcome == userID) outcome to userID
-                    else if (outcome == secondPlayerId) outcome to secondPlayerId
-                    else outcome to "none"
-                }
-            }
-        else{
-            return when(loser){
-                userID -> "vince $secondPlayerId" to secondPlayerId
-                secondPlayerId -> "vince $userID" to userID
-                else -> {
-                    if (outcome.lowercase(getDefault()).contains("vince p1")) outcome to secondPlayerId
-                    else if (outcome.lowercase(getDefault()).contains("vince p2")) outcome to userID
-                    else if (outcome == userID) outcome to userID
-                    else if (outcome == secondPlayerId) outcome to secondPlayerId
-                    else outcome to "none"
-                }
-            }
+
+        // Per il guest, p1 e p2 sono invertiti rispetto all'host
+        val (p1Id, p2Id) = if (connectionState.value.isHost)
+            userID to secondPlayerId
+        else
+            secondPlayerId to userID
+
+        return when {
+            loser == userID       -> "vince $secondPlayerId" to secondPlayerId
+            loser == secondPlayerId -> "vince $userID" to userID
+            outcome.lowercase(getDefault()).contains("vince p1") -> outcome to p1Id
+            outcome.lowercase(getDefault()).contains("vince p2") -> outcome to p2Id
+            outcome == userID       -> outcome to userID
+            outcome == secondPlayerId -> outcome to secondPlayerId
+            else -> outcome to "none"
         }
     }
 
@@ -374,6 +363,17 @@ class NearbyGameViewModel(
             matchEnd(GameModes.NearBy,"Connection Lost")
         }
         disconnect()
+    }
+
+    fun updateFirstPlayer(){
+        _matchSummary.update {
+            it.map { stat ->
+                if (stat.userId == userID){
+                    stat.copy(wasFirstPLayer = connectionState.value.isHost)
+                }
+                else stat
+            }
+        }
     }
 
     companion object {

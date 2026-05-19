@@ -56,7 +56,14 @@ interface MatchesDao {
 
     // per riprendere una partita interrotta
     @Query("SELECT * FROM Partite WHERE matchId IN (SELECT matchId FROM Partecipazioni WHERE userId = :userId)")
-    fun getMatchesByUser(userId: String): Flow<List<Matches>>
+    suspend fun getMatchesByUser(userId: String): List<Matches?>
+
+    @Query("SELECT *" +
+            "FROM Partite m " +
+            "JOIN STATISTICHEPARTITE ms ON ms.matchId = m.matchId" +
+            " WHERE m.matchId =:matchId"
+    )
+    suspend fun getMatchStats(matchId:Long):List<MatchStatistics>
 
     @Query("SELECT COUNT(*) FROM Partite WHERE isCompleted=:completion")
     suspend fun getSuspendedCount(completion: Boolean=false): Int
@@ -98,6 +105,15 @@ interface MatchStatisticsDao {
 
     @Query("SELECT * FROM StatistichePartite WHERE userId = :userId")
     fun getStatsByUser(userId: String): MatchStatistics
+
+    @Query(value =
+        "SELECT * " +
+            " FROM UTENTI u JOIN PARTECIPAZIONI p on p.userId = u.userId " +
+            " JOIN PARTITE m on p.matchId = m.matchId " +
+            " JOIN StatistichePartite st on st.matchId = m.matchId" +
+        " WHERE m.matchId = :matchId"
+    )
+    suspend fun getPlayerStatsFromMatch(matchId: Long): List<MatchStatistics?>
 }
 
 @Dao

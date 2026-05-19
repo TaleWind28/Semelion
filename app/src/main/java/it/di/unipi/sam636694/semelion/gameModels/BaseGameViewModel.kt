@@ -69,9 +69,11 @@ abstract class BaseGameViewModel(
 
     val validationQueue = Channel<String>(Channel.BUFFERED)
 
+    private val startTime:Long = System.currentTimeMillis()
+
     protected val _matchSummary = MutableStateFlow(listOf(
-        MatchStatistics(matchId=-1, userId= userID,outcome = "still playing...",  figureRevealed = 0, winner = null,totalActions = 0),
-        MatchStatistics(matchId=-1,userId= secondPlayerId,outcome = "still playing...",  figureRevealed = 0,winner = null,totalActions = 0)
+        MatchStatistics(matchId=-1, userId= userID,outcome = "still playing...",  figureRevealed = 0, winner = null, date = startTime, wasFirstPLayer = true,totalActions = 0),
+        MatchStatistics(matchId=-1,userId= secondPlayerId,outcome = "still playing...",  figureRevealed = 0,winner = null, date=startTime, wasFirstPLayer = false,totalActions = 0)
     ))
     val matchSummary = _matchSummary.asStateFlow()
 
@@ -898,41 +900,58 @@ abstract class BaseGameViewModel(
                 Log.d("DB","inserting data: $stat")
                 matchStatisticsDao.upsert(stat)
             }
+
             //update dei playerSummary
-            listOf(userID,secondPlayerId).fold(0){ acc,userId ->
+            listOf(userID,secondPlayerId).forEach{ userId ->
                 Log.d("DB","inserting data for user:$userId")
                 //se non ha delle statistiche le creo
-                var playerStats: PlayerStatistics? = playersStatisticsDao.getStatsByUser(userId)
 
-                if (playerStats == null ){
-                    playersStatisticsDao.insert(PlayerStatistics(userId,1,0,0,0,0))
-                    playerStats = playersStatisticsDao.getStatsByUser(userId) ?: return@fold acc
-                }
-
-                val wins = if (winningUser == userId) playerStats.matchesWon.plus(1) else playerStats.matchesWon
-
-                val losses = if (winningUser != userId)playerStats.matchesLost.plus(1) else playerStats.matchesLost
+                var stats = PlayerStatistics(
+                    userId= userId,
+                    matchesPlayed = 1,
+                    matchesWon = if (winningUser == userId) 1 else 0,
+                    matchesLost=if (winningUser == secondPlayerId) 1 else 0,
+                    matchesDrawn = if ((winningUser != userId) && (winningUser != secondPlayerId)) 1 else 0
+                )
 
                 if (winningUser == userId){
-                    val currStr = playerStats.currentStreak + 1
-                    Log.d("DB","pre update:\nstreak:$currStr\nbest:${playerStats.bestStreak}")
-                    if (currStr > playerStats.bestStreak){
-                        Log.d("DB","pre update:\nstreak:$currStr\nbest:${playerStats.bestStreak}")
-                        playerStats = playerStats.copy(currentStreak = currStr, bestStreak = currStr)
+                    val currStr = stats.currentStreak + 1
+                    Log.d("DB","pre update:\nstreak:$currStr\nbest:${stats.bestStreak}")
+                    if (currStr > stats.bestStreak){
+                        Log.d("DB","pre update:\nstreak:$currStr\nbest:${stats.bestStreak}")
+                        stats = stats.copy(currentStreak = currStr, bestStreak = currStr)
                     }
-                    Log.d("DB","pre update:$playerStats\nstreak:$currStr")
-                }else{
-                    playerStats = playerStats.copy(currentStreak = 0)
+                    Log.d("DB","pre update:$stats\nstreak:$currStr")
+                }
+                else{
+                    stats = stats.copy(currentStreak = 0)
                 }
 
-                //Log.d("DB","esterno:$playerStats")
+                val playerStats: PlayerStatistics? = playersStatisticsDao.getStatsByUser(userId)
 
+                if (playerStats == null ){
+                    //se non ho valori nel db allor aggiungo stats
+                    playersStatisticsDao.insert(stats.copy(currentStreak = if (stats.matchesWon == 1) 1 else 0, bestStreak = if (stats.matchesWon == 1) 1 else 0))
+                    return@forEach
+                }
+                Log.d("DBMS","$playerStats")
+                //aggiorno stats in base ai valori presi dal db
+                stats = stats.copy(
+                    matchesPlayed = playerStats.matchesPlayed + stats.matchesPlayed,
+                    matchesWon = playerStats.matchesWon + stats.matchesWon,
+                    matchesLost = playerStats.matchesLost + stats.matchesLost,
+                    matchesDrawn = playerStats.matchesDrawn + stats.matchesDrawn,
 
-                if (playerStats.matchesPlayed == 0) playersStatisticsDao.insert(playerStats.copy(matchesPlayed = 1, matchesWon = wins, matchesLost = losses))
-                else playersStatisticsDao.update(playerStats.copy(matchesPlayed = playerStats.matchesPlayed + 1, matchesWon = wins, matchesLost = losses))
-                Log.d("DB","data inserted for user:$userId")
-                acc
+                )
+
+                playersStatisticsDao.update(stats)
+                Log.d("DBMS","data inserted for user:$userId\n$stats")
+
             }
+//            Log.d("DB","prima")
+            //ritorna una lista di matchStatistics
+//            val playerStats = matchStatisticsDao.getPlayerStatsFromMatch(matchId)
+//            Log.d("DB","$playerStats")
             isDBOperationComplete.value = true
         }
     }
