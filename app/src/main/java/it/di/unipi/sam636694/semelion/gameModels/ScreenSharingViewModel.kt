@@ -38,6 +38,8 @@ class SemelionGameViewModel(
     init {
         setup()
     }
+    private var wasResumed = false
+    private var resumedMatchId:Long = -5
 
     override fun setup(){
         val decks = createDecks()
@@ -61,8 +63,15 @@ class SemelionGameViewModel(
 
     fun resumeMatch(matches: Matches){
         val state = matches.gameState
+        wasResumed = true
+        resumedMatchId = matches.matchId
         Log.d("pino","sospesa")
         _uiState.update { state }
+    }
+
+    override fun matchEnd(mode: GameModes,loser:String?,resumedMatchId:Long?) {
+        Log.d("DBMS","resumed:$wasResumed, $resumedMatchId")
+        super.matchEnd(mode, loser, resumedMatchId = if (wasResumed) this.resumedMatchId else null)
     }
 
     override fun destroy() {

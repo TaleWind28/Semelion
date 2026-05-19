@@ -164,7 +164,7 @@ abstract class BaseGameViewModel(
         viewModelScope.launch {
             val needsDelay = _uiState.value.grid.any { it.name in listOf(id1, id2) && it.value >= 7 }
             if (!needsDelay) delay(DELAY_TIME)
-            _uiState.update { validateState(id1, it) }
+            _uiState.update { validateState(id2,validateState(id1, it)) }
         }
 
         return true
@@ -181,7 +181,7 @@ abstract class BaseGameViewModel(
         val jackSwaps = swaps.drop(1)
         //se non ho altre pozioni termino
         if (jackSwaps.isEmpty()){
-            _uiState.update { validateState(cardId = cardId,_uiState.value)}
+            _uiState.update { validateState(cardId = cardId,_uiState.value.copy(phase = GamePhase.Validation))}
             return false
         }
 
@@ -208,7 +208,7 @@ abstract class BaseGameViewModel(
         player.playFile(R.raw.queen)
 
         _uiState.update { state ->
-            state.copy(
+            var modifiedState = state.copy(
                 grid = (0 until 3).fold(state) { acc, i ->
                     val id1 = findCard(acc.grid[direction(i, 0)].name, state)?.name ?: "none"
                     val id2 = findCard(acc.grid[direction(i, 7)].name, state)?.name ?: "none"
@@ -216,7 +216,14 @@ abstract class BaseGameViewModel(
                 }.grid,
                 phase = GamePhase.Validation          // transizione dentro lo stato
             )
+
+            (0 until 3 ).fold(modifiedState){ acc, i ->
+                //Log.d("Queen","${direction(i,0)}")
+                validateState(acc.grid[direction(i,0)].name, acc)
+
+            }
         }
+
 
         viewModelScope.launch {
             val needsDelay = _uiState.value.grid
@@ -243,9 +250,10 @@ abstract class BaseGameViewModel(
             }
             return false
         }
+
         //aggiorno lo stato shiftando la griglia
         _uiState.update { state ->
-            state.copy(
+            var modifiedState = state.copy(
                 grid = (0 until 6).fold(state) { acc, i ->
                     val id1 = findCard(acc.grid[direction(i, 0)].name, state)?.name ?: "none"
                     val id2 = findCard(acc.grid[direction(i, 1)].name, state)?.name ?: "none"
@@ -253,6 +261,11 @@ abstract class BaseGameViewModel(
                 }.grid,
                 phase = GamePhase.Validation          // transizione dentro lo stato
             )
+            modifiedState = (0 until 6 ).fold(modifiedState){ acc, i ->
+                validateState(acc.grid[(rowIndex * 7) + i].name, acc)
+            }
+            modifiedState
+
         }
 
         viewModelScope.launch {
@@ -267,7 +280,6 @@ abstract class BaseGameViewModel(
     }
 
     //FUNZIONI HELPER PER GLI HANDLER
-
     fun generateJackChain(state: GameUIState,jackHouse:String,swapCount:Int):List<Int>{
         val validPositions = (0..27).filter { colorHouse(state.grid[it].house) == colorHouse(jackHouse) }
         val positions = mutableListOf<Int>()
@@ -350,7 +362,6 @@ abstract class BaseGameViewModel(
 
     //FUNZIONE DI VALIDAZIONE
     open fun validateState(cardId: String, state: GameUIState): GameUIState {
-        Log.d("validate", cardId)
 
         val card = findCard(cardId, state) ?: return state
         var modifiedState = state
@@ -378,12 +389,9 @@ abstract class BaseGameViewModel(
             modifiedState = substituteJolly(modifiedState, "joker_$it")
         }
 
-        //controllo se devo coprire delle carte
-        modifiedState = modifiedState.grid.chunked(7).flatten().fold(modifiedState) { state, card ->
-            coverCard(card.name, state)
-        }
+        modifiedState = coverCard(cardId,modifiedState)
 
-        Log.d("validate", "calcolo azioni: $cardId")
+        Log.d("validate", "calcolo azioni: $cardId, seven:${modifiedState.incorrectSevenReveled}")
 
         if (modifiedState.phase is GamePhase.Validation){
             //aggiorna azioni
@@ -410,17 +418,17 @@ abstract class BaseGameViewModel(
                 phase = GamePhase.PlayerTurn
             )
         } else {
-            modifiedState  // mantiene FigurePending solo se un 7 non è stato rivelato in posizione errata
+            modifiedState  // mantiene FigurePending anche se un 7 viene rivelato in posizione errata
         }
     }
 
     //funzioni di utility
     fun createDecks(): Pair<List<CardUIStates>, List<CardUIStates>> {
 
-        val allCards = createCards(figures = SEMELION_FIGURES, jolly = JOLLY_COLOR)
+        val allCards = createCards(figures = SEMELION_FIGURES, jolly = JOLLY_COLOR).shuffled()
 
         //testing filtro solo carte <7
-        val noFiguresDeck = allCards.filter { it.value in 1..7 }.shuffled()
+        val noFiguresDeck = allCards.filter { it.value in 1..7 }
 
         val specialDeck = allCards.filter { it.value > 7 || it.value == 0 }
 
@@ -428,7 +436,7 @@ abstract class BaseGameViewModel(
 
         val uncoverDeck = noFiguresDeck.take(UNCOVER_DECK_SIZE).map { it.copy(isRevealed = true) }
 
-        //val uncoverDeckTest = listOf(CardUIStates(name = "7P", value = 7, house = "P",isRevealed = false) )
+        Log.d("decks","uncover: $uncoverDeck")
 
         return Pair(gridDeck.shuffled(), uncoverDeck.shuffled())
 
@@ -487,10 +495,11 @@ abstract class BaseGameViewModel(
     }
 
     fun coverCard(cardId: String, state: GameUIState): GameUIState {
+
         val selectedCard = findCard(cardId, state) ?: return state
 
         if (selectedCard.value != 7 || !selectedCard.isRevealed) return state
-
+        Log.d("validate","cardToValidate: $cardId")
         val position = state.grid.indexOfFirst { card -> card.name == selectedCard.name }
 
         //controllo se il 7 può essere rivelato
@@ -739,7 +748,8 @@ abstract class BaseGameViewModel(
                 p2Actions = p2Actions,
                 p1ActionsUsed = 0,
                 p1Turn = false,
-                incorrectSevenReveled = false
+                incorrectSevenReveled = false,
+                //phase = GamePhase.Validation
             )
         }
         //se p2 ha rivelato un 7 passa
@@ -749,7 +759,8 @@ abstract class BaseGameViewModel(
                 p2Actions = p2Actions,
                 p2ActionsUsed = 0,
                 p1Turn = true,
-                incorrectSevenReveled = false
+                incorrectSevenReveled = false,
+                //phase = GamePhase.Validation
             )
         }
         //fine turno p1
@@ -876,7 +887,7 @@ abstract class BaseGameViewModel(
         }
     }
 
-    open fun matchEnd(mode: GameModes,loser:String? = null){
+    open fun matchEnd(mode: GameModes,loser:String? = null,resumedMatchId:Long? = null){
         //calcolo l'outcome della partita
         val (outcome,winningUser) = calculateOutcome(loser,_uiState.value)
 
@@ -885,10 +896,10 @@ abstract class BaseGameViewModel(
         _matchSummary.update { lists -> lists.map { it.copy(outcome = outcome) } }
 
         viewModelScope.launch {
-            val matchId = matchesDao.getNextMatchId() - 1
+            val matchId = resumedMatchId ?: (matchesDao.getNextMatchId() - 1)
             //inserisco il match nel db
             matchesDao.update(Matches(matchId = matchId,gameMode= mode,gameState=_uiState.value, isCompleted = true))
-            Log.d("DB","$matchId")
+            Log.d("DBMS","$matchId")
             //update dei matchSummary
             matchSummary.value.forEach { stats ->
                 val stat = stats.copy(matchId = matchId,outcome = outcome, winner = winningUser)
@@ -970,17 +981,6 @@ abstract class BaseGameViewModel(
                 Log.d("DB","inserting data: $stat")
                 matchStatisticsDao.upsert(stat)
             }
-            //update dei playerSummary
-//            listOf(userID,secondPlayerId).fold(0){ acc,userId ->
-//                Log.d("DB","inserting data for user:$userId")
-//                //se non ha delle statistiche le creo
-////                val playerStats = playersStatisticsDao.getStatsByUser(userId) ?: PlayerStatistics(userId, matchesPlayed = 0, matchesWon = 0, matchesLost = 0)
-////
-////                if (playerStats.matchesPlayed == 0) playersStatisticsDao.insert(playerStats.copy(matchesPlayed = 1))
-////                else playersStatisticsDao.update(playerStats.copy(matchesPlayed = playerStats.matchesPlayed + 1))
-//                Log.d("DB","data inserted for user:$userId")
-//                acc
-//            }
             isDBOperationComplete.value = true
         }
     }
@@ -1009,7 +1009,6 @@ abstract class BaseGameViewModel(
         else if (opponent.nickName != nickname && nickname!= null) userDao.update(User(secondPlayerId,nickname))
         Log.d("DB","secondPlayerID:$secondPlayerId")
     }
-
 
     protected fun updateSecondPlayer(secondPlayerId: String){
         this.secondPlayerId = secondPlayerId

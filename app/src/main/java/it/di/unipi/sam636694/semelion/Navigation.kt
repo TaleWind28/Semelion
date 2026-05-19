@@ -81,18 +81,15 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
         Log.d("nick","preComp:$username")
 
         matches = db.matchesDao().getMatchesByUser(userID)
-        recentMatches = matches.map { match ->
-            val matchStats =  db.matchesDao().getMatchStats(match?.matchId!!)
-            val opponentMatch = matchStats.firstOrNull{ it.userId != userID }
-            val date = SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).format(
-                Date(opponentMatch?.date!!)
-            )
+        recentMatches = matches.mapNotNull { match ->
+            val matchStats = db.matchesDao().getMatchStats(match?.matchId ?: return@mapNotNull null)
+            val opponentMatch = matchStats.firstOrNull { it.userId != userID } ?: return@mapNotNull null
+            val date = SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).format(Date(opponentMatch.date))
             val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(opponentMatch.date))
             val opponentName = db.userDao().getUserById(opponentMatch.userId)?.nickName
-            Log.d("DBMS","${opponentMatch.userId}\n $opponentName")
 
             RecentMatch(
-                opponent = opponentName?: opponentMatch.userId,
+                opponent = opponentName ?: opponentMatch.userId,
                 date = date,
                 time = time,
                 isWin = opponentMatch.winner
