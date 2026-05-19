@@ -52,6 +52,7 @@ class NearbyGameViewModel(
     playersStatisticsDao: PlayerStatisticsDao,
     userDao: UserDao,
     player: AudioPlayer,
+    var nickname: String,
     var endpoint: String?,
     var remoteId: String,
     val localId: String,
@@ -235,6 +236,10 @@ class NearbyGameViewModel(
         super.updateSecondPlayer(remoteId)
     }
 
+    fun updateNickname(nickname: String?){
+        this.nickname = nickname?:userID
+    }
+
     val payloadCallback = object : PayloadCallback() {
         override fun onPayloadReceived(endpointId: String, payload: Payload) {
             val raw = String(payload.asBytes()!!, Charsets.UTF_8)
@@ -244,12 +249,16 @@ class NearbyGameViewModel(
             Log.d("message","$messageType$message,${messageType ==  "endpoint:"} ")
             when (messageType) {
                 "endpoint:" -> {
-                    viewModelScope.launch {
-                        updateRemoteId(message)
-                        updateFirstPlayer()
-                        matchStart(GameModes.NearBy)
-                    }
+                    updateRemoteId(message)
+                    updateFirstPlayer()
+                    sendMessage("nickname",nickname,connectionsClient, endpointId)
                     Log.d("endpoint","endpoint Ottenuto")
+                }
+                "nickname:" ->{
+                    viewModelScope.launch{
+                        matchStart(GameModes.NearBy,message)
+                    }
+
                 }
                 "grid:" -> {
                     _uiState.update {
@@ -383,6 +392,7 @@ class NearbyGameViewModel(
             matchStatisticsDao: MatchStatisticsDao,
             playerStatisticsDao: PlayerStatisticsDao,
             player: AudioPlayer,
+            nickname:String,
             userDao: UserDao,
             localId: String,
             context: Context
@@ -397,6 +407,7 @@ class NearbyGameViewModel(
                         playersStatisticsDao = playerStatisticsDao,
                         userDao = userDao,
                         player = player,
+                        nickname = nickname,
                         remoteId = "",
                         localId = localId,
                         endpoint = null,

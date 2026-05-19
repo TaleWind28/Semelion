@@ -181,8 +181,7 @@ abstract class BaseGameViewModel(
         val jackSwaps = swaps.drop(1)
         //se non ho altre pozioni termino
         if (jackSwaps.isEmpty()){
-            val usedActions = increaseUsedActions(state = _uiState.value)
-            _uiState.update { it.copy(p1ActionsUsed = usedActions.first,p2ActionsUsed = usedActions.second,phase = GamePhase.PlayerTurn)}
+            _uiState.update { validateState(cardId = cardId,_uiState.value)}
             return false
         }
 
@@ -743,8 +742,6 @@ abstract class BaseGameViewModel(
                 incorrectSevenReveled = false
             )
         }
-
-        //Log.d("counter","p1,7")
         //se p2 ha rivelato un 7 passa
         if (!state.p1Turn && state.incorrectSevenReveled) {
             return state.copy(
@@ -755,7 +752,6 @@ abstract class BaseGameViewModel(
                 incorrectSevenReveled = false
             )
         }
-        //Log.d("counter","p2,7")
         //fine turno p1
         if (p1Actions - state.p1ActionsUsed <= 0 && state.p1Turn) {
             sendScreenMessage(
@@ -770,7 +766,6 @@ abstract class BaseGameViewModel(
                 p1Turn = false
             )
         }
-        //Log.d("counter","p1, fine azioni")
         //fine turno p2
         if (p2Actions - state.p2ActionsUsed <= 0) {
             sendScreenMessage(
@@ -786,7 +781,6 @@ abstract class BaseGameViewModel(
                 p1Turn = true
             )
         }
-        //Log.d("counter","p2,fine azioni")
         //continuo il turno
         return state.copy(
             p1Actions = p1Actions,
@@ -802,6 +796,7 @@ abstract class BaseGameViewModel(
         return 1 + rows.sumOf { row ->
             val revealed = row.filter { it.isRevealed }
             if (revealed.size < 2) return@sumOf 0
+            //regola alternativa -> abbiamo visto che porta al bullismo
             //val houseActions = row.getBonusActions()
             //houseActions.sumOf { triple ->  triple.second / 2 + triple.third / 2}
             row.getPredominantOrder().sumOf { triple -> max(triple.second, triple.third) / 2 }
@@ -986,11 +981,9 @@ abstract class BaseGameViewModel(
         }
     }
 
-    suspend fun matchStart(mode: GameModes){
+    suspend fun matchStart(mode: GameModes, nickname:String? = null){
         //devo metterlo da un'altra parte
-        if (userDao.getUserById(userID) == null) userDao.insert(User(userID, nickName = "Semelion_User: $userID"))
-        if (userDao.getUserById(secondPlayerId) == null) userDao.insert(User(secondPlayerId, nickName = "Sora"))
-        Log.d("DB","secondPlayerID:$secondPlayerId")
+        updateUsers(nickname=nickname)
         //caso specifico di partita in ScreenSharing
         val matchID = matchesDao.getNextMatchId()
         //inserisco il match nel db
@@ -1000,6 +993,17 @@ abstract class BaseGameViewModel(
         participationsDao.insert(Participations(matchId= matchID,userId = userID, role = "Host"))
         //flag per consentire modifiche in sicurezza nella UI
         isDBOperationComplete.value = true
+    }
+
+    suspend fun updateUsers(nickname:String?){
+        //controllo se devo creare l'utente nel db
+        if (userDao.getUserById(userID)== null) userDao.insert(User(userID, nickName = "Semelion_User: $userID"))
+        //controllo se esiste l'avversario nel db
+        val opponent = userDao.getUserById(secondPlayerId)
+        //controllo se in caso l'avversario esista il nickname sia diverso da quello in memoria, solo se il nickname non è null
+        if (opponent == null) userDao.insert(User(secondPlayerId, nickName = nickname ?: "Sora"))
+        else if (opponent.nickName != nickname && nickname!= null) userDao.update(User(secondPlayerId,nickname))
+        Log.d("DB","secondPlayerID:$secondPlayerId")
     }
 
 

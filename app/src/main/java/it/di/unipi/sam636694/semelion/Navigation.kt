@@ -21,6 +21,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -35,10 +36,12 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import androidx.room.PrimaryKey
 import it.di.unipi.sam636694.semelion.database.MatchStatistics
 import it.di.unipi.sam636694.semelion.database.Matches
 import it.di.unipi.sam636694.semelion.database.PlayerStatistics
 import it.di.unipi.sam636694.semelion.database.SemelionDB
+import it.di.unipi.sam636694.semelion.database.User
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 import kotlin.collections.listOf
@@ -49,8 +52,10 @@ import it.di.unipi.sam636694.semelion.ui.screens.RecentMatch
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionHome
 import it.di.unipi.sam636694.semelion.ui.screens.UserData
 import it.di.unipi.sam636694.semelion.ui.screens.mockMatches
+import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
+import kotlin.String
 
 @Composable
 fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, player: AudioPlayer,userID:String){
@@ -83,13 +88,17 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                 }
 
                 is Route.ProfilePage -> NavEntry(key){
+
                     var user by remember {  mutableStateOf<PlayerStatistics?>(null)  }
                     var username by remember { mutableStateOf("none") }
                     var matches by remember { mutableStateOf(emptyList<Matches?>()) }
-                    var recentMatches by remember {  mutableStateOf(emptyList<RecentMatch?>()) }
+                    var recentMatches by remember {  mutableStateOf(emptyList<RecentMatch>()) }
+                    val scope = rememberCoroutineScope()
+
                     LaunchedEffect(userID) {
                         user = db.playerStatisticsDao().getStatsByUser(userID)
                         username = db.userDao().getUserById(userID)?.nickName ?: "none"
+                        Log.d("nick","preComp:$username")
                         matches = db.matchesDao().getMatchesByUser(userID)
                         recentMatches = matches.map { match ->
                             val matchStats =  db.matchesDao().getMatchStats(match?.matchId!!)
@@ -98,24 +107,26 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                                 Date(opponentMatch?.date!!)
                             )
                             val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(opponentMatch.date))
+                            val opponentName = db.userDao().getUserById(opponentMatch.userId)?.nickName
+                            Log.d("DBMS","${opponentMatch.userId}\n $opponentName")
 
                             RecentMatch(
-                                opponent = opponentMatch.userId,
+                                opponent = opponentName?: opponentMatch.userId,
                                 date = date,
                                 time = time,
                                 isWin = opponentMatch.winner != opponentMatch.userId,
                                 rankChange = 0
                             )
                         }
-                        recentMatches.forEach { Log.d("DB","$it") }
-                        //Log.d("DB","$recentMatches.")
+//                        recentMatches.forEach { Log.d("DB","$it") }
                     }
 
 
                     val profileData = if (user == null) UserData(userID,0f,0,0,0, losses = 0, draws = 0, wins = 0)
                         else
                             UserData(
-                                username = username,user!!.matchesWon.toFloat()/user!!.matchesPlayed.toFloat() * 100,
+                                username = username,
+                                winRate=user!!.matchesWon.toFloat()/user!!.matchesPlayed.toFloat() * 100,
                                 gamesPlayed=user!!.matchesPlayed,
                                 winStreak=user!!.currentStreak,
                                 bestWinStreak=user!!.bestStreak,
@@ -127,8 +138,14 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                             )
                     ProfilePage(
                         profile = profileData,
-                        matches = recentMatches as List<RecentMatch>,
-                        onEditProfile = {},
+                        matches = recentMatches,
+                        onEditProfile = { nickname:String ->
+                            scope.launch {
+                                db.userDao().update(User(userId = userID, nickName = nickname))
+                                //forza la recomposition
+                                username = nickname
+                            }
+                        },
                         onViewAllMatches = {}
                     )
                 }

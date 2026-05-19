@@ -56,6 +56,8 @@ fun SemelionConnectionsScreen(
 ) {
     val SERVICE_ID = "semelion_nearbyConnections"
 
+    var nickname: String = "pino"
+
     val requiredPermissions = remember {
         buildList {
             add(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -70,22 +72,6 @@ fun SemelionConnectionsScreen(
         }.toTypedArray()
     }
 
-    val nvm: NearbyGameViewModel = viewModel(
-        factory = NearbyGameViewModel.factory(
-            matchesDao= db.matchesDao(),
-            participationsDao = db.participationsDao(),
-            matchStatisticsDao = db.matchStatisticsDao(),
-            playerStatisticsDao = db.playerStatisticsDao(),
-            userDao = db.userDao(),
-            player = player,
-            localId = userId,
-            context = LocalContext.current
-        )
-    )
-
-    val connectionState by nvm.connectionState.collectAsState()
-    val gameState by nvm.uiState.collectAsState()
-
     //CAMBIARE IL TIPO//
     val permissionsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -95,10 +81,32 @@ fun SemelionConnectionsScreen(
         }
     }
 
+    val nvm: NearbyGameViewModel = viewModel(
+        factory = NearbyGameViewModel.factory(
+            matchesDao= db.matchesDao(),
+            participationsDao = db.participationsDao(),
+            matchStatisticsDao = db.matchStatisticsDao(),
+            playerStatisticsDao = db.playerStatisticsDao(),
+            userDao = db.userDao(),
+            player = player,
+            localId = userId,
+            nickname= nickname,
+            context = LocalContext.current
+        )
+    )
+
     //richiesta permessi
-    LaunchedEffect(Unit) {
+    LaunchedEffect(nvm) {
         permissionsLauncher.launch(requiredPermissions)
+        nickname = db.userDao().getUserById(userId)?.nickName ?: userId
+        Log.d("DBMSS","nick:$nickname")
+        nvm.updateNickname(nickname)
     }
+
+    val connectionState by nvm.connectionState.collectAsState()
+    val gameState by nvm.uiState.collectAsState()
+
+
     Log.d("conn","${connectionState.gameStarted}")
     if (
         !connectionState.gameStarted &&(
@@ -165,7 +173,7 @@ fun SemelionConnectionsScreen(
         }
     }
     else {
-        NavigationUIApp(snackBarHostState = snackbarHostState, db = db, nvm, onNavigateBack = onBack)
+        NavigationUIApp(snackBarHostState = snackbarHostState, db = db, viewModel=nvm, onNavigateBack = onBack)
     }
 }
 

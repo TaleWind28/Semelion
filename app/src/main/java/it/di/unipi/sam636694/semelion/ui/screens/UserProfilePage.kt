@@ -1,5 +1,6 @@
 package it.di.unipi.sam636694.semelion.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -7,10 +8,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -89,7 +95,7 @@ val mockMatches = listOf(
 fun ProfilePage(
     profile: UserData = mockProfile,
     matches: List<RecentMatch> = mockMatches,
-    onEditProfile: () -> Unit = {},
+    onEditProfile: (String) -> Unit = {},
     onViewAllMatches: () -> Unit = {}
 ) {
     LazyColumn(
@@ -110,7 +116,10 @@ fun ProfilePage(
 //  CARD PROFILO
 // ════════════════════════════════════════════════════════════
 @Composable
-fun ProfileCard(profile: UserData, onEdit: () -> Unit) {
+fun ProfileCard(profile: UserData, onEdit: (String) -> Unit) {
+    var isEditing by remember { mutableStateOf(false) }
+    var nicknameInput by remember { mutableStateOf(profile.username) }
+    Log.d("nick","nick:$nicknameInput")
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = GreenLight,
@@ -159,29 +168,68 @@ fun ProfileCard(profile: UserData, onEdit: () -> Unit) {
             }
  
             Spacer(Modifier.height(4.dp))
- 
-            // Nome utente + edit
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = profile.username,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-                IconButton(
-                    onClick = onEdit,
-                    modifier = Modifier.size(24.dp)
+
+            if (isEditing) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Edit,
-                        contentDescription = "Modifica username",
-                        tint = TextSecondary,
-                        modifier = Modifier.size(16.dp)
+                    TextField(
+                        value = nicknameInput,
+                        onValueChange = { nicknameInput = it },
+                        singleLine = true
                     )
+                    IconButton(
+                        onClick = {
+                            onEdit(nicknameInput)
+                            isEditing = false
+                        },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(Icons.Filled.Check, contentDescription = "Conferma")
+                    }
                 }
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = profile.username,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    IconButton(
+                        onClick = { isEditing = true },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(Icons.Filled.Edit, contentDescription = "Modifica username", tint = TextSecondary)
+                    }
+                }
+
+            // Nome utente + edit
+//            Row(
+//                verticalAlignment = Alignment.CenterVertically,
+//                horizontalArrangement = Arrangement.spacedBy(6.dp)
+//            ) {
+//                Text(
+//                    text = profile.username,
+//                    fontSize = 20.sp,
+//                    fontWeight = FontWeight.Bold,
+//                    color = TextPrimary
+//                )
+//                IconButton(
+//                    onClick = onEdit,
+//                    modifier = Modifier.size(24.dp)
+//                ) {
+//                    Icon(
+//                        imageVector = Icons.Filled.Edit,
+//                        contentDescription = "Modifica username",
+//                        tint = TextSecondary,
+//                        modifier = Modifier.size(16.dp)
+//                    )
+//                }
             }
         }
     }
