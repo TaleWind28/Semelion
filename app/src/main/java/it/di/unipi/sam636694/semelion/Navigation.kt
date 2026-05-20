@@ -67,19 +67,13 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
     var recentMatches by remember {  mutableStateOf(emptyList<RecentMatch>()) }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(userID) {
-
+    LaunchedEffect(userID, backStack.size) {
         user = db.playerStatisticsDao().getStatsByUser(userID)
-
         username = db.userDao().getUserById(userID)?.nickName ?: "not in db"
-
         Log.d("DBMS","username:$username, user: ${db.userDao().getUserById(userID)}")
-
         if (username == "not in db") db.userDao().insert(User(userId = userID, nickName = "Semelion User: $userID"))
         username = db.userDao().getUserById(userID)?.nickName ?: "not in db"
-
         Log.d("nick","preComp:$username")
-
         matches = db.matchesDao().getMatchesByUser(userID)
         recentMatches = matches.mapNotNull { match ->
             val matchStats = db.matchesDao().getMatchStats(match?.matchId ?: return@mapNotNull null)
@@ -108,8 +102,6 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
             when(key){
                 is Route.Home ->
                     NavEntry(key){
-
-
                         SemelionHome(
                             destinations =  mapOf(
                                 "Quick Play" to {backStack.add(Route.ScreenSharingGame)},
@@ -136,9 +128,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                                 bestWinStreak=user!!.bestStreak,
                                 wins = user!!.matchesWon,
                                 losses = user!!.matchesLost,
-                                draws = if (user!!.matchesWon != 0 && user!!.matchesLost != 0)
-                                    user!!.matchesWon- user!!.matchesLost
-                                else 0
+                                draws = user!!.matchesDrawn
                             )
                     Log.d("DBMS","preProfile: $username\n $profileData")
                     ProfilePage(
