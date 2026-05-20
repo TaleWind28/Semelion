@@ -38,7 +38,6 @@ import it.di.unipi.sam636694.semelion.ui.states.GameUIState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import android.content.Context
-import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import com.google.android.gms.nearby.Nearby
 import it.di.unipi.sam636694.semelion.database.GameModes
 import it.di.unipi.sam636694.semelion.ui.states.DiscoveredEndpoint
@@ -59,15 +58,17 @@ class NearbyGameViewModel(
     val localId: String,
 ) : BaseGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao, userDao, player,userID=localId,remoteId) {
 
+    private var heartbeatJob: Job? = null
+    private var lastHeartbeat = System.currentTimeMillis()
+    private val pingInterval = 1000L
+    private val pingTimeout = 8000L
+    
     private val connectionsClient: ConnectionsClient = Nearby.getConnectionsClient(appContext)
 
     private val _connectionState = MutableStateFlow(ConnectionUiState())
     val connectionState: StateFlow<ConnectionUiState> = _connectionState.asStateFlow()
 
-    private var heartbeatJob: Job? = null
-    private var lastHeartbeat = System.currentTimeMillis()
-    private val HEARTBEAT_INTERVAL = 1000L
-    private val HEARTBEAT_TIMEOUT = 8000L
+
 
     fun onConnectionResult(endpointId: String, success: Boolean) {
         if (success) {
@@ -86,15 +87,12 @@ class NearbyGameViewModel(
     }
 
     fun onDisconnected() {
-        val gameStarted = _connectionState.value.gameStarted
-
         disconnect()
-
         _connectionState.update {
-            it.copy(connectedEndpointId = null, status = "Disconnesso", gameStarted = gameStarted)
+            it.copy(connectedEndpointId = null, status = "Disconnesso", gameStarted = _connectionState.value.gameStarted)
         }
     }
-
+    //hosta una partita
     fun startHosting(serviceId: String) {
         _connectionState.update {
             it.copy(isSearching = true, isHost = true, status = "In attesa di connessioni...")
@@ -104,6 +102,7 @@ class NearbyGameViewModel(
         connectionsClient.startAdvertising(localId, serviceId, connectionCallback, options)
     }
 
+    //cerca un host
     fun startDiscovery(serviceId: String) {
         //modifico lo stato di connessione
         _connectionState.update {
@@ -147,6 +146,7 @@ class NearbyGameViewModel(
         )
     }
 
+    //inizia la connessione con un endpoint
     fun connectToEndpoint(endpointId:String){
         _connectionState.update { it.copy(status = "Connessione a $endpointId...") }
         connectionsClient.requestConnection(localId, endpointId, connectionCallback)
@@ -157,6 +157,7 @@ class NearbyGameViewModel(
         _connectionState.update { it.copy(sent = true) }
     }
 
+    //disconnetti l'utente
     fun disconnect() {
         connectionsClient.stopAllEndpoints()
         connectionsClient.stopAdvertising()
@@ -169,6 +170,7 @@ class NearbyGameViewModel(
 
     }
 
+    //interrompi tentativo di connessione
     fun cancelSearch() {
         connectionsClient.stopAdvertising()
         connectionsClient.stopDiscovery()
@@ -177,17 +179,34 @@ class NearbyGameViewModel(
         }
     }
 
-    override fun setup() {
-        val decks = createDecks()
-        _uiState.update { it.copy(grid = decks.first, uncoverDeck = decks.second, phase = GamePhase.PlayerTurn) }
-        validation()
+    //PING UTILITY
+    fun startHeartbeat(endpointId: String) {
+        lastHeartbeat = System.currentTimeMillis()
+        heartbeatJob = viewModelScope.launch {
+            while (true) {
+                delay(pingInterval)
+                sendMessage("ping", "", connectionsClient, endpointId)
+
+                // Controlla se l'ultimo heartbeat ricevuto è troppo vecchio
+                if (System.currentTimeMillis() - lastHeartbeat > pingTimeout) {
+                    destroy()
+                    break
+                }
+            }
+        }
     }
 
+    fun stopHeartbeat() {
+        heartbeatJob?.cancel()
+        heartbeatJob = null
+    }
+
+    //inizializzazione del viewModel -> chiama solo setup
     init {
         setup()
     }
 
-
+    //GESTIONE DELLA PARTITA
     fun sendGrid(endpointId: String) {
         viewModelScope.launch {
             Log.d("send", "provo a mandare su $endpointId")
@@ -198,6 +217,7 @@ class NearbyGameViewModel(
         }
     }
 
+    //simula l'azione dell'avversario sulla griglia
     fun produceAction(command: String) {
         if (_uiState.value.phase is GamePhase.GameOver) return
         Log.d("PayloadReceived", "actionCommand:$command")
@@ -206,6 +226,7 @@ class NearbyGameViewModel(
         super.processIntent(action)
     }
 
+    //invia l'azione effettuata all'avversario
     fun sendAction(intent: GameIntent) {
         val action = intent.serialize()
         Log.d("nvm", "$endpoint:$connectionsClient")
@@ -213,6 +234,7 @@ class NearbyGameViewModel(
         sendMessage("gameaction", action, clientConnectionsClient = connectionsClient, endpoint = endpoint!!)
     }
 
+    //interpreta la direzione del re
     fun mapKingDirection(intent: GameIntent.KingDirectionChosen): GameIntent {
         return when (intent.rowIndex) {
             0 -> GameIntent.KingDirectionChosen(rowIndex = 2, direction = intent.direction)
@@ -221,6 +243,13 @@ class NearbyGameViewModel(
             3 -> GameIntent.KingDirectionChosen(rowIndex = 1, direction = intent.direction)
             else -> GameIntent.Errore("indice non consentito")
         }
+    }
+
+    //OVERRIDE
+    override fun setup() {
+        val decks = createDecks()
+        _uiState.update { it.copy(grid = decks.first, uncoverDeck = decks.second, phase = GamePhase.PlayerTurn) }
+        validation()
     }
 
     override fun processIntent(intent: GameIntent): Boolean {
@@ -256,7 +285,32 @@ class NearbyGameViewModel(
         }
     }
 
+    override fun destroy() {
+        endpoint?.let {
+            sendMessage("destruction", "player gave up", connectionsClient, it)
+        }
+        if (endpoint == null){
+            matchEnd(GameModes.NearBy,"Connection Lost")
+        }
+        disconnect()
+    }
 
+    override fun calculateOutcome(loser:String?,state: GameUIState):Pair<String,Boolean?>{
+        val outcome = loser ?: state.winner ?: "interrotta"
+        Log.d("outcome","$outcome, ${state.winner}")
+
+        return when {
+            loser == userID       -> "vince $secondPlayerId" to false
+            loser == secondPlayerId -> "vince $userID" to true
+            outcome.lowercase(getDefault()).contains("vince p1") -> outcome to true
+            outcome.lowercase(getDefault()).contains("vince p2") -> outcome to false
+            outcome == userID       -> outcome to true
+            outcome == secondPlayerId -> outcome to false
+            else -> outcome to null
+        }
+    }
+
+    //UPDATER
     fun updateRemoteId(remoteId: String){
         this.remoteId = remoteId
         super.updateSecondPlayer(remoteId)
@@ -266,6 +320,18 @@ class NearbyGameViewModel(
         this.nickname = nickname?:userID
     }
 
+    fun updateFirstPlayer(){
+        _matchSummary.update {
+            it.map { stat ->
+                if (stat.userId == userID){
+                    stat.copy(wasFirstPLayer = connectionState.value.isHost)
+                }
+                else stat
+            }
+        }
+    }
+
+    //CALLBACKS
     val payloadCallback = object : PayloadCallback() {
         override fun onPayloadReceived(endpointId: String, payload: Payload) {
             val raw = String(payload.asBytes()!!, Charsets.UTF_8)
@@ -322,27 +388,6 @@ class NearbyGameViewModel(
         }
     }
 
-    override fun calculateOutcome(loser:String?,state: GameUIState):Pair<String,Boolean?>{
-        val outcome = loser ?: state.winner ?: "interrotta"
-        Log.d("outcome","$outcome, ${state.winner}")
-
-        // Per il guest, p1 e p2 sono invertiti rispetto all'host
-        val (p1Id, p2Id) = if (connectionState.value.isHost)
-            userID to secondPlayerId
-        else
-            secondPlayerId to userID
-
-        return when {
-            loser == userID       -> "vince $secondPlayerId" to false
-            loser == secondPlayerId -> "vince $userID" to true
-            outcome.lowercase(getDefault()).contains("vince p1") -> outcome to true
-            outcome.lowercase(getDefault()).contains("vince p2") -> outcome to false
-            outcome == userID       -> outcome to true
-            outcome == secondPlayerId -> outcome to false
-            else -> outcome to null
-        }
-    }
-
     val connectionCallback = object : ConnectionLifecycleCallback() {
         override fun onConnectionInitiated(endpointId: String, info: ConnectionInfo) {
             _connectionState.update { it.copy(status = "Connessione in arrivo da ${info.endpointName}...") }
@@ -369,48 +414,7 @@ class NearbyGameViewModel(
         }
     }
 
-    fun startHeartbeat(endpointId: String) {
-        lastHeartbeat = System.currentTimeMillis()
-        heartbeatJob = viewModelScope.launch {
-            while (true) {
-                delay(HEARTBEAT_INTERVAL)
-                sendMessage("ping", "", connectionsClient, endpointId)
-
-                // Controlla se l'ultimo heartbeat ricevuto è troppo vecchio
-                if (System.currentTimeMillis() - lastHeartbeat > HEARTBEAT_TIMEOUT) {
-                    destroy()
-                    break
-                }
-            }
-        }
-    }
-
-    fun stopHeartbeat() {
-        heartbeatJob?.cancel()
-        heartbeatJob = null
-    }
-
-    override fun destroy() {
-        endpoint?.let {
-            sendMessage("destruction", "player gave up", connectionsClient, it)
-        }
-        if (endpoint == null){
-            matchEnd(GameModes.NearBy,"Connection Lost")
-        }
-        disconnect()
-    }
-
-    fun updateFirstPlayer(){
-        _matchSummary.update {
-            it.map { stat ->
-                if (stat.userId == userID){
-                    stat.copy(wasFirstPLayer = connectionState.value.isHost)
-                }
-                else stat
-            }
-        }
-    }
-
+    //METODO FACTORY PER ISTANZIARE IL VIEWMODEL
     companion object {
         fun factory(
             matchesDao: MatchesDao,

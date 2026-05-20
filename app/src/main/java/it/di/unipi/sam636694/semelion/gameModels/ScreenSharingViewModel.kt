@@ -48,6 +48,8 @@ class SemelionGameViewModel(
             uncoverDeck = decks.second,
             phase = GamePhase.Loading
         )
+        Log.d("decks","sevenPosition: ${_uiState.value.uncoverDeck.indexOfFirst { it.value == 7 }}\n")
+        _uiState.value.uncoverDeck.forEach { Log.d("decks", it.name) }
         viewModelScope.launch {
             if (_uiState.value.phase is GamePhase.Loading){
                 val suspendedMatch = matchesDao.getSuspendedMatch()

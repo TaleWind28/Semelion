@@ -31,6 +31,7 @@ import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
+import it.di.unipi.sam636694.semelion.utilities.LogScreen
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import kotlinx.coroutines.channels.Channel
@@ -208,7 +209,8 @@ abstract class BaseGameViewModel(
         player.playFile(R.raw.queen)
 
         _uiState.update { state ->
-            var modifiedState = state.copy(
+
+            val modifiedState = state.copy(
                 grid = (0 until 3).fold(state) { acc, i ->
                     val id1 = findCard(acc.grid[direction(i, 0)].name, state)?.name ?: "none"
                     val id2 = findCard(acc.grid[direction(i, 7)].name, state)?.name ?: "none"
@@ -218,7 +220,6 @@ abstract class BaseGameViewModel(
             )
 
             (0 until 3 ).fold(modifiedState){ acc, i ->
-                //Log.d("Queen","${direction(i,0)}")
                 validateState(acc.grid[direction(i,0)].name, acc)
 
             }
@@ -366,7 +367,7 @@ abstract class BaseGameViewModel(
         val card = findCard(cardId, state) ?: return state
         var modifiedState = state
 
-        Log.d("validate", cardId)
+        //Log.d("validate", cardId)
 
         if (card.isRevealed) {
             //controlla se la carta rivelata è una figura
@@ -376,16 +377,6 @@ abstract class BaseGameViewModel(
         //cercare jolly sulla griglia -> actually vorrei usare uno stato diverso per le invocazioni però non so
         JOLLY_COLOR.forEach {
             modifiedState = jollyApplier(modifiedState, "joker_$it")
-            Log.d(
-                "jolly",
-                "${findCard("joker_$it", modifiedState)?.name}:${
-                    findCard(
-                        "joker_$it",
-                        modifiedState
-                    )?.value
-                }"
-            )
-            //controllo se il jolly può essere sostituito
             modifiedState = substituteJolly(modifiedState, "joker_$it")
         }
 
@@ -393,7 +384,8 @@ abstract class BaseGameViewModel(
 
         Log.d("validate", "calcolo azioni: $cardId, seven:${modifiedState.incorrectSevenReveled}")
 
-        if (modifiedState.phase is GamePhase.Validation){
+        if (modifiedState.phase is GamePhase.Validation || modifiedState.incorrectSevenReveled){
+            Log.d("actions", "calcolo azioni: $cardId, seven:${modifiedState.incorrectSevenReveled}")
             //aggiorna azioni
             val (p1Actions, p2Actions) = increaseUsedActions(modifiedState)
             modifiedState = modifiedState.copy(
@@ -411,7 +403,7 @@ abstract class BaseGameViewModel(
 
         modifiedState = findWinner(modifiedState)
 
-        Log.d("outcome","winner:${modifiedState.winner}")
+        //Log.d("outcome","winner:${modifiedState.winner}")
 
         return if (modifiedState.phase == GamePhase.Validation) {
             modifiedState.copy(
@@ -435,8 +427,6 @@ abstract class BaseGameViewModel(
         val gridDeck = noFiguresDeck.drop(UNCOVER_DECK_SIZE) + specialDeck
 
         val uncoverDeck = noFiguresDeck.take(UNCOVER_DECK_SIZE).map { it.copy(isRevealed = true) }
-
-        Log.d("decks","uncover: $uncoverDeck")
 
         return Pair(gridDeck.shuffled(), uncoverDeck.shuffled())
 
@@ -618,6 +608,7 @@ abstract class BaseGameViewModel(
                 }
             }
         }
+
         //ho due case del colore del jolly -> posso ignorarlo
         if (i != 1) {
             return state.copy(
@@ -647,8 +638,6 @@ abstract class BaseGameViewModel(
             }
 
         //assume il valore in base all'ordinamento predominante
-
-
         Log.d("validate", "valore calcolato:$value, seme:$dominantHouse")
 
         return state.copy(
@@ -712,18 +701,20 @@ abstract class BaseGameViewModel(
 
         return modifiedState
     }
+
     fun replaceCard(state: GameUIState, cardID: String): GameUIState {
         val card = findCard(cardID, state) ?: return state
         if (!card.isRevealed) return state
         val newUncover = state.uncoverDeck
         val nextCard = state.uncoverDeck.first()
-        val pos = _uiState.value.grid.indexOfFirst { it.name==cardID }
+        val pos = state.grid.indexOfFirst { it.name==cardID }
         val relevantCards = listOf(Triple(cardID,pos, true))
         val outcome = listOf(Triple(nextCard.name,pos, true))
 
         sendScreenMessage("addedFromUncover",relevantCards,outcome)
-
-        return state.copy(
+        state.uncoverDeck.forEach { Log.d("uncover",it.name) }
+        Log.d("uncover","carta:${nextCard.name}")
+        return validateState(cardId=nextCard.name,state=state.copy(
             grid = state.grid.map {
                 when (it.name) {
                     card.name -> nextCard.copy()
@@ -734,6 +725,8 @@ abstract class BaseGameViewModel(
             revealedCards = state.revealedCards + nextCard.name,
             lastReplacedCard = nextCard.name
         )
+        )
+
 
     }
 
@@ -749,7 +742,7 @@ abstract class BaseGameViewModel(
                 p1ActionsUsed = 0,
                 p1Turn = false,
                 incorrectSevenReveled = false,
-                //phase = GamePhase.Validation
+                phase = GamePhase.Validation
             )
         }
         //se p2 ha rivelato un 7 passa
@@ -760,7 +753,7 @@ abstract class BaseGameViewModel(
                 p2ActionsUsed = 0,
                 p1Turn = true,
                 incorrectSevenReveled = false,
-                //phase = GamePhase.Validation
+                phase = GamePhase.Validation
             )
         }
         //fine turno p1
@@ -837,6 +830,7 @@ abstract class BaseGameViewModel(
         }
     }
 
+    //messaggio di log
     fun sendScreenMessage(type:String, relevantCards:List<Triple<String,Int, Boolean>>, outcome:List<Triple<String,Int, Boolean>>){
         viewModelScope.launch {
             SharedRepository.send(
@@ -850,12 +844,9 @@ abstract class BaseGameViewModel(
 
     }
 
+    //potrebbe finire in NVM
     fun blankGrid(){
         _uiState.update { it.copy(grid = emptyList(), uncoverDeck = emptyList()) }
-    }
-
-    fun updateGrid(grid:List<CardUIStates>,uncoverDeck:List<CardUIStates>){
-        _uiState.update { it.copy(grid = grid, uncoverDeck = uncoverDeck) }
     }
 
     abstract fun setup()
@@ -912,35 +903,39 @@ abstract class BaseGameViewModel(
                 Log.d("DB","inserting data for user:$userId")
                 //se non ha delle statistiche le creo
 
+                //winninguser sarà true se il vincitore è l'utente locale, false se il vincitore è l'avversario, null altrimenti
                 var stats = PlayerStatistics(
                     userId= userId,
                     matchesPlayed = 1,
-                    matchesWon = if (outcome.contains(userId)) 1 else 0,
-                    matchesLost=if (!outcome.contains(userId)) 1 else 0,
-                    matchesDrawn = if (!outcome.contains(userID) && !outcome.contains(secondPlayerId)) 1 else 0
+                    matchesWon = if (winningUser == true) 1 else 0,
+                    matchesLost=if (winningUser == false) 1 else 0,
+                    matchesDrawn = if (winningUser == null) 1 else 0
                 )
 
+                //controllo la streak
                 if (outcome.contains(userId)){
                     val currStr = stats.currentStreak + 1
-                    Log.d("DB","pre update:\nstreak:$currStr\nbest:${stats.bestStreak}")
+                    //Log.d("DB","pre update:\nstreak:$currStr\nbest:${stats.bestStreak}")
                     if (currStr > stats.bestStreak){
-                        Log.d("DB","pre update:\nstreak:$currStr\nbest:${stats.bestStreak}")
+                        //Log.d("DB","pre update:\nstreak:$currStr\nbest:${stats.bestStreak}")
                         stats = stats.copy(currentStreak = currStr, bestStreak = currStr)
                     }
-                    Log.d("DB","pre update:$stats\nstreak:$currStr")
+                    //Log.d("DB","pre update:$stats\nstreak:$currStr")
                 }
                 else{
                     stats = stats.copy(currentStreak = 0)
                 }
 
+                //ottengo le statistiche del player dal db
                 val playerStats: PlayerStatistics? = playersStatisticsDao.getStatsByUser(userId)
 
+                //se non ho la riga allora la creo con le stats ottenute attualmente
                 if (playerStats == null ){
-                    //se non ho valori nel db allor aggiungo stats
                     playersStatisticsDao.insert(stats.copy(currentStreak = if (stats.matchesWon == 1) 1 else 0, bestStreak = if (stats.matchesWon == 1) 1 else 0))
                     return@forEach
                 }
-                Log.d("DBMS","$playerStats")
+                //Log.d("DBMS","$playerStats")
+
                 //aggiorno stats in base ai valori presi dal db
                 stats = stats.copy(
                     matchesPlayed = playerStats.matchesPlayed + stats.matchesPlayed,
@@ -950,9 +945,8 @@ abstract class BaseGameViewModel(
 
                 )
 
+                //aggiorno la entry nel database
                 playersStatisticsDao.update(stats)
-                Log.d("DBMS","data inserted for user:$userId\n$stats")
-
             }
 //            Log.d("DB","prima")
             //ritorna una lista di matchStatistics
