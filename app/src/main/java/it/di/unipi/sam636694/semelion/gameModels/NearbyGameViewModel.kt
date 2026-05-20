@@ -41,6 +41,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import com.google.android.gms.nearby.Nearby
 import it.di.unipi.sam636694.semelion.database.GameModes
+import it.di.unipi.sam636694.semelion.ui.states.DiscoveredEndpoint
 import kotlinx.coroutines.Job
 import java.util.Locale.getDefault
 
@@ -104,27 +105,52 @@ class NearbyGameViewModel(
     }
 
     fun startDiscovery(serviceId: String) {
+        //modifico lo stato di connessione
         _connectionState.update {
             it.copy(isSearching = true, isHost = false, status = "Cerco un host...")
         }
+        //svouto la griglia
         this.blankGrid()
+
         val options = DiscoveryOptions.Builder()
             .setStrategy(Strategy.P2P_POINT_TO_POINT).build()
+
         connectionsClient.startDiscovery(
             serviceId,
             object : EndpointDiscoveryCallback() {
                 override fun onEndpointFound(endpointId: String, info: DiscoveredEndpointInfo) {
-                    _connectionState.update { it.copy(status = "Host trovato! Connessione...") }
-                    connectionsClient.requestConnection(localId, endpointId, connectionCallback)
-                    connectionsClient.stopDiscovery()
+                    _connectionState.update { state ->
+                        val updated = state.discoveredEndpoints.toMutableList()
+                        if (updated.none{ it.endpointId == endpointId }){
+                            updated.add(DiscoveredEndpoint(endpointId, info.endpointName))
+                        }
+                        state.copy(
+                            discoveredEndpoints = updated,
+                            status = "${updated.size} host trovati"
+                        )
+                        //state.copy(status = "Host trovato! Connessione...")
+                    }
                 }
 
                 override fun onEndpointLost(endpointId: String) {
-                    _connectionState.update { it.copy(status = "Host perso, riprovo...") }
+                    // Rimuove dalla lista se l'host sparisce
+                    _connectionState.update { state ->
+                        val updated = state.discoveredEndpoints.filter { it.endpointId != endpointId }
+                        state.copy(
+                            discoveredEndpoints = updated,
+                            status = if (updated.isEmpty()) "Nessun host trovato" else "${updated.size} host trovati"
+                        )
+                    }
                 }
             },
             options
         )
+    }
+
+    fun connectToEndpoint(endpointId:String){
+        _connectionState.update { it.copy(status = "Connessione a $endpointId...") }
+        connectionsClient.requestConnection(localId, endpointId, connectionCallback)
+        connectionsClient.stopDiscovery()
     }
 
     fun onSent() {

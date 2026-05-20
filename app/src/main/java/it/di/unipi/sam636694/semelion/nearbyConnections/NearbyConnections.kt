@@ -4,19 +4,38 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -37,6 +56,12 @@ import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.gameModels.NearbyGameViewModel
 import it.di.unipi.sam636694.semelion.serializeList
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.NavKey
 import it.di.unipi.sam636694.semelion.AudioPlayer
 import it.di.unipi.sam636694.semelion.Route
@@ -54,8 +79,6 @@ fun SemelionConnectionsScreen(
     userId: String,
     onBack: () -> Unit,
 ) {
-    val SERVICE_ID = "semelion_nearbyConnections"
-
     var nickname: String = "pino"
 
     val requiredPermissions = remember {
@@ -99,7 +122,6 @@ fun SemelionConnectionsScreen(
     LaunchedEffect(nvm) {
         permissionsLauncher.launch(requiredPermissions)
         nickname = db.userDao().getUserById(userId)?.nickName ?: userId
-        Log.d("DBMSS","nick:$nickname")
         nvm.updateNickname(nickname)
     }
 
@@ -108,71 +130,16 @@ fun SemelionConnectionsScreen(
 
 
     Log.d("conn","${connectionState.gameStarted}")
-    if (
-        !connectionState.gameStarted &&(
-        gameState.grid.isEmpty() ||
-        (connectionState.connectedEndpointId == null  && connectionState.isHost) ||
-        (!connectionState.received && !connectionState.isHost)
-        )){
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Stato connessione
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .background(
-                            color = if (connectionState.connectedEndpointId != null) Color.Green else Color.Red,
-                            shape = CircleShape
-                        )
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = if (connectionState.connectedEndpointId != null) "Connesso" else "Non connesso")
-            }
 
-            if (connectionState.isSearching) {
-                CircularProgressIndicator()
-            }
-
-            Text(
-                text = connectionState.status,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-
-                Button(
-                    onClick = { nvm.startHosting(SERVICE_ID) },
-                    enabled = connectionState.connectedEndpointId == null && !connectionState.isSearching
-                ) { Text("Crea una partita") }
-
-                Button(
-                    onClick = { nvm.startDiscovery(SERVICE_ID) },
-                    enabled = connectionState.connectedEndpointId == null && !connectionState.isSearching
-                ) { Text("Unisciti ad una partita") }
-
-                Button(
-                    onClick = { nvm.disconnect() },
-                    enabled = connectionState.connectedEndpointId != null
-                ) { Text("Disconnetti") }
-
-                Button(
-                    onClick = { nvm.cancelSearch() },
-                    enabled = connectionState.isSearching
-                ) { Text("Annulla") }
-
-            }
-        }
-    }
-    else {
+    if (!connectionState.gameStarted &&
+        (
+            gameState.grid.isEmpty() ||
+            (connectionState.connectedEndpointId == null  && connectionState.isHost) ||
+            (!connectionState.received && !connectionState.isHost)
+        )
+    ) {
+        DiscoveryScreen(nvm, onBack = onBack)
+    } else {
         NavigationUIApp(snackBarHostState = snackbarHostState, db = db, viewModel=nvm, onNavigateBack = onBack)
     }
 }
@@ -185,25 +152,252 @@ fun sendMessage(messageType:String,message:String, clientConnectionsClient: Conn
 }
 
 @Composable
-fun OrrebbondoSchermoDiDebug(gameState: GameUIState,connectionState: ConnectionUiState){
-    if (!gameState.grid.isEmpty()) {
-        //DEBUG
-        Text(gameState.grid.serializeList())
-        val c1 = gameState.grid.isEmpty()
-        val c2 = (connectionState.connectedEndpointId == null)
-        val c3 = !connectionState.isHost && connectionState.connectedEndpointId != null && connectionState.received
-        val c4 =
-            connectionState.isHost && connectionState.connectedEndpointId != null && !connectionState.sent && gameState.grid.isNotEmpty()
+fun DiscoveryScreen(
+    viewModel: NearbyGameViewModel,
+    onBack: () -> Unit
+) {
+    val serviceId = "semelion_nearbyConnections"
+    val state by viewModel.connectionState.collectAsState()
+    var isHosting by rememberSaveable { mutableStateOf(true) }
 
-        val c5 = gameState.grid.isEmpty()
-        val c6 =(connectionState.connectedEndpointId == null && !connectionState.received && !connectionState.isHost)
-        val c7 = connectionState.connectedEndpointId == null
-        val c8 = !connectionState.received
-        Column{
-            Text("\ncondizione 1:$c1,\nendpoint Null:$c2,\nreceived:${connectionState.received}, \nisHost:${connectionState.isHost} \nguardia launch:$c3\nguardia sbagliata: $c4")
-            Text("isHost:${connectionState.isHost}")
-            Text("c1:$c5,c2:$c6,c3:$c7,c4:$c8")
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF0F7EE))
+    ) {
+        // Toggle condiviso
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFFDDEEDD))
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            listOf("Create Match" to true, "Join Match" to false).forEach { (label, tabIsHost) ->
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (isHosting == tabIsHost) Color(0xFF22CC22) else Color.Transparent)
+                        .clickable { isHosting = tabIsHost }
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(label,
+                        color = if (isHosting == tabIsHost) Color(0xFF0A3A0A) else Color(0xFF4A7A4A),
+                        fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
         }
 
+        LaunchedEffect(isHosting) {
+            viewModel.cancelSearch()
+            if (!isHosting) {
+                viewModel.disconnect()
+                viewModel.startDiscovery(serviceId)
+            }
+        }
+
+        if (isHosting) {
+            HostScreen(viewModel = viewModel, serviceId = serviceId, onBack = onBack  )
+        } else {
+            GuestScreen(viewModel = viewModel,state=state)
+        }
+    }
+}
+
+@Composable
+fun GuestScreen(state: ConnectionUiState,viewModel: NearbyGameViewModel){
+    // Radar
+    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.size(160.dp).clip(CircleShape)
+                .border(1.5.dp, Color(0xFFB8DCB8), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier.size(110.dp).clip(CircleShape)
+                    .border(1.5.dp, Color(0xFFC8E8C8), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier.size(64.dp).clip(CircleShape)
+                        .background(Color(0xFF22CC22)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF0A3A0A), modifier = Modifier.size(28.dp))
+                }
+            }
+        }
+    }
+
+    // Titolo
+    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Searching for Rooms", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1A5C1A))
+        Spacer(Modifier.height(4.dp))
+        Text("STAY WITHIN 10 METERS OF YOUR OPPONENT", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF4A7A4A), letterSpacing = 1.sp, textAlign = TextAlign.Center)
+    }
+
+    // Label sezione
+    Text(
+        "NEARBY PLAYERS FOUND",
+        modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 8.dp),
+        fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp, color = Color(0xFF4A7A4A)
+    )
+
+    // Lista host
+    LazyColumn(modifier = Modifier) {
+        items(state.discoveredEndpoints) { endpoint ->
+            PlayerCard(
+                name = endpoint.endpointName,
+                onJoin = { viewModel.connectToEndpoint(endpoint.endpointId) }
+            )
+        }
+
+        // Info box
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.White)
+                    .border(0.5.dp, Color(0xFFCCE8CC), RoundedCornerShape(14.dp))
+                    .padding(14.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Icon(Icons.Default.Info, contentDescription = null, tint = Color(0xFF4A7A4A), modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(10.dp))
+                Text("Ensure Bluetooth and Location services are enabled for the most accurate nearby discovery.", fontSize = 12.sp, color = Color(0xFF4A7A4A), lineHeight = 18.sp)
+            }
+        }
+    }
+}
+
+@Composable
+fun PlayerCard(name: String, onJoin: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 5.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White)
+            .border(0.5.dp, Color(0xFFCCE8CC), RoundedCornerShape(14.dp))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(10.dp))
+                .background(Color(0xFFC8D8F8)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF2255AA), modifier = Modifier.size(24.dp))
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(name, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text("Online", fontSize = 12.sp, color = Color(0xFF4A7A4A))
+        }
+        Button(
+            onClick = onJoin,
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A5C1A)),
+            shape = RoundedCornerShape(8.dp),
+            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp)
+        ) {
+            Text("JOIN", fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        }
+    }
+}
+
+@Composable
+fun HostScreen(
+    viewModel: NearbyGameViewModel,
+    serviceId: String,
+    onBack: () -> Unit
+) {
+    val state by viewModel.connectionState.collectAsState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF0F7EE))
+    ) {
+        // Card principale
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(Color(0xFFE8F5E8))
+                .padding(32.dp, 32.dp, 32.dp, 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Radar
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .border(3.dp, Color(0xFFC8DCC8), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier.size(86.dp).clip(CircleShape)
+                        .background(Color(0xFF22CC22)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Info, contentDescription = null,
+                        tint = Color(0xFF0A3A0A), modifier = Modifier.size(30.dp))
+                }
+            }
+
+            Text("Searching for Rivals", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(
+                if (state.isSearching) "In attesa di giocatori..." else "Premi per iniziare",
+                fontSize = 14.sp, color = Color(0xFF5A7A5A)
+            )
+
+            Button(
+                onClick = { viewModel.startHosting(serviceId) },
+                enabled = !state.isSearching,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A5C1A)),
+                contentPadding = PaddingValues(vertical = 18.dp)
+            ) {
+                Icon(Icons.Default.LocationOn, contentDescription = null,
+                    modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(10.dp))
+                Text("START SCANNING", fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp)
+            }
+        }
+
+        Log.d("conn","$state")
+
+        Spacer(Modifier.height(12.dp))
+
+        // Info box
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0xFFE8EEF8))
+                .padding(16.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(Icons.Default.Info, contentDescription = null,
+                tint = Color(0xFF3A5A9A), modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(10.dp))
+            Text(
+                "Semelion uses nearby connections to find opponents in your immediate vicinity.",
+                fontSize = 13.sp, color = Color(0xFF3A5A7A), lineHeight = 20.sp
+            )
+        }
+
+        Spacer(Modifier.weight(1f))
     }
 }
