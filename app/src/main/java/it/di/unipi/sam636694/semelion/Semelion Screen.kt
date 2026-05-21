@@ -217,7 +217,6 @@ fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGam
 @Composable
 fun SinglePlayer(modifier: Modifier = Modifier,state: GameUIState,viewModel: SemelionGameViewModel,padding: PaddingValues) {
     val configuration = LocalConfiguration.current
-    //var showLogScreen by remember { mutableStateOf(false) }
     when (configuration.orientation) {
         Configuration.ORIENTATION_LANDSCAPE -> {
             Landscape(

@@ -48,6 +48,7 @@ import kotlin.collections.chunked
 import kotlin.collections.find
 import kotlin.collections.plus
 import kotlin.math.max
+import kotlin.random.Random
 import kotlin.time.Duration.Companion.minutes
 
 abstract class BaseGameViewModel(
@@ -365,10 +366,10 @@ abstract class BaseGameViewModel(
     open fun validateState(cardId: String, state: GameUIState): GameUIState {
 
         val card = findCard(cardId, state) ?: return state
+
         var modifiedState = state
 
-        //Log.d("validate", cardId)
-
+        //controllo se la carta è rivelata
         if (card.isRevealed) {
             //controlla se la carta rivelata è una figura
             modifiedState = figureRevealed(cardId, modifiedState)
@@ -380,10 +381,9 @@ abstract class BaseGameViewModel(
             modifiedState = substituteJolly(modifiedState, "joker_$it")
         }
 
+        //controllo se la carta deve essere coperta
         modifiedState = coverCard(cardId,modifiedState)
-
-        Log.d("validate", "calcolo azioni: $cardId, seven:${modifiedState.incorrectSevenReveled}")
-
+        //se sono ancora in fase di validazione modifico il numero di azioni
         if (modifiedState.phase is GamePhase.Validation || modifiedState.incorrectSevenReveled){
             Log.d("actions", "calcolo azioni: $cardId, seven:${modifiedState.incorrectSevenReveled}")
             //aggiorna azioni
@@ -401,16 +401,18 @@ abstract class BaseGameViewModel(
             }
         }
 
+        //controllo se un giocatore ha vinto
         modifiedState = findWinner(modifiedState)
 
-        //Log.d("outcome","winner:${modifiedState.winner}")
-
+        //se la validazione ha avuto successo torna al turno del giocatore
         return if (modifiedState.phase == GamePhase.Validation) {
+            Log.d("coinFlip","p1Turn:${modifiedState.p1Turn}")
             modifiedState.copy(
                 phase = GamePhase.PlayerTurn
             )
         } else {
-            modifiedState  // mantiene FigurePending anche se un 7 viene rivelato in posizione errata
+            //altrimenti maniteni lo stato attuale per risolvere gli effetti delle figure
+            modifiedState
         }
     }
 
@@ -732,64 +734,49 @@ abstract class BaseGameViewModel(
 
     fun actionCounter(state: GameUIState, rows: List<List<CardUIStates>>): GameUIState {
         val p1Actions = calcActions(listOf(rows[2], rows[3]))
-        val p2Actions = calcActions(listOf(rows[0], rows[1])) + if(state.p2FirstTurn) 1 else 0
+        val p2Actions = calcActions(listOf(rows[0], rows[1]))
+        //mi sembrava più elegante farlo così
+        val isSecondPlayer = {player:Boolean, turn:Int-> (if((!player && turn == 0) || (player && turn == 1)) 1 else 0)}
+        Log.d("coinFlip","turno:${state.turnsPlayed}\np1:${isSecondPlayer(state.p1Turn,state.turnsPlayed)}\np2:${isSecondPlayer(!state.p1Turn,state.turnsPlayed)}")
 
-        //se p1 ha rivelato un 7 passa
-        if (state.p1Turn && state.incorrectSevenReveled) {
-            return state.copy(
-                p1Actions = p1Actions,
-                p2Actions = p2Actions,
-                p1ActionsUsed = 0,
-                p1Turn = false,
-                incorrectSevenReveled = false,
-                phase = GamePhase.Validation
-            )
+        return when{
+            //se un 7 è stato coperto il turno termina
+            state.incorrectSevenReveled ->
+                state.copy(
+                    p1Actions = p1Actions,
+                    p2Actions = p2Actions,
+                    p1ActionsUsed = 0,
+                    p2ActionsUsed = 0,
+                    p1Turn = !state.p1Turn,
+                    turnsPlayed = state.turnsPlayed+1,
+                    incorrectSevenReveled = false,
+                    phase = GamePhase.Validation)
+            //se il giocatore ha terminato le azioni il turno termina
+            //fine turno p1
+            p1Actions + isSecondPlayer(state.p1Turn,state.turnsPlayed) - state.p1ActionsUsed  <=0 ->
+                state.copy(
+                    p1Actions = p1Actions + isSecondPlayer(state.p1Turn,state.turnsPlayed+1),
+                    p1ActionsUsed = 0,
+                    p1Turn = false,
+                    p2Actions = p2Actions + isSecondPlayer(state.p1Turn,state.turnsPlayed+1),
+                    turnsPlayed = state.turnsPlayed+1
+                )
+            //fine turno p2
+            p2Actions + isSecondPlayer(!state.p1Turn,state.turnsPlayed) - state.p2ActionsUsed  <=0 ->
+                state.copy(
+                    p1Actions = p1Actions + isSecondPlayer(!state.p1Turn,state.turnsPlayed+1),
+                    p2ActionsUsed = 0,
+                    p1Turn = true,
+                    p2Actions = p2Actions + isSecondPlayer(!state.p1Turn,state.turnsPlayed+1),
+                    turnsPlayed = state.turnsPlayed+1
+                )
+
+            else ->
+                state.copy(
+                    p1Actions=p1Actions+ isSecondPlayer(state.p1Turn,state.turnsPlayed),
+                    p2Actions = p2Actions + isSecondPlayer(!state.p1Turn,state.turnsPlayed)
+                )
         }
-        //se p2 ha rivelato un 7 passa
-        if (!state.p1Turn && state.incorrectSevenReveled) {
-            return state.copy(
-                p1Actions = p1Actions,
-                p2Actions = p2Actions,
-                p2ActionsUsed = 0,
-                p1Turn = true,
-                incorrectSevenReveled = false,
-                phase = GamePhase.Validation
-            )
-        }
-        //fine turno p1
-        if (p1Actions - state.p1ActionsUsed <= 0 && state.p1Turn) {
-            sendScreenMessage(
-                "Turn End",
-                listOf(Triple("P1 aveva",state.p1Actions, true)),
-                listOf(Triple("P1 ha usato",state.p1ActionsUsed,true))
-            )
-            return state.copy(
-                p1Actions = p1Actions,
-                p2Actions = p2Actions,
-                p1ActionsUsed = 0,
-                p1Turn = false
-            )
-        }
-        //fine turno p2
-        if (p2Actions - state.p2ActionsUsed <= 0) {
-            sendScreenMessage(
-                "Turn End",
-                listOf(Triple("P2 aveva",state.p2Actions, true)),
-                listOf(Triple("P2 ha usato",state.p2ActionsUsed,true))
-            )
-            return state.copy(
-                p1Actions = p1Actions,
-                p2Actions = p2Actions  - if (state.p2FirstTurn) 1 else 0 ,
-                p2ActionsUsed = 0,
-                p2FirstTurn = false,
-                p1Turn = true
-            )
-        }
-        //continuo il turno
-        return state.copy(
-            p1Actions = p1Actions,
-            p2Actions = p2Actions,
-        )
     }
 
     fun findCard(cardID: String, state: GameUIState): CardUIStates? {
@@ -980,9 +967,10 @@ abstract class BaseGameViewModel(
     }
 
     suspend fun matchStart(mode: GameModes, nickname:String? = null){
+        //imposto il primo giocatore
+        setFirstPlayer()
         //devo metterlo da un'altra parte
         updateUsers(nickname=nickname)
-        //caso specifico di partita in ScreenSharing
         val matchID = matchesDao.getNextMatchId()
         //inserisco il match nel db
         matchesDao.insert(Matches(gameMode = mode, gameState = _uiState.value, isCompleted = false))
@@ -991,6 +979,15 @@ abstract class BaseGameViewModel(
         participationsDao.insert(Participations(matchId= matchID,userId = userID, role = "Host"))
         //flag per consentire modifiche in sicurezza nella UI
         isDBOperationComplete.value = true
+    }
+
+    open fun setFirstPlayer() {
+        val coinFlip = Random.nextBoolean()
+        if(coinFlip)
+            this._uiState.update { it.copy(firstPlayer = "Host", p2Actions = it.p2Actions+1)}
+        else
+            this._uiState.update { it.copy(firstPlayer = "Guest", p1Turn = false, p1Actions=it.p1Actions + 1)}
+        Log.d("coinFlip","coinFlip:$coinFlip\n${_uiState.value.firstPlayer},\np1Actions:${_uiState.value.p1Actions}\np2Actions:${_uiState.value.p2Actions}")
     }
 
     suspend fun updateUsers(nickname:String?){

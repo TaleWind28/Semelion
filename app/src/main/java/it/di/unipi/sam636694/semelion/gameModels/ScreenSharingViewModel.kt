@@ -23,6 +23,7 @@ import it.di.unipi.sam636694.semelion.ui.states.GameUIState
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale.getDefault
+import kotlin.random.Random
 
 class SemelionGameViewModel(
     matchesDao: MatchesDao,
