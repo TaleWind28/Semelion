@@ -199,8 +199,13 @@ abstract class BaseGameViewModel(
 
                 currentId to figureSwap(currentId, nextCard.name, currentState, "Jack' chain")
             }
-
-        _uiState.update { validateState(cardId =swapped.second.grid[position].name ,state=swapped.second.copy(phase = GamePhase.Validation)) }
+        //valido tutte le posizioni
+        val validatedState = swaps.fold( swapped.second.copy(phase = GamePhase.Validation)){ state, position ->
+            val cardId = state.grid[position].name
+            Log.d("madness","validating:$cardId")
+            validateState(cardId=cardId, state = state)
+        }
+        _uiState.update { validatedState }
 
         return true
     }
@@ -844,7 +849,10 @@ abstract class BaseGameViewModel(
             is GameIntent.SwapCards -> handleSwapCards(intent.id1, intent.id2)
             is GameIntent.QueenDirectionChosen -> handleQueenDirection(intent.direction.toFunction(intent.colIndex))
             is GameIntent.KingDirectionChosen -> handleKingDirection(intent.rowIndex, intent.direction.toFunction(intent.rowIndex))
-            is GameIntent.JackMadness -> handleJackMadness(swaps=intent.jackSwaps)
+            is GameIntent.JackMadness -> {
+                //intent.jackSwaps.forEach { Log.d("madness","posizione:${_uiState.value.grid[it].name} valore:${it}")}
+                handleJackMadness(swaps=intent.jackSwaps)
+            }
             else -> false
         }
     }
@@ -873,6 +881,7 @@ abstract class BaseGameViewModel(
 
         _matchSummary.update { lists -> lists.map { it.copy(outcome = outcome) } }
 
+        //db operations
         viewModelScope.launch {
             val matchId = resumedMatchId ?: (matchesDao.getNextMatchId() - 1)
             //inserisco il match nel db
@@ -921,7 +930,6 @@ abstract class BaseGameViewModel(
                     playersStatisticsDao.insert(stats.copy(currentStreak = if (stats.matchesWon == 1) 1 else 0, bestStreak = if (stats.matchesWon == 1) 1 else 0))
                     return@forEach
                 }
-                //Log.d("DBMS","$playerStats")
 
                 //aggiorno stats in base ai valori presi dal db
                 stats = stats.copy(
@@ -935,10 +943,6 @@ abstract class BaseGameViewModel(
                 //aggiorno la entry nel database
                 playersStatisticsDao.update(stats)
             }
-//            Log.d("DB","prima")
-            //ritorna una lista di matchStatistics
-//            val playerStats = matchStatisticsDao.getPlayerStatsFromMatch(matchId)
-//            Log.d("DB","$playerStats")
             isDBOperationComplete.value = true
         }
     }
@@ -967,8 +971,6 @@ abstract class BaseGameViewModel(
     }
 
     suspend fun matchStart(mode: GameModes, nickname:String? = null){
-        //imposto il primo giocatore
-        setFirstPlayer()
         //devo metterlo da un'altra parte
         updateUsers(nickname=nickname)
         val matchID = matchesDao.getNextMatchId()
