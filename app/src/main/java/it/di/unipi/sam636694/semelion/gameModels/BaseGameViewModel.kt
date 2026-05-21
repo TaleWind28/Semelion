@@ -43,6 +43,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.security.SecureRandom
 import java.util.Locale.getDefault
 import kotlin.collections.chunked
 import kotlin.collections.find
@@ -984,7 +985,7 @@ abstract class BaseGameViewModel(
     }
 
     open fun setFirstPlayer() {
-        val coinFlip = Random.nextBoolean()
+        val coinFlip = SecureRandom().nextBoolean()
         if(coinFlip)
             this._uiState.update { it.copy(firstPlayer = "Host", p2Actions = it.p2Actions+1)}
         else
