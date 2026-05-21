@@ -129,9 +129,9 @@ fun SemelionConnectionsScreen(
     val gameState by nvm.uiState.collectAsState()
 
 
-    Log.d("conn","${connectionState.gameStarted}")
+    Log.d("conn","gameStarted:${connectionState.gameStarted}")
 
-    if (!connectionState.gameStarted &&
+    if ((!connectionState.gameStarted) &&
         (
             gameState.grid.isEmpty() ||
             (connectionState.connectedEndpointId == null  && connectionState.isHost) ||
@@ -158,7 +158,7 @@ fun DiscoveryScreen(
 ) {
     val serviceId = "semelion_nearbyConnections"
     val state by viewModel.connectionState.collectAsState()
-    var isHosting by rememberSaveable { mutableStateOf(true) }
+    var isHosting by remember { mutableStateOf(true) }
 
     Column(
         modifier = Modifier
@@ -194,6 +194,7 @@ fun DiscoveryScreen(
 
         LaunchedEffect(isHosting) {
             viewModel.cancelSearch()
+            Log.d("disconnect","isHosting:$isHosting")
             if (!isHosting) {
                 viewModel.disconnect()
                 viewModel.startDiscovery(serviceId)
@@ -375,7 +376,7 @@ fun HostScreen(
             }
         }
 
-        Log.d("conn","$state")
+        Log.d("conn","stato:$state")
 
         Spacer(Modifier.height(12.dp))
 

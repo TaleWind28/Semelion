@@ -87,9 +87,10 @@ class NearbyGameViewModel(
     }
 
     fun onDisconnected() {
+        if (_uiState.value.phase is GamePhase.GameOver) return
         disconnect()
         _connectionState.update {
-            it.copy(connectedEndpointId = null, status = "Disconnesso", gameStarted = _connectionState.value.gameStarted)
+            it.copy(connectedEndpointId = null, status = "Disconnesso")
         }
     }
     //hosta una partita
@@ -159,6 +160,7 @@ class NearbyGameViewModel(
 
     //disconnetti l'utente
     fun disconnect() {
+        Log.d("disc","porco")
         connectionsClient.stopAllEndpoints()
         connectionsClient.stopAdvertising()
         connectionsClient.stopDiscovery()
@@ -175,7 +177,7 @@ class NearbyGameViewModel(
         connectionsClient.stopAdvertising()
         connectionsClient.stopDiscovery()
         _connectionState.update {
-            ConnectionUiState(status = "Ricerca annullata")
+            it.copy(isSearching = false, status = "Ricerca annullata")  // non resettare tutto
         }
     }
 
@@ -189,7 +191,9 @@ class NearbyGameViewModel(
 
                 // Controlla se l'ultimo heartbeat ricevuto è troppo vecchio
                 if (System.currentTimeMillis() - lastHeartbeat > pingTimeout) {
-                    destroy()
+                    Log.d("disc","dio")
+                    if (_uiState.value.phase !is GamePhase.GameOver) destroy()
+                    Log.d("disc","porco")
                     break
                 }
             }
@@ -250,6 +254,10 @@ class NearbyGameViewModel(
         val decks = createDecks()
         _uiState.update { it.copy(grid = decks.first, uncoverDeck = decks.second, phase = GamePhase.PlayerTurn) }
         validation()
+    }
+
+    override fun setFirstPlayer() {
+        if (connectionState.value.isHost)super.setFirstPlayer()
     }
 
     override fun processIntent(intent: GameIntent): Boolean {
@@ -342,9 +350,16 @@ class NearbyGameViewModel(
             when (messageType) {
                 "endpoint:" -> {
                     updateRemoteId(message)
-                    updateFirstPlayer()
                     sendMessage("nickname",nickname,connectionsClient, endpointId)
                     Log.d("endpoint","endpoint Ottenuto")
+                    //setFirstPlayer()
+                    _uiState.update { it.copy(firstPlayer = "Guest") }
+                    updateFirstPlayer()
+                    sendMessage("starting player",_uiState.value.firstPlayer,connectionsClient,endpointId)
+                }
+                "starting player:" ->{
+                    _uiState.update { it.copy(firstPlayer = "Host") }
+                    Log.d("coinFlip","fp:${_uiState.value.firstPlayer}")
                 }
                 "nickname:" ->{
                     viewModelScope.launch{
@@ -366,6 +381,7 @@ class NearbyGameViewModel(
                 "gameaction:" -> produceAction(message)
                 "destruction:" -> {
                     stopHeartbeat()
+                    Log.d("disc","hb fermato")
                     _uiState.update { it.copy(phase = GamePhase.GameOver, winner = userID) }
                     Log.d("message","fase post destruction:${_uiState.value.phase}")
                 }
