@@ -26,6 +26,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import it.di.unipi.sam636694.semelion.R
+import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 
 // ── Colori ───────────────────────────────────────────────────
 private val GreenPrimary   = Color(0xFF3DBE5A)
@@ -230,7 +232,7 @@ fun StatisticsSection(profile: UserData) {
         ) {
             StatCard(
                 label = "WIN RATE",
-                value = "${profile.winRate}%",
+                value = "${profile.winRate.roundToInt()}%",
                 valueColor = GreenDark,
                 modifier = Modifier.weight(1f)
             )
@@ -322,44 +324,6 @@ fun StatCard(
         }
     }
 }
- 
-@Composable
-fun RankCard(rank: String, modifier: Modifier = Modifier) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = GreenCard,
-        modifier = modifier.height(110.dp)
-    ) {
-        Box(modifier = Modifier.padding(16.dp)) {
-            Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxHeight()) {
-                Text(
-                    text = "CURRENT RANK",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                    color = GreenDark
-                )
-                Text(
-                    text = rank,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = GreenDark,
-                    lineHeight = 26.sp
-                )
-            }
-            // Icona trofeo sfumata in basso a destra
-            Icon(
-                painter = painterResource(id = R.drawable.leaderboard_24px), // sostituisci con icona trofeo
-                contentDescription = null,
-                tint = GreenPrimary.copy(alpha = 0.2f),
-                modifier = Modifier
-                    .size(52.dp)
-                    .align(Alignment.BottomEnd)
-            )
-        }
-    }
-}
- 
 // ════════════════════════════════════════════════════════════
 //  SEZIONE PARTITE RECENTI
 // ════════════════════════════════════════════════════════════
@@ -464,7 +428,7 @@ fun MatchRow(match: RecentMatch) {
                 // Risultato
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = if (match.isWin == null) "WIN" else "LOSS",
+                        text = if (match.isWin == true) "VITTORIA" else if (match.isWin == false) "SCONFITTA" else "PAREGGIO",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = accentColor
