@@ -236,7 +236,7 @@ fun SinglePlayer(modifier: Modifier = Modifier,state: GameUIState,viewModel: Sem
 
 @Composable
 fun MultiPlayer(modifier: Modifier = Modifier,state: GameUIState,viewModel: NearbyGameViewModel) {
-    Log.d("finder","jack:${state.grid.indexOfFirst { it.value == 8 }}")
+    //Log.d("finder","jack:${state.grid.indexOfFirst { it.value == 8 }}")
     val configuration = LocalConfiguration.current
     when (configuration.orientation) {
         Configuration.ORIENTATION_LANDSCAPE -> {
@@ -269,7 +269,7 @@ fun Portrait(state: GameUIState, viewModel: BaseGameViewModel){
             actionsUsed=state.p2ActionsUsed,
             actionsTotal =state.p2Actions,
             isWaiting = state.p1Turn,
-            playerName = viewModel.secondPlayerId
+            playerName = if (viewModel is NearbyGameViewModel) viewModel.nickname else viewModel.secondPlayerId
         )
 
         FinalGrid(state = state, model = viewModel)
@@ -291,9 +291,21 @@ fun Landscape(state: GameUIState, viewModel: BaseGameViewModel,modifier: Modifie
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            OpponentHeader(actionsUsed=state.p2ActionsUsed, actionsTotal =state.p2Actions, isWaiting = state.p1Turn,viewModel.secondPlayerId )
+            //avversario
+            OpponentHeader(
+                actionsUsed=state.p2ActionsUsed,
+                actionsTotal =state.p2Actions,
+                isWaiting = state.p1Turn,
+                playerName = if (viewModel is NearbyGameViewModel) viewModel.nickname else viewModel.secondPlayerId
+            )
             FinalGrid(state = state, model = viewModel,cardSize= CardSize.LARGE)
-            OpponentHeader(actionsUsed = state.p1ActionsUsed, actionsTotal = state.p1Actions, isWaiting = !state.p1Turn,viewModel.userID)
+            //giocatore
+            OpponentHeader(
+                actionsUsed = state.p1ActionsUsed,
+                actionsTotal = state.p1Actions,
+                isWaiting = !state.p1Turn,
+                playerName= viewModel.userID
+            )
         }
 }
 

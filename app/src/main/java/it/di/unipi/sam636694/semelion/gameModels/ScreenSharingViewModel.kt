@@ -43,6 +43,8 @@ class SemelionGameViewModel(
     private var resumedMatchId:Long = -5
 
     override fun setup(){
+        //imposto il primo giocatore
+        setFirstPlayer()
         val decks = createDecks()
         _uiState.value = GameUIState(
             grid = decks.first,
