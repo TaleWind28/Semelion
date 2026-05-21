@@ -8,7 +8,7 @@ data class ConnectionUiState(
     val sent: Boolean = false,
     val received: Boolean = false,
     val gameStarted: Boolean = false,
-    val discoveredEndpoints: List<DiscoveredEndpoint> = emptyList()
+    val discoveredEndpoints: List<DiscoveredEndpoint> = emptyList(),
 )
 
 data class DiscoveredEndpoint(

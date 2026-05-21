@@ -265,13 +265,13 @@ class NearbyGameViewModel(
             _uiState.update { it.copy(phase = GamePhase.GameOver)}
             return false
         }
-
+        //mappo la direzione scelta dal re
         val mappedIntent = if (intent is GameIntent.KingDirectionChosen && !this.connectionState.value.isHost) {
             mapKingDirection(intent)
         } else {
             intent
         }
-
+        //eseguo l'intent
         val result = super.processIntent(mappedIntent)
         if (!result) return false
         sendAction(mappedIntent)
@@ -280,8 +280,11 @@ class NearbyGameViewModel(
 
     override fun validateState(cardId: String, state: GameUIState): GameUIState {//cannolo
         val validatedState = super.validateState(cardId, state)
+
         Log.d("validazionesotto", "${validatedState.p1Turn}")
+
         if (!(validatedState.phase is GamePhase.Validation || validatedState.phase is GamePhase.PlayerTurn)) return validatedState
+
         return if (
             validatedState.p1Turn && !connectionState.value.isHost
             ||
@@ -352,13 +355,16 @@ class NearbyGameViewModel(
                     updateRemoteId(message)
                     sendMessage("nickname",nickname,connectionsClient, endpointId)
                     Log.d("endpoint","endpoint Ottenuto")
-                    //setFirstPlayer()
-                    _uiState.update { it.copy(firstPlayer = "Guest") }
-                    updateFirstPlayer()
-                    sendMessage("starting player",_uiState.value.firstPlayer,connectionsClient,endpointId)
+                    if(_connectionState.value.isHost){
+                        setFirstPlayer()
+                        updateFirstPlayer()
+                        sendMessage("starting player",_uiState.value.firstPlayer,connectionsClient,endpointId)
+                    }
                 }
                 "starting player:" ->{
-                    _uiState.update { it.copy(firstPlayer = "Host") }
+                    Log.d("player",message)
+                    if (message == "Guest") _uiState.update { it.copy(firstPlayer = message, p1Turn = false,p1Actions = it.p1Actions+1) }
+                    if (message == "Host") _uiState.update { it.copy(firstPlayer = message,p2Actions = it.p2Actions+1) }
                     Log.d("coinFlip","fp:${_uiState.value.firstPlayer}")
                 }
                 "nickname:" ->{
