@@ -1,9 +1,7 @@
 package it.di.unipi.sam636694.semelion
 import android.content.res.Configuration
 import android.util.Log
-import android.widget.Space
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -14,26 +12,20 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -49,16 +41,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import it.di.unipi.sam636694.semelion.database.GameModes
-import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
 import it.di.unipi.sam636694.semelion.gameModels.NearbyGameViewModel
 import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
@@ -66,7 +54,6 @@ import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
-import it.di.unipi.sam636694.semelion.utilities.LogScreen
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -236,120 +223,76 @@ fun SinglePlayer(modifier: Modifier = Modifier,state: GameUIState,viewModel: Sem
     val configuration = LocalConfiguration.current
     when (configuration.orientation) {
         Configuration.ORIENTATION_LANDSCAPE -> {
-            Landscape(
-                modifier = Modifier.wrapContentWidth(),
-                state = state,
-                viewModel = viewModel
-            )
+            GameScreen(modifier=Modifier.wrapContentWidth(),viewModel=viewModel, state = state, cardSize= CardSize.LARGE)
+        }
+        Configuration.ORIENTATION_PORTRAIT -> {
+            GameScreen(modifier=Modifier.wrapContentWidth(),viewModel=viewModel, state=state, cardSize = CardSize.SMALL)
         }
         else -> {
-                Portrait(
-                    state = state,
-                    viewModel = viewModel
-                )
         }
     }
 }
-
 @Composable
 fun MultiPlayer(modifier: Modifier = Modifier,state: GameUIState,viewModel: NearbyGameViewModel) {
     //Log.d("finder","jack:${state.grid.indexOfFirst { it.value == 8 }}")
     val configuration = LocalConfiguration.current
     when (configuration.orientation) {
         Configuration.ORIENTATION_LANDSCAPE -> {
-            Landscape(state = state, viewModel = viewModel, modifier=Modifier)
+            GameScreen(modifier=Modifier.wrapContentWidth(),viewModel=viewModel, state = state, cardSize= CardSize.LARGE)
+        }
+        Configuration.ORIENTATION_PORTRAIT -> {
+            GameScreen(modifier=Modifier.wrapContentWidth(),viewModel=viewModel, state=state, cardSize = CardSize.SMALL)
         }
         else -> {
-            Column(
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Portrait(state = state,viewModel = viewModel)
-            }
 
         }
     }
 }
 
 @Composable
-fun Portrait(state: GameUIState, viewModel: BaseGameViewModel){
+fun GameScreen(modifier: Modifier = Modifier,viewModel: BaseGameViewModel,state: GameUIState, cardSize: CardSize) {
+    val conf = when(viewModel){
+        is NearbyGameViewModel ->{
+            if (viewModel.connectionState.value.isHost) {
+                Pair(Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn),
+                    Triple(state.p1ActionsUsed,state.p1Actions,!state.p1Turn))
+            }
+            else{
+                Pair(
+                    Triple(state.p1ActionsUsed,state.p1Actions,!state.p1Turn),
+                    Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn)
+                )
+            }
+        }
+        else ->{
+            Pair(Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn),
+                Triple(state.p1ActionsUsed,state.p1Actions,!state.p1Turn))
+        }
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
-    ){
-        Spacer(Modifier.size(10.dp))
-
+    ) {
+        //avversario
         OpponentHeader(
-            actionsUsed=state.p2ActionsUsed,
-            actionsTotal =state.p2Actions,
-            isWaiting = state.p1Turn,
-            playerName = if (viewModel is NearbyGameViewModel) viewModel.nickname else viewModel.secondPlayerId
+            actionsUsed = conf.first.first,
+            actionsTotal = conf.first.second,
+            isWaiting = conf.first.third,
+            playerName = viewModel.opponentName
         )
 
-        FinalGrid(state = state, model = viewModel)
-
+        FinalGrid(state = state, model = viewModel, cardSize = cardSize)
+        //giocatore
         OpponentHeader(
-            actionsUsed = state.p1ActionsUsed,
-            actionsTotal = state.p1Actions,
-            isWaiting = !state.p1Turn,
-            playerName = viewModel.userID
+            actionsUsed = conf.second.first,
+            actionsTotal = conf.second.second,
+            isWaiting = conf.second.third,
+            playerName = viewModel.playerName
         )
-
-        Spacer(Modifier.size(10.dp))
     }
 }
-@Composable
-fun Landscape(state: GameUIState, viewModel: BaseGameViewModel,modifier: Modifier) {
-    val conf =
-        when(viewModel){
-            is NearbyGameViewModel ->{
-                if (viewModel.connectionState.value.isHost) {
-                    Pair(Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn),
-                        Triple(state.p2ActionsUsed,state.p2Actions,!state.p1Turn))
-                }
-                else{
-                    Pair(
-                        Triple(state.p1ActionsUsed,state.p1Actions,!state.p1Turn),
-                        Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn)
-                    )
-                }
-            }
-            else ->{
-                Pair(Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn),
-                    Triple(state.p1ActionsUsed,state.p1Actions,!state.p1Turn))
-
-            }
-    }
-
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            //avversario
-            OpponentHeader(
-                actionsUsed=conf.first.first ,
-                actionsTotal =conf.first.second,
-                isWaiting = conf.first.third,
-                playerName = viewModel.secondPlayerId
-            )
-
-            FinalGrid(state = state, model = viewModel,cardSize= CardSize.LARGE)
-            //giocatore
-            OpponentHeader(
-                actionsUsed = conf.second.first,
-                actionsTotal = conf.second.second,
-                isWaiting = conf.second.third,
-                playerName= if (viewModel is NearbyGameViewModel)viewModel.nickname else viewModel.userID
-            )
-        }
-}
-
-
-
 @Composable
 fun OpponentHeader(
     actionsUsed: Int,
@@ -486,49 +429,6 @@ fun UncoverDeck(state: GameUIState){
                     Text("—", color = TextSecondary, fontSize = 20.sp)
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun SemelionTopBar() {
-    Surface(
-        color = Color.White,
-        shadowElevation = 2.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .height(56.dp)
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = TextPrimary)
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = "Semelion",
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                color = TextPrimary,
-                modifier = Modifier.weight(1f)
-            )
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    "TURN",
-                    fontSize = 10.sp,
-                    color = GreenAccent,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    "YOU (Player 1)",
-                    fontSize = 12.sp,
-                    color = GreenAccent,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = TextPrimary)
         }
     }
 }

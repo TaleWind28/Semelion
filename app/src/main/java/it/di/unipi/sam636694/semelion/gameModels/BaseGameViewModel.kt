@@ -1,7 +1,6 @@
 package it.di.unipi.sam636694.semelion.gameModels
 
 import android.util.Log
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import it.di.unipi.sam636694.semelion.AudioPlayer
@@ -31,16 +30,12 @@ import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
-import it.di.unipi.sam636694.semelion.utilities.LogScreen
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.security.SecureRandom
@@ -49,8 +44,6 @@ import kotlin.collections.chunked
 import kotlin.collections.find
 import kotlin.collections.plus
 import kotlin.math.max
-import kotlin.random.Random
-import kotlin.time.Duration.Companion.minutes
 
 abstract class BaseGameViewModel(
     val matchesDao: MatchesDao,
@@ -59,12 +52,15 @@ abstract class BaseGameViewModel(
     val playersStatisticsDao: PlayerStatisticsDao,
     val userDao: UserDao,
     val player: AudioPlayer,
-    val userID: String,
+    var userID: String,
     var secondPlayerId: String
 ) : ViewModel(){
 
     protected val _uiState = MutableStateFlow(GameUIState())
     val uiState = _uiState.asStateFlow()
+
+    var playerName = "Semelion User"
+    var opponentName = "Sora"
 
     val isDBOperationComplete = MutableStateFlow(true)
 
@@ -753,7 +749,7 @@ abstract class BaseGameViewModel(
             //fine turno p1
             p1Actions + isSecondPlayer(state.p1Turn,state.turnsPlayed) - state.p1ActionsUsed  <=0 ->
                 state.copy(
-                    p1Actions = p1Actions + isSecondPlayer(state.p1Turn,state.turnsPlayed+1),
+                    p1Actions = p1Actions,
                     p1ActionsUsed = 0,
                     p1Turn = false,
                     p2Actions = p2Actions + isSecondPlayer(state.p1Turn,state.turnsPlayed+1),
@@ -765,7 +761,7 @@ abstract class BaseGameViewModel(
                     p1Actions = p1Actions + isSecondPlayer(!state.p1Turn,state.turnsPlayed+1),
                     p2ActionsUsed = 0,
                     p1Turn = true,
-                    p2Actions = p2Actions + isSecondPlayer(!state.p1Turn,state.turnsPlayed+1),
+                    p2Actions = p2Actions,
                     turnsPlayed = state.turnsPlayed+1
                 )
 
@@ -967,6 +963,7 @@ abstract class BaseGameViewModel(
         Log.d("coinFlip","turno inizio ms:${_uiState.value.p1Turn}")
         //devo metterlo da un'altra parte
         updateUsers(nickname=nickname)
+        if (nickname!=null) this.opponentName = nickname
         val matchID = matchesDao.getNextMatchId()
         //inserisco il match nel db
         matchesDao.insert(Matches(gameMode = mode, gameState = _uiState.value, isCompleted = false))
@@ -991,6 +988,7 @@ abstract class BaseGameViewModel(
     suspend fun updateUsers(nickname:String?){
         //controllo se devo creare l'utente nel db
         if (userDao.getUserById(userID)== null) userDao.insert(User(userID, nickName = "Semelion_User: $userID"))
+        this.playerName = userDao.getUserById(userID)?.nickName ?: "Semelion User"
         //controllo se esiste l'avversario nel db
         val opponent = userDao.getUserById(secondPlayerId)
         //controllo se in caso l'avversario esista il nickname sia diverso da quello in memoria, solo se il nickname non è null

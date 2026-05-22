@@ -335,6 +335,7 @@ class NearbyGameViewModel(
 
     fun updateNickname(nickname: String?){
         this.nickname = nickname?:userID
+        super.userID = nickname?: userID
     }
 
     fun updateFirstPlayer(){
