@@ -286,7 +286,27 @@ fun Portrait(state: GameUIState, viewModel: BaseGameViewModel){
 }
 @Composable
 fun Landscape(state: GameUIState, viewModel: BaseGameViewModel,modifier: Modifier) {
-    Log.d("coinFlip","turno in Landscape${state.p1Turn}")
+    val conf =
+        when(viewModel){
+            is NearbyGameViewModel ->{
+                if (viewModel.connectionState.value.isHost) {
+                    Pair(Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn),
+                        Triple(state.p2ActionsUsed,state.p2Actions,!state.p1Turn))
+                }
+                else{
+                    Pair(
+                        Triple(state.p1ActionsUsed,state.p1Actions,!state.p1Turn),
+                        Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn)
+                    )
+                }
+            }
+            else ->{
+                Pair(Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn),
+                    Triple(state.p1ActionsUsed,state.p1Actions,!state.p1Turn))
+
+            }
+    }
+
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -294,21 +314,24 @@ fun Landscape(state: GameUIState, viewModel: BaseGameViewModel,modifier: Modifie
         ) {
             //avversario
             OpponentHeader(
-                actionsUsed=state.p2ActionsUsed,
-                actionsTotal =state.p2Actions,
-                isWaiting = state.p1Turn,
-                playerName = if (viewModel is NearbyGameViewModel) viewModel.nickname else viewModel.secondPlayerId
+                actionsUsed=conf.first.first ,
+                actionsTotal =conf.first.second,
+                isWaiting = conf.first.third,
+                playerName = viewModel.secondPlayerId
             )
+
             FinalGrid(state = state, model = viewModel,cardSize= CardSize.LARGE)
             //giocatore
             OpponentHeader(
-                actionsUsed = state.p1ActionsUsed,
-                actionsTotal = state.p1Actions,
-                isWaiting = !state.p1Turn,
-                playerName= viewModel.userID
+                actionsUsed = conf.second.first,
+                actionsTotal = conf.second.second,
+                isWaiting = conf.second.third,
+                playerName= if (viewModel is NearbyGameViewModel)viewModel.nickname else viewModel.userID
             )
         }
 }
+
+
 
 @Composable
 fun OpponentHeader(

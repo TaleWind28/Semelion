@@ -202,9 +202,9 @@ abstract class BaseGameViewModel(
             }
         //valido tutte le posizioni
         val validatedState = swaps.fold( swapped.second.copy(phase = GamePhase.Validation)){ state, position ->
-            val cardId = state.grid[position].name
-            Log.d("madness","validating:$cardId")
-            validateState(cardId=cardId, state = state)
+            val card = state.grid[position]
+
+            validateState( card.name , state)
         }
         _uiState.update { validatedState }
 
@@ -227,19 +227,12 @@ abstract class BaseGameViewModel(
             )
 
             (0 until 3 ).fold(modifiedState){ acc, i ->
-                validateState(acc.grid[direction(i,0)].name, acc)
+                val card = acc.grid[direction(i,0)]
 
+                validateState( card.name , acc)
             }
         }
 
-
-        viewModelScope.launch {
-            val needsDelay = _uiState.value.grid
-                .find { it.name == _uiState.value.lastReplacedCard }
-                ?.let { it.value >= 7 } ?: false
-            if (needsDelay) delay(DELAY_TIME)
-            _uiState.update { validateState(it.lastReplacedCard ?: "queen Landing", it) }
-        }
         return true
     }
 
@@ -267,21 +260,14 @@ abstract class BaseGameViewModel(
                     val id2 = findCard(acc.grid[direction(i, 1)].name, state)?.name ?: "none"
                     figureSwap(id1, id2, acc,"King's Rule")
                 }.grid,
-                phase = GamePhase.Validation          // transizione dentro lo stato
+                phase = GamePhase.Validation,
+                //figureWasRevealed = true// transizione dentro lo stato
             )
             modifiedState = (0 until 6 ).fold(modifiedState){ acc, i ->
-                validateState(acc.grid[(rowIndex * 7) + i].name, acc)
+                val card = acc.grid[(rowIndex * 7) + i]
+                validateState( card.name , acc)
             }
             modifiedState
-
-        }
-
-        viewModelScope.launch {
-            val needsDelay = _uiState.value.grid
-                .find { it.name == _uiState.value.lastReplacedCard }
-                ?.let { it.value >= 7 } ?: false
-            if (needsDelay) delay(DELAY_TIME)
-            _uiState.update { validateState(it.lastReplacedCard ?: "king's cross", it) }
         }
 
         return true
@@ -370,7 +356,7 @@ abstract class BaseGameViewModel(
 
     //FUNZIONE DI VALIDAZIONE
     open fun validateState(cardId: String, state: GameUIState): GameUIState {
-
+        Log.d("coinFlip", "validateState: cardId=$cardId, phase=${state.phase}, incorrectSeven=${state.incorrectSevenReveled}, p1Turn=${state.p1Turn}")
         val card = findCard(cardId, state) ?: return state
 
         var modifiedState = state
@@ -389,16 +375,17 @@ abstract class BaseGameViewModel(
 
         //controllo se la carta deve essere coperta
         modifiedState = coverCard(cardId,modifiedState)
+
         //se sono ancora in fase di validazione modifico il numero di azioni
-        if (modifiedState.phase is GamePhase.Validation || modifiedState.incorrectSevenReveled){
-            Log.d("actions", "calcolo azioni: $cardId, seven:${modifiedState.incorrectSevenReveled}")
-            //aggiorna azioni
-            val (p1Actions, p2Actions) = increaseUsedActions(modifiedState)
-            modifiedState = modifiedState.copy(
-                p1ActionsUsed = p1Actions,
-                p2ActionsUsed = p2Actions
-            )
-            modifiedState = actionCounter(modifiedState, modifiedState.grid.chunked(7))
+        if (modifiedState.phase is GamePhase.Validation){
+                //aggiorna azioni
+                val (p1Actions, p2Actions) = increaseUsedActions(modifiedState)
+                modifiedState = modifiedState.copy(
+                    p1ActionsUsed = p1Actions,
+                    p2ActionsUsed = p2Actions
+                )
+            Log.d("pippo","$cardId, phase:${modifiedState.phase}")
+            //update dei summary
             _matchSummary.update { summary ->
                 if(state.p1Turn)
                     listOf(summary.first().copy( totalActions = summary.first().totalActions +1),summary.last())
@@ -406,6 +393,9 @@ abstract class BaseGameViewModel(
                     listOf(summary.first(),summary.last().copy(totalActions = summary.last().totalActions + 1))
             }
         }
+
+        //controllo se devo passare il turno
+        modifiedState = actionCounter(modifiedState, modifiedState.grid.chunked(7))
 
         //controllo se un giocatore ha vinto
         modifiedState = findWinner(modifiedState)
@@ -741,9 +731,10 @@ abstract class BaseGameViewModel(
     fun actionCounter(state: GameUIState, rows: List<List<CardUIStates>>): GameUIState {
         val p1Actions = calcActions(listOf(rows[2], rows[3]))
         val p2Actions = calcActions(listOf(rows[0], rows[1]))
+
+        Log.d("coinFlip", "actionCounter: incorrectSeven=${state.incorrectSevenReveled}, p1Turn=${state.p1Turn}, phase=${state.phase}")
         //mi sembrava più elegante farlo così
         val isSecondPlayer = {player:Boolean, turn:Int-> (if((!player && turn == 0) || (player && turn == 1)) 1 else 0)}
-        Log.d("coinFlip","turno:${state.turnsPlayed}\np1:${isSecondPlayer(state.p1Turn,state.turnsPlayed)}\np2:${isSecondPlayer(!state.p1Turn,state.turnsPlayed)}")
 
         return when{
             //se un 7 è stato coperto il turno termina
@@ -756,7 +747,8 @@ abstract class BaseGameViewModel(
                     p1Turn = !state.p1Turn,
                     turnsPlayed = state.turnsPlayed+1,
                     incorrectSevenReveled = false,
-                    phase = GamePhase.Validation)
+                    phase = GamePhase.PlayerTurn
+                )
             //se il giocatore ha terminato le azioni il turno termina
             //fine turno p1
             p1Actions + isSecondPlayer(state.p1Turn,state.turnsPlayed) - state.p1ActionsUsed  <=0 ->
@@ -779,8 +771,8 @@ abstract class BaseGameViewModel(
 
             else ->
                 state.copy(
-                    p1Actions=p1Actions+ isSecondPlayer(state.p1Turn,state.turnsPlayed),
-                    p2Actions = p2Actions + isSecondPlayer(!state.p1Turn,state.turnsPlayed)
+                    p1Actions= p1Actions+ isSecondPlayer(state.p1Turn,state.turnsPlayed),
+                    p2Actions= p2Actions + isSecondPlayer(!state.p1Turn,state.turnsPlayed)
                 )
         }
     }

@@ -82,17 +82,19 @@ import kotlinx.coroutines.launch
 fun FinalGrid(state: GameUIState, model: BaseGameViewModel,cardSize: CardSize = CardSize.SMALL) {
     Log.d("coinFlip", "FinalGrid ricevuto p1Turn=${state.p1Turn}")
     Box(modifier= Modifier.wrapContentWidth()) {
-        val attentionModifier = Modifier.border(
-            color = Color(0xFF3BFF7C),
-            width = 6.dp,
-            shape = RoundedCornerShape(8.dp)
-        )
-
-        //utility per non duplicare codice
-        fun playerModifier(isActive: Boolean): Modifier =
-            if (isActive) attentionModifier else Modifier
 
         val playerConfigs = produceConfigs(state = state, viewModel = model)
+        val attentionModifier ={style:Color ->
+            Modifier.border(
+            color = style,
+            width = 6.dp,
+            shape = RoundedCornerShape(8.dp)
+            )
+        }
+
+        //utility per non duplicare codice
+        fun playerModifier(isActive: Boolean, style:Color): Modifier =
+            if (isActive) attentionModifier(style) else Modifier
 
         Column(
             modifier = Modifier.wrapContentWidth(),
@@ -102,7 +104,7 @@ fun FinalGrid(state: GameUIState, model: BaseGameViewModel,cardSize: CardSize = 
                 Log.d("SemelionScreen","$index")
                 if (index > 0) Spacer(modifier = Modifier.size(8.dp))
 
-                Box(modifier = playerModifier(isActive)) {
+                Box(modifier = playerModifier(isActive,style.first)) {
                     Column(verticalArrangement = Arrangement.SpaceEvenly) {
                         playerRows.forEachIndexed { rowIndex, rowItems ->
                             CardRow(
@@ -111,7 +113,7 @@ fun FinalGrid(state: GameUIState, model: BaseGameViewModel,cardSize: CardSize = 
                                 model = model,
                                 rowBackground = style.first.copy(alpha = if (index == 0) 0.15f else 0.08f),
                                 phase = state.phase,
-                                enabled= true,//if (model is NearbyGameViewModel) model.connectionState.value.isHost == state.p1Turn else true
+                                enabled= true,
                                 grid=state.grid,
                                 cardSize = cardSize.dp
                             )
@@ -130,25 +132,31 @@ fun produceConfigs(state: GameUIState,viewModel: BaseGameViewModel):List<Triple<
             Log.d("coinFlip","turno:${state.p1Turn}")
             listOf(
                 //g2
-                Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFF009688), 180f)),
+                //rosso 0xFFE53935
+                Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFFE53935), 180f)),
                 //g1
-                Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFF9C27B0), 0f))
+                //blu 0xFF2196F3
+                Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFF2196F3), 0f))
             )
         }
         is NearbyGameViewModel ->{
             if (viewModel.connectionState.value.isHost){
                 listOf(
                     //guest
-                    Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFF009688), 180f)),
+                    //arancione 0xFFFF9800
+                    Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFFFF9800), 180f)),
                     //host
-                    Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFF9C27B0), 0f))
+                    //verde 0xFF3BFF7C
+                    Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFF3BFF7C), 0f))
                     )
             }else{
                 listOf(
                     //host
-                    Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFF9C27B0), 0f)),
+                    //arancione 0xFFFF9800
+                    Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFFFF9800), 0f)),
                     //guest
-                    Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFF009688), 180f))
+                    //verde 0xFF3BFF7C
+                    Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFF3BFF7C), 180f))
                 )
             }
 
@@ -167,7 +175,6 @@ fun produceConfigs(state: GameUIState,viewModel: BaseGameViewModel):List<Triple<
 @Composable
 fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewModel, rowBackground: Color, phase: GamePhase, enabled:Boolean,grid: List<CardUIStates>, cardSize:Dp) {
     //preparazione misure
-//    var cardSize by remember{ mutableStateOf(48.dp)}
     val density = LocalDensity.current
 
     val draggableState = remember {
@@ -199,13 +206,7 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
     ) {
         Row(
             modifier = Modifier
-                //.fillMaxWidth()
                 .onSizeChanged { size ->
-//                    with(density) {
-//                        val totalSpacingPx = 0.50.dp.toPx() * 6  // 6 gap tra 7 carte
-//                        cardSize = ((size.width - totalSpacingPx) / 7).toDp()
-//                    }
-
                     draggableState.updateAnchors(
                     newAnchors = DraggableAnchors {
                         (-1) at -size.width.toFloat()
@@ -292,7 +293,6 @@ fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp,enabled:Boo
             .size(size)
             .pointerInput(card.name, card.isRevealed) {
                 detectTapGestures(
-
                     onTap = {
                         Log.d("grid","fase:${model.uiState.value.phase}")
                         if(model.uiState.value.phase is GamePhase.WaitingForOpponent){

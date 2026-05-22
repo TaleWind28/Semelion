@@ -257,7 +257,10 @@ class NearbyGameViewModel(
     }
 
     override fun setFirstPlayer() {
-        if (connectionState.value.isHost)super.setFirstPlayer()
+        if (!connectionState.value.isHost) return
+        super.setFirstPlayer()
+        if (uiState.value.firstPlayer == "Guest") _uiState.update { it.copy(phase = GamePhase.WaitingForOpponent) }
+
     }
 
     override fun processIntent(intent: GameIntent): Boolean {
@@ -281,7 +284,7 @@ class NearbyGameViewModel(
     override fun validateState(cardId: String, state: GameUIState): GameUIState {//cannolo
         val validatedState = super.validateState(cardId, state)
 
-        Log.d("validazionesotto", "${validatedState.p1Turn}")
+        Log.d("coinFlip", "${validatedState.p1Turn}")
 
         if (!(validatedState.phase is GamePhase.Validation || validatedState.phase is GamePhase.PlayerTurn)) return validatedState
 
@@ -335,7 +338,7 @@ class NearbyGameViewModel(
         _matchSummary.update {
             it.map { stat ->
                 if (stat.userId == userID){
-                    stat.copy(wasFirstPLayer = connectionState.value.isHost)
+                    stat.copy(wasFirstPLayer = (connectionState.value.isHost && _uiState.value.firstPlayer == "Host") || (!connectionState.value.isHost && _uiState.value.firstPlayer == "Guest") )
                 }
                 else stat
             }
@@ -363,8 +366,9 @@ class NearbyGameViewModel(
                 }
                 "starting player:" ->{
                     Log.d("player",message)
-                    if (message == "Guest") _uiState.update { it.copy(firstPlayer = message, p1Turn = false,p1Actions = it.p1Actions+1) }
+                    if (message == "Guest") _uiState.update { it.copy(firstPlayer = message, p1Turn = false,p1Actions = it.p1Actions+1, phase = GamePhase.PlayerTurn) }
                     if (message == "Host") _uiState.update { it.copy(firstPlayer = message,p2Actions = it.p2Actions+1) }
+                    updateFirstPlayer()
                     Log.d("coinFlip","fp:${_uiState.value.firstPlayer}")
                 }
                 "nickname:" ->{
@@ -380,7 +384,7 @@ class NearbyGameViewModel(
                 }
                 "uncover:" -> {
                     _uiState.update {
-                        it.copy(uncoverDeck = deserializeCardList(message), phase = GamePhase.WaitingForOpponent)
+                        it.copy(uncoverDeck = deserializeCardList(message))
                     }
                     _connectionState.update { it.copy(received = true, gameStarted = true) }
                 }

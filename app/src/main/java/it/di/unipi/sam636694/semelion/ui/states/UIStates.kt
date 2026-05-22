@@ -21,6 +21,7 @@ data class GameUIState (
     val revealedCards: List<String> = emptyList(),
     val phase: GamePhase = GamePhase.PlayerTurn,
     val lastReplacedCard : String? = null,
+    val figureWasRevealed:Boolean = false,
     val winner : String? = null,
     val p2FirstTurn: Boolean = true,
     val jackSwaps: List<Int> = emptyList()
@@ -30,6 +31,8 @@ sealed class GamePhase {
     object PlayerTurn   : GamePhase()
     object QueenPending : GamePhase()
     object KingPending  : GamePhase()
+
+    object SevenControlPending : GamePhase()
 
     object JackMadness : GamePhase()
 
