@@ -88,6 +88,10 @@ class NearbyGameViewModel(
 
     fun onDisconnected() {
         if (_uiState.value.phase is GamePhase.GameOver) return
+        if (_uiState.value.phase !is GamePhase.Disconnected){
+            _uiState.update { it.copy(phase = GamePhase.Disconnected) }
+            return
+        }
         disconnect()
         _connectionState.update {
             it.copy(connectedEndpointId = null, status = "Disconnesso")
@@ -160,7 +164,6 @@ class NearbyGameViewModel(
 
     //disconnetti l'utente
     fun disconnect() {
-        Log.d("disc","porco")
         connectionsClient.stopAllEndpoints()
         connectionsClient.stopAdvertising()
         connectionsClient.stopDiscovery()
@@ -367,7 +370,7 @@ class NearbyGameViewModel(
                 "starting player:" ->{
                     Log.d("player",message)
                     if (message == "Guest") _uiState.update { it.copy(firstPlayer = message, p1Turn = false,p1Actions = it.p1Actions+1, phase = GamePhase.PlayerTurn) }
-                    if (message == "Host") _uiState.update { it.copy(firstPlayer = message,p2Actions = it.p2Actions+1) }
+                    if (message == "Host") _uiState.update { it.copy(firstPlayer = message,p2Actions = it.p2Actions+1, phase = GamePhase.WaitingForOpponent) }
                     updateFirstPlayer()
                     Log.d("coinFlip","fp:${_uiState.value.firstPlayer}")
                 }

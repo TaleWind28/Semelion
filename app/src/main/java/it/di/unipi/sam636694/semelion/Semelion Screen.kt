@@ -197,6 +197,23 @@ fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGam
                 }
             }
         }
+        is GamePhase.Disconnected ->{
+            BasicAlertDialog(onDismissRequest = {}) {
+                Surface(shape = RoundedCornerShape(16.dp)) {
+                    Column {
+                        Text(
+                            text = "La connessione è stata persa, la partità verrà registrata come un pareggio",
+                            modifier = Modifier.padding(24.dp),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+
+                        if (viewModel is NearbyGameViewModel) viewModel.disconnect()
+                        onBack()
+
+                        }
+                    }
+                }
+            }
         is GamePhase.JackMadness -> {
 
             BasicAlertDialog(onDismissRequest = {viewModel.processIntent(GameIntent.JackMadness(state.jackSwaps))}) {

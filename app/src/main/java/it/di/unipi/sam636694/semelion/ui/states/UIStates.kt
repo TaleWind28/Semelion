@@ -32,8 +32,6 @@ sealed class GamePhase {
     object QueenPending : GamePhase()
     object KingPending  : GamePhase()
 
-    object SevenControlPending : GamePhase()
-
     object JackMadness : GamePhase()
 
     object Validation : GamePhase()
@@ -42,6 +40,7 @@ sealed class GamePhase {
 
     object Loading : GamePhase()
 
+    object Disconnected : GamePhase()
     object WaitingForOpponent : GamePhase()
 }
 
