@@ -972,6 +972,7 @@ abstract class BaseGameViewModel(
     }
 
     suspend fun matchStart(mode: GameModes, nickname:String? = null){
+        Log.d("coinFlip","turno inizio ms:${_uiState.value.p1Turn}")
         //devo metterlo da un'altra parte
         updateUsers(nickname=nickname)
         val matchID = matchesDao.getNextMatchId()
@@ -982,10 +983,12 @@ abstract class BaseGameViewModel(
         participationsDao.insert(Participations(matchId= matchID,userId = userID, role = "Host"))
         //flag per consentire modifiche in sicurezza nella UI
         isDBOperationComplete.value = true
+        Log.d("coinFlip","turno fine ms:${_uiState.value.p1Turn}")
     }
 
     open fun setFirstPlayer() {
         val coinFlip = SecureRandom().nextBoolean()
+
         if(coinFlip)
             this._uiState.update { it.copy(firstPlayer = "Host", p2Actions = it.p2Actions+1)}
         else

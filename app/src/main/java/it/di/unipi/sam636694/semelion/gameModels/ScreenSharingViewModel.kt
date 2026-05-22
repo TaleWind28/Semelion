@@ -43,16 +43,18 @@ class SemelionGameViewModel(
     private var resumedMatchId:Long = -5
 
     override fun setup(){
-        //imposto il primo giocatore
-        setFirstPlayer()
         val decks = createDecks()
         _uiState.value = GameUIState(
             grid = decks.first,
             uncoverDeck = decks.second,
             phase = GamePhase.Loading
         )
+        //imposto il primo giocatore
+        setFirstPlayer()
+        Log.d("coinFlip","turno dopo coinflip:${_uiState.value.p1Turn}")
+
         Log.d("decks","sevenPosition: ${_uiState.value.uncoverDeck.indexOfFirst { it.value == 7 }}\n")
-        _uiState.value.uncoverDeck.forEach { Log.d("decks", it.name) }
+
         viewModelScope.launch {
             if (_uiState.value.phase is GamePhase.Loading){
                 val suspendedMatch = matchesDao.getSuspendedMatch()
@@ -61,6 +63,7 @@ class SemelionGameViewModel(
                 else{
                     resumeMatch(suspendedMatch)
                 }
+                Log.d("coinFlip","turno dopo coinflip:${_uiState.value.p1Turn}")
                 _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }
             }
         }

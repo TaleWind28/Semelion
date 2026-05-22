@@ -80,7 +80,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun FinalGrid(state: GameUIState, model: BaseGameViewModel,cardSize: CardSize = CardSize.SMALL) {
-    //width(cardSize*7 + 0.5.dp*6)
+    Log.d("coinFlip", "FinalGrid ricevuto p1Turn=${state.p1Turn}")
     Box(modifier= Modifier.wrapContentWidth()) {
         val attentionModifier = Modifier.border(
             color = Color(0xFF3BFF7C),
@@ -127,6 +127,7 @@ fun produceConfigs(state: GameUIState,viewModel: BaseGameViewModel):List<Triple<
     val rows = state.grid.chunked(7)
     return when(viewModel){
         is SemelionGameViewModel -> {
+            Log.d("coinFlip","turno:${state.p1Turn}")
             listOf(
                 //g2
                 Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFF009688), 180f)),

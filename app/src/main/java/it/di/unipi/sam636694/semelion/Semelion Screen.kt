@@ -286,6 +286,7 @@ fun Portrait(state: GameUIState, viewModel: BaseGameViewModel){
 }
 @Composable
 fun Landscape(state: GameUIState, viewModel: BaseGameViewModel,modifier: Modifier) {
+    Log.d("coinFlip","turno in Landscape${state.p1Turn}")
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
