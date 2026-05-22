@@ -1,9 +1,10 @@
-package it.di.unipi.sam636694.semelion
+package it.di.unipi.sam636694.semelion.utilities
 
 import android.util.Log
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 

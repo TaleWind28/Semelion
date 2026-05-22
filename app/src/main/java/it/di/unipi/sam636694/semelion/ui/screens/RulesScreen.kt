@@ -1,4 +1,4 @@
-package it.di.unipi.sam636694.semelion
+package it.di.unipi.sam636694.semelion.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,12 +16,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import it.di.unipi.sam636694.semelion.utilities.GreenAccent
+import it.di.unipi.sam636694.semelion.R
+import it.di.unipi.sam636694.semelion.utilities.TextPrimary
+import it.di.unipi.sam636694.semelion.utilities.TextSecondary
 
 // ── Colori tema ──────────────────────────────────────────────
 private val GreenLight   = Color(0xFFE8F5E9)
@@ -459,8 +465,8 @@ fun RoundedCard(content: @Composable ColumnScope.() -> Unit) {
 }
 
 // Estensione per testo misto bold/normal (usata in ActionItem)
-private fun buildAnnotatedString(builder: androidx.compose.ui.text.AnnotatedString.Builder.() -> Unit) =
-    androidx.compose.ui.text.buildAnnotatedString(builder)
+private fun buildAnnotatedString(builder: AnnotatedString.Builder.() -> Unit) =
+    buildAnnotatedString(builder)
 
 @Preview
 @Composable

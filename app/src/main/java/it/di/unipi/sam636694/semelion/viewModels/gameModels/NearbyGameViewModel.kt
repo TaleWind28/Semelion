@@ -1,4 +1,4 @@
-package it.di.unipi.sam636694.semelion.gameModels
+package it.di.unipi.sam636694.semelion.viewModels.gameModels
 
 import android.util.Log
 import androidx.lifecycle.ViewModelProvider
@@ -20,9 +20,9 @@ import it.di.unipi.sam636694.semelion.database.MatchesDao
 import it.di.unipi.sam636694.semelion.database.ParticipationsDao
 import it.di.unipi.sam636694.semelion.database.PlayerStatisticsDao
 import it.di.unipi.sam636694.semelion.database.UserDao
-import it.di.unipi.sam636694.semelion.deserializeCardList
-import it.di.unipi.sam636694.semelion.serialize
-import it.di.unipi.sam636694.semelion.toGameIntent
+import it.di.unipi.sam636694.semelion.utilities.deserializeCardList
+import it.di.unipi.sam636694.semelion.utilities.serialize
+import it.di.unipi.sam636694.semelion.utilities.toGameIntent
 import it.di.unipi.sam636694.semelion.ui.states.ConnectionUiState
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
@@ -32,8 +32,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import sendMessage
 import com.google.android.gms.nearby.connection.*
-import it.di.unipi.sam636694.semelion.AudioPlayer
-import it.di.unipi.sam636694.semelion.serializeList
+import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
+import it.di.unipi.sam636694.semelion.utilities.serializeList
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

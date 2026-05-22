@@ -4,40 +4,27 @@ import SemelionConnectionsScreen
 import android.icu.text.SimpleDateFormat
 import android.util.Log
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
-import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import androidx.room.PrimaryKey
-import it.di.unipi.sam636694.semelion.database.MatchStatistics
 import it.di.unipi.sam636694.semelion.database.Matches
 import it.di.unipi.sam636694.semelion.database.PlayerStatistics
 import it.di.unipi.sam636694.semelion.database.SemelionDB
@@ -46,19 +33,21 @@ import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 import kotlin.collections.listOf
 import kotlin.collections.mapOf
-import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
+import it.di.unipi.sam636694.semelion.viewModels.gameModels.SemelionGameViewModel
 import it.di.unipi.sam636694.semelion.ui.screens.ProfilePage
 import it.di.unipi.sam636694.semelion.ui.screens.RecentMatch
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionHome
+import it.di.unipi.sam636694.semelion.ui.screens.SemelionRules
 import it.di.unipi.sam636694.semelion.ui.screens.UserData
-import it.di.unipi.sam636694.semelion.ui.screens.mockMatches
+import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
 import kotlin.String
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, player: AudioPlayer,userID:String){
+fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, player: AudioPlayer, userID:String){
 
     val backStack = rememberNavBackStack(Route.Home)
     var user by remember {  mutableStateOf<PlayerStatistics?>(null)  }
@@ -164,7 +153,23 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
 
                     if (uiState.phase is GamePhase.Loading) {
                         Text(text = "Loading..")
+                        if (viewModel.suspendedFound){
+                            BasicAlertDialog(onDismissRequest = {}) {
+                                Column() {
+                                    Text(text = "È stata trovata una partita sospesa, vui riprenderla")
+                                    Row() {
+                                        Button(onClick = {viewModel.resumeMatch()}) {
+                                            Text(text = "Riprendi partita")
+                                        }
+                                        Button(onClick = {viewModel.newMatch()}) {
+                                            Text(text = "No, iniziane una nuova")
+                                        }
+                                    }
 
+                                }
+
+                            }
+                        }
                     } else {
                         NavigationUIApp(
                             snackBarHostState = snackBarHostState,

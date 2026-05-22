@@ -55,15 +55,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.scale
-import it.di.unipi.sam636694.semelion.CardSize
-import it.di.unipi.sam636694.semelion.Direction
+import it.di.unipi.sam636694.semelion.utilities.CardSize
+import it.di.unipi.sam636694.semelion.utilities.Direction
 import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
-import it.di.unipi.sam636694.semelion.cardImageMap
-import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
-import it.di.unipi.sam636694.semelion.gameModels.NearbyGameViewModel
-import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
+import it.di.unipi.sam636694.semelion.utilities.cardImageMap
+import it.di.unipi.sam636694.semelion.viewModels.gameModels.BaseGameViewModel
+import it.di.unipi.sam636694.semelion.viewModels.gameModels.NearbyGameViewModel
+import it.di.unipi.sam636694.semelion.viewModels.gameModels.SemelionGameViewModel
 import kotlinx.coroutines.launch
 
 @Composable

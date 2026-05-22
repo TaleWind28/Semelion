@@ -1,29 +1,26 @@
-package it.di.unipi.sam636694.semelion.gameModels
+package it.di.unipi.sam636694.semelion.viewModels.gameModels
 
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import it.di.unipi.sam636694.semelion.AudioPlayer
-import it.di.unipi.sam636694.semelion.RowOrder
+import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
+import it.di.unipi.sam636694.semelion.utilities.RowOrder
 import it.di.unipi.sam636694.semelion.database.GameModes
 import it.di.unipi.sam636694.semelion.database.MatchStatisticsDao
-import it.di.unipi.sam636694.semelion.database.Matches
 import it.di.unipi.sam636694.semelion.database.MatchesDao
-import it.di.unipi.sam636694.semelion.database.Participations
 import it.di.unipi.sam636694.semelion.database.ParticipationsDao
-import it.di.unipi.sam636694.semelion.database.PlayerStatistics
 import it.di.unipi.sam636694.semelion.database.PlayerStatisticsDao
-import it.di.unipi.sam636694.semelion.database.User
 import it.di.unipi.sam636694.semelion.database.UserDao
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.Locale.getDefault
-import kotlin.random.Random
 
 class SemelionGameViewModel(
     matchesDao: MatchesDao,
@@ -40,7 +37,12 @@ class SemelionGameViewModel(
         setup()
     }
     private var wasResumed = false
+
+    var suspendedFound by mutableStateOf(false)
+
     private var resumedMatchId:Long = -5
+
+    private var resumedMatchState: GameUIState = GameUIState()
 
     override fun setup(){
         val decks = createDecks()
@@ -60,22 +62,31 @@ class SemelionGameViewModel(
                 super.playerName = userDao.getUserById(userID)?.nickName ?: "Player 1"
                 val suspendedMatch = matchesDao.getSuspendedMatch()
                 Log.d("Suspended","$suspendedMatch")
-                if ( suspendedMatch == null) matchStart(GameModes.ScreenSharing)
-                else{
-                    resumeMatch(suspendedMatch)
+                if ( suspendedMatch == null) {
+                    matchStart(GameModes.ScreenSharing)
+                    Log.d("coinFlip","turno dopo coinflip:${_uiState.value.p1Turn}")
+                    _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }
                 }
-                Log.d("coinFlip","turno dopo coinflip:${_uiState.value.p1Turn}")
-                _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }
+                else{
+                    resumedMatchId = suspendedMatch.matchId
+                    resumedMatchState = suspendedMatch.gameState
+                    suspendedFound = true
+                }
             }
         }
     }
 
-    fun resumeMatch(matches: Matches){
-        val state = matches.gameState
+    fun resumeMatch(){
         wasResumed = true
-        resumedMatchId = matches.matchId
-        Log.d("pino","sospesa")
-        _uiState.update { state }
+        _uiState.update { resumedMatchState }
+    }
+
+    fun newMatch(){
+        viewModelScope.launch {
+            matchStart(GameModes.ScreenSharing)
+            Log.d("coinFlip","turno dopo coinflip:${_uiState.value.p1Turn}")
+            _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }
+        }
     }
 
     override fun matchEnd(mode: GameModes,loser:String?,resumedMatchId:Long?) {

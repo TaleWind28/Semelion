@@ -7,13 +7,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 sealed interface Route: NavKey {
-
-    @Serializable
-    data class NearbyGame(val hostId:Long, val guestId:Long, val connectionsClient: ConnectionsClient) : Route
-
-    @Serializable
-    data object NearbyLobby : Route
-
     @Serializable
     data object ScreenSharingGame: Route
 

@@ -1,6 +1,6 @@
 package it.di.unipi.sam636694.semelion.ui.states
 
-import it.di.unipi.sam636694.semelion.Direction
+import it.di.unipi.sam636694.semelion.utilities.Direction
 
 sealed class GameIntent {
     data class CardClicked(val cardId: String) : GameIntent()

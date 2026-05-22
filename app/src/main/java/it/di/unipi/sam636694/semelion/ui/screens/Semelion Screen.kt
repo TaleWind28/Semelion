@@ -1,4 +1,4 @@
-package it.di.unipi.sam636694.semelion
+package it.di.unipi.sam636694.semelion.ui.screens
 import android.content.res.Configuration
 import android.util.Log
 import androidx.activity.compose.BackHandler
@@ -46,10 +46,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import it.di.unipi.sam636694.semelion.utilities.CardSize
+import it.di.unipi.sam636694.semelion.utilities.GreenAccent
+import it.di.unipi.sam636694.semelion.R
+import it.di.unipi.sam636694.semelion.utilities.TextSecondary
+import it.di.unipi.sam636694.semelion.utilities.cardImageMap
 import it.di.unipi.sam636694.semelion.database.GameModes
-import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
-import it.di.unipi.sam636694.semelion.gameModels.NearbyGameViewModel
-import it.di.unipi.sam636694.semelion.gameModels.SemelionGameViewModel
+import it.di.unipi.sam636694.semelion.viewModels.gameModels.BaseGameViewModel
+import it.di.unipi.sam636694.semelion.viewModels.gameModels.NearbyGameViewModel
+import it.di.unipi.sam636694.semelion.viewModels.gameModels.SemelionGameViewModel
 import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase

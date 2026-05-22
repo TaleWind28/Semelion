@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.foundation)
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.ui.unit)
+    implementation(libs.androidx.compose.animation.core)
     val composeBom = platform("androidx.compose:compose-bom:2026.01.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)

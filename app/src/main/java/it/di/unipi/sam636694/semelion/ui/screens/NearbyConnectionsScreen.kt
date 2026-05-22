@@ -50,14 +50,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.gms.nearby.connection.Payload
 import com.google.android.gms.nearby.connection.*
 import it.di.unipi.sam636694.semelion.database.SemelionDB
-import it.di.unipi.sam636694.semelion.gameModels.NearbyGameViewModel
+import it.di.unipi.sam636694.semelion.viewModels.gameModels.NearbyGameViewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import it.di.unipi.sam636694.semelion.AudioPlayer
+import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.ui.states.ConnectionUiState
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 

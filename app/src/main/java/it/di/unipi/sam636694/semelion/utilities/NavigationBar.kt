@@ -29,13 +29,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import it.di.unipi.sam636694.semelion.LogViewModel
-import it.di.unipi.sam636694.semelion.PdfViewerScreen
-import it.di.unipi.sam636694.semelion.Route
-import it.di.unipi.sam636694.semelion.SemelionRules
-import it.di.unipi.sam636694.semelion.SemelionScreen
+import it.di.unipi.sam636694.semelion.viewModels.LogViewModel
+import it.di.unipi.sam636694.semelion.ui.screens.SemelionRules
+import it.di.unipi.sam636694.semelion.ui.screens.SemelionScreen
 import it.di.unipi.sam636694.semelion.database.SemelionDB
-import it.di.unipi.sam636694.semelion.gameModels.BaseGameViewModel
+import it.di.unipi.sam636694.semelion.viewModels.gameModels.BaseGameViewModel
 
 
 enum class AppDestinations(
