@@ -23,21 +23,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,21 +51,14 @@ import com.google.android.gms.nearby.connection.Payload
 import com.google.android.gms.nearby.connection.*
 import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.gameModels.NearbyGameViewModel
-import it.di.unipi.sam636694.semelion.serializeList
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import androidx.navigation3.runtime.NavKey
 import it.di.unipi.sam636694.semelion.AudioPlayer
-import it.di.unipi.sam636694.semelion.Route
 import it.di.unipi.sam636694.semelion.ui.states.ConnectionUiState
-import it.di.unipi.sam636694.semelion.ui.states.GamePhase
-import it.di.unipi.sam636694.semelion.ui.states.GameUIState
-import it.di.unipi.sam636694.semelion.utilities.AppDestinations
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 
 @Composable
@@ -79,7 +69,7 @@ fun SemelionConnectionsScreen(
     userId: String,
     onBack: () -> Unit,
 ) {
-    var nickname: String = "pino"
+    var nickname = "pino"
 
     val requiredPermissions = remember {
         buildList {
@@ -128,9 +118,6 @@ fun SemelionConnectionsScreen(
     val connectionState by nvm.connectionState.collectAsState()
     val gameState by nvm.uiState.collectAsState()
 
-
-    Log.d("conn","gameStarted:${connectionState.gameStarted}")
-
     if ((!connectionState.gameStarted) &&
         (
             gameState.grid.isEmpty() ||
@@ -138,7 +125,7 @@ fun SemelionConnectionsScreen(
             (!connectionState.received && !connectionState.isHost)
         )
     ) {
-        DiscoveryScreen(nvm, onBack = onBack)
+        DiscoveryScreen(nvm)
     } else {
         NavigationUIApp(snackBarHostState = snackbarHostState, db = db, viewModel=nvm, onNavigateBack = onBack)
     }
@@ -154,7 +141,6 @@ fun sendMessage(messageType:String,message:String, clientConnectionsClient: Conn
 @Composable
 fun DiscoveryScreen(
     viewModel: NearbyGameViewModel,
-    onBack: () -> Unit
 ) {
     val serviceId = "semelion_nearbyConnections"
     val state by viewModel.connectionState.collectAsState()
@@ -202,15 +188,17 @@ fun DiscoveryScreen(
         }
 
         if (isHosting) {
-            HostScreen(viewModel = viewModel, serviceId = serviceId, onBack = onBack  )
+            HostScreen(viewModel = viewModel, serviceId = serviceId )
         } else {
             GuestScreen(viewModel = viewModel,state=state)
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GuestScreen(state: ConnectionUiState,viewModel: NearbyGameViewModel){
+    var joiningDialog by remember { mutableStateOf(false) }
     // Radar
     Box(modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp), contentAlignment = Alignment.Center) {
         Box(
@@ -253,7 +241,10 @@ fun GuestScreen(state: ConnectionUiState,viewModel: NearbyGameViewModel){
         items(state.discoveredEndpoints) { endpoint ->
             PlayerCard(
                 name = endpoint.endpointName,
-                onJoin = { viewModel.connectToEndpoint(endpoint.endpointId) }
+                onJoin = {
+                    joiningDialog = true
+                    viewModel.connectToEndpoint(endpoint.endpointId)
+                }
             )
         }
 
@@ -275,7 +266,21 @@ fun GuestScreen(state: ConnectionUiState,viewModel: NearbyGameViewModel){
             }
         }
     }
+
+    if (joiningDialog)
+        BasicAlertDialog(onDismissRequest = {}) {
+            Surface(shape = RoundedCornerShape(16.dp)) {
+                Column {
+                    Text(
+                        text = "Creazione della partita in corso...",
+                        modifier = Modifier.padding(24.dp),
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
+            }
+        }
 }
+
 
 @Composable
 fun PlayerCard(name: String, onJoin: () -> Unit) {
@@ -316,7 +321,6 @@ fun PlayerCard(name: String, onJoin: () -> Unit) {
 fun HostScreen(
     viewModel: NearbyGameViewModel,
     serviceId: String,
-    onBack: () -> Unit
 ) {
     val state by viewModel.connectionState.collectAsState()
 
