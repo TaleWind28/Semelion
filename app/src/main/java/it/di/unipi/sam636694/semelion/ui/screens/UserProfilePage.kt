@@ -210,7 +210,12 @@ fun ProfileCard(profile: UserData, onEdit: (String) -> Unit,onAvatarChosen: (Int
                                     Image(
                                         painter = painterResource(res),
                                         contentDescription = "Semelion_Avatar",
-                                        modifier = Modifier.clickable(onClick = {onAvatarChosen(res)})
+                                        modifier = Modifier.clickable(
+                                            onClick = {
+                                                onAvatarChosen(res)
+                                                editAvatar = false
+                                            }
+                                        )
                                     )
                                 }
                             }
