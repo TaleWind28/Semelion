@@ -52,14 +52,17 @@ import com.google.android.gms.nearby.connection.*
 import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.NearbyGameViewModel
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.ui.states.ConnectionUiState
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
+
 
 @Composable
 fun SemelionConnectionsScreen(
@@ -70,6 +73,7 @@ fun SemelionConnectionsScreen(
     onBack: () -> Unit,
 ) {
     var nickname = "pino"
+    var avatar by remember { mutableIntStateOf(R.drawable.avatar_1) }
 
     val requiredPermissions = remember {
         buildList {
@@ -111,8 +115,14 @@ fun SemelionConnectionsScreen(
     //richiesta permessi
     LaunchedEffect(nvm) {
         permissionsLauncher.launch(requiredPermissions)
-        nickname = db.userDao().getUserById(userId)?.nickName ?: userId
-        nvm.updateNickname(nickname)
+        val user = db.userDao().getUserById(userId)
+        if (user!=null){
+            nickname = user.nickName
+            avatar = user.avatar
+            nvm.updateNickname(nickname)
+            nvm.updateFirstPlayerAvatar(avatar)
+        }
+
     }
 
     val connectionState by nvm.connectionState.collectAsState()

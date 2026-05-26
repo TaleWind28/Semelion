@@ -53,8 +53,12 @@ abstract class BaseGameViewModel(
     val userDao: UserDao,
     val player: AudioPlayer,
     var userID: String,
-    var secondPlayerId: String
+    var secondPlayerId: String,
 ) : ViewModel(){
+
+    public var firstPlayerAvatar = R.drawable.avatar_1
+
+    public var secondPlayerAvatar= R.drawable.avatar_1
 
     protected val _uiState = MutableStateFlow(GameUIState())
     val uiState = _uiState.asStateFlow()
@@ -987,13 +991,20 @@ abstract class BaseGameViewModel(
 
     suspend fun updateUsers(nickname:String?){
         //controllo se devo creare l'utente nel db
-        if (userDao.getUserById(userID)== null) userDao.insert(User(userID, nickName = "Semelion_User: $userID"))
+        if (userDao.getUserById(userID)== null) userDao.insert(User(userID, nickName = "Semelion_User: $userID", avatar = R.drawable.avatar_1))
         this.playerName = userDao.getUserById(userID)?.nickName ?: "Semelion User"
+        //imposto l'avatar del primo player
+        firstPlayerAvatar =  userDao.getUserById(userID)?.avatar ?: R.drawable.avatar_1
+
         //controllo se esiste l'avversario nel db
         val opponent = userDao.getUserById(secondPlayerId)
+
+
         //controllo se in caso l'avversario esista il nickname sia diverso da quello in memoria, solo se il nickname non è null
-        if (opponent == null) userDao.insert(User(secondPlayerId, nickName = nickname ?: "Sora"))
-        else if (opponent.nickName != nickname && nickname!= null) userDao.update(User(secondPlayerId,nickname))
+        if (opponent == null) userDao.insert(User(secondPlayerId, nickName = nickname ?: "Sora", avatar = R.drawable.avatar_1))
+        else if (opponent.nickName != nickname && nickname!= null) userDao.update(User(userId=secondPlayerId,nickName=nickname,avatar=opponent.avatar))
+        if (opponent != null) secondPlayerAvatar = opponent.avatar
+
         Log.d("DB","secondPlayerID:$secondPlayerId")
     }
 

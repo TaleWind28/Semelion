@@ -1,10 +1,16 @@
 package it.di.unipi.sam636694.semelion.ui.screens
 
 import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -21,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -62,7 +69,8 @@ data class UserData(
     val bestWinStreak:Int,
     val losses: Int,
     val wins: Int,
-    val draws: Int
+    val draws: Int,
+    val selectedAvatar: Int = R.drawable.avatar_1,
 )
 
 val mockProfile = UserData(
@@ -98,6 +106,7 @@ fun ProfilePage(
     profile: UserData = mockProfile,
     matches: List<RecentMatch> = mockMatches,
     onEditProfile: (String) -> Unit = {},
+    onAvatarChosen: (Int) -> Unit = {},
     onViewAllMatches: () -> Unit = {}
 ) {
     LazyColumn(
@@ -107,7 +116,7 @@ fun ProfilePage(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        item { ProfileCard(profile = profile, onEdit = onEditProfile) }
+        item { ProfileCard(profile = profile, onEdit = onEditProfile, onAvatarChosen = onAvatarChosen) }
         item { StatisticsSection(profile = profile) }
         item { RecentMatchesSection(matches = matches, onViewAll = onViewAllMatches) }
         item { Spacer(Modifier.height(8.dp)) }
@@ -117,10 +126,31 @@ fun ProfilePage(
 // ════════════════════════════════════════════════════════════
 //  CARD PROFILO
 // ════════════════════════════════════════════════════════════
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileCard(profile: UserData, onEdit: (String) -> Unit) {
+fun ProfileCard(profile: UserData, onEdit: (String) -> Unit,onAvatarChosen: (Int) -> Unit) {
     var isEditing by remember { mutableStateOf(false) }
     var nicknameInput by remember { mutableStateOf(profile.username) }
+    var editAvatar by remember { mutableStateOf(false) }
+
+    val avatars = listOf(
+        R.drawable.avatar_1,
+        R.drawable.avatar_2,
+        R.drawable.avatar_3,
+        R.drawable.avatar_4,
+        R.drawable.avatar_5,
+        R.drawable.avatar_6,
+        R.drawable.avatar_7,
+        R.drawable.avatar_8,
+        R.drawable.avatar_9,
+        R.drawable.avatar_10,
+        R.drawable.avatar_11,
+        R.drawable.avatar_12,
+    )
+
+//    avatars.forEachIndexed { i, res ->
+//        Image(painter = painterResource(res), contentDescription = "Avatar $i")
+//    }
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = GreenLight,
@@ -143,12 +173,7 @@ fun ProfileCard(profile: UserData, onEdit: (String) -> Unit) {
                     contentAlignment = Alignment.Center
                 ) {
                     // Sostituisci con AsyncImage o Image se hai una foto profilo
-                    Icon(
-                        imageVector = Icons.Filled.Person,
-                        contentDescription = "Avatar",
-                        tint = GreenPrimary,
-                        modifier = Modifier.size(60.dp)
-                    )
+                    Image(painter = painterResource(profile.selectedAvatar), contentDescription = "Semelion Avatar")
                 }
  
                 // Pulsante edit avatar
@@ -156,15 +181,43 @@ fun ProfileCard(profile: UserData, onEdit: (String) -> Unit) {
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
-                        .background(GreenPrimary),
+                        .background(GreenPrimary)
+                        .clickable(onClick={ editAvatar = true})
+                    ,
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Edit,
-                        contentDescription = "Modifica avatar",
+                        contentDescription = "Cambia Avatar",
                         tint = Color.White,
                         modifier = Modifier.size(16.dp)
                     )
+                }
+            }
+            if (editAvatar) {
+                BasicAlertDialog(onDismissRequest = { editAvatar = false }) {
+
+                    Surface(color = Color.White) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            Text(text = "Scegli il tuo Avatar", modifier = Modifier.size(60.dp), color = Color.Black)
+
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(4),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                items(avatars) { res ->
+                                    Image(
+                                        painter = painterResource(res),
+                                        contentDescription = "Semelion_Avatar",
+                                        modifier = Modifier.clickable(onClick = {onAvatarChosen(res)})
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
  

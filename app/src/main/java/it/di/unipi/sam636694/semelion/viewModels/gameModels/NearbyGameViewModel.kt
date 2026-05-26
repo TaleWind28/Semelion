@@ -38,6 +38,8 @@ import it.di.unipi.sam636694.semelion.ui.states.GameUIState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import android.content.Context
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.R
 import com.google.android.gms.nearby.Nearby
 import it.di.unipi.sam636694.semelion.database.GameModes
 import it.di.unipi.sam636694.semelion.ui.states.DiscoveredEndpoint
@@ -338,6 +340,10 @@ class NearbyGameViewModel(
         super.userID = nickname?: userID
     }
 
+    fun updateFirstPlayerAvatar(avatar:Int){
+        this.firstPlayerAvatar = avatar
+    }
+
     fun updateFirstPlayer(){
         _matchSummary.update {
             it.map { stat ->
@@ -362,11 +368,28 @@ class NearbyGameViewModel(
                     updateRemoteId(message)
                     sendMessage("nickname",nickname,connectionsClient, endpointId)
                     Log.d("endpoint","endpoint Ottenuto")
+                    //mando avatar
+                    val avatarResName = appContext.resources.getResourceEntryName(firstPlayerAvatar)
+                    sendMessage(avatarResName,"avatar",connectionsClient,endpointId)
+
                     if(_connectionState.value.isHost){
                         setFirstPlayer()
                         updateFirstPlayer()
                         sendMessage("starting player",_uiState.value.firstPlayer,connectionsClient,endpointId)
                     }
+                }
+
+                "avatar:" -> {
+                    val resId = appContext.resources.getIdentifier(
+                        message,
+                        "drawable",
+                        appContext.packageName
+                    )
+
+                    if (resId != 0) {
+                        secondPlayerAvatar = resId
+                    }
+
                 }
                 "starting player:" ->{
                     Log.d("player",message)
@@ -393,6 +416,7 @@ class NearbyGameViewModel(
                     _connectionState.update { it.copy(received = true, gameStarted = true) }
                 }
                 "gameaction:" -> produceAction(message)
+
                 "destruction:" -> {
                     stopHeartbeat()
                     Log.d("disc","hb fermato")

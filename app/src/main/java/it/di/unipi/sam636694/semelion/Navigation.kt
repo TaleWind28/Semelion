@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -52,6 +53,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
     val backStack = rememberNavBackStack(Route.Home)
     var user by remember {  mutableStateOf<PlayerStatistics?>(null)  }
     var username by remember { mutableStateOf("none") }
+    var userAvatar by remember { mutableIntStateOf(R.drawable.avatar_1) }
     var matches by remember { mutableStateOf(emptyList<Matches?>()) }
     var recentMatches by remember {  mutableStateOf(emptyList<RecentMatch>()) }
     val scope = rememberCoroutineScope()
@@ -60,7 +62,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
         user = db.playerStatisticsDao().getStatsByUser(userID)
         username = db.userDao().getUserById(userID)?.nickName ?: "not in db"
         Log.d("DBMS","username:$username, user: ${db.userDao().getUserById(userID)}")
-        if (username == "not in db") db.userDao().insert(User(userId = userID, nickName = "Semelion User: $userID"))
+        if (username == "not in db") db.userDao().insert(User(userId = userID, nickName = "Semelion User: $userID", avatar = R.drawable.avatar_1))
         username = db.userDao().getUserById(userID)?.nickName ?: "not in db"
         Log.d("nick","preComp:$username")
         matches = db.matchesDao().getMatchesByUser(userID)
@@ -121,15 +123,24 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                             )
                     Log.d("DBMS","preProfile: $username\n $profileData")
                     ProfilePage(
-                        profile = profileData.copy(username = username),
+                        profile = profileData.copy(username = username, selectedAvatar = userAvatar),
                         matches = recentMatches,
                         onEditProfile = { nickname:String ->
                             scope.launch {
-                                db.userDao().update(User(userId = userID, nickName = nickname))
+                                val user = db.userDao().getUserById(userID) ?: return@launch
+                                db.userDao().update(User(userId = userID, nickName = nickname, avatar = user.avatar))
                                 //forza la recomposition
                                 username = nickname
                                 Log.d("nick","nicck:$nickname")
                             }
+                        },
+                        onAvatarChosen = { avatar:Int ->
+                            scope.launch {
+                                val user = db.userDao().getUserById(userID) ?: return@launch
+                                db.userDao().update(User(userId = userID, nickName = user.nickName,avatar= avatar))
+                                userAvatar = avatar
+                            }
+
                         },
                         onViewAllMatches = {}
                     )

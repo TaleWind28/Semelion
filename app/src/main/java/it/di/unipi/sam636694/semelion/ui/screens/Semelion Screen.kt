@@ -285,7 +285,8 @@ fun GameScreen(modifier: Modifier = Modifier,viewModel: BaseGameViewModel,state:
             actionsUsed = conf.first.first,
             actionsTotal = conf.first.second,
             isWaiting = conf.first.third,
-            playerName = viewModel.opponentName
+            playerName = viewModel.opponentName,
+            avatar = viewModel.secondPlayerAvatar
         )
 
         FinalGrid(state = state, model = viewModel, cardSize = cardSize)
@@ -294,7 +295,8 @@ fun GameScreen(modifier: Modifier = Modifier,viewModel: BaseGameViewModel,state:
             actionsUsed = conf.second.first,
             actionsTotal = conf.second.second,
             isWaiting = conf.second.third,
-            playerName = viewModel.playerName
+            playerName = viewModel.playerName,
+            avatar = viewModel.firstPlayerAvatar
         )
     }
 }
@@ -303,7 +305,8 @@ fun OpponentHeader(
     actionsUsed: Int,
     actionsTotal: Int,
     isWaiting: Boolean,
-    playerName: String
+    playerName: String,
+    avatar: Int
 ) {
     Surface(
         shape = RoundedCornerShape(20.dp),
@@ -327,12 +330,11 @@ fun OpponentHeader(
                     .background(Color(0xFF9E9E9E)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Outlined.Person,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp)
+                Image(
+                    painter = painterResource(avatar),
+                    contentDescription = "Playter Avatar"
                 )
+
             }
 
             Spacer(Modifier.width(10.dp))

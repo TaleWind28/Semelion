@@ -31,6 +31,7 @@ data class User(
     @PrimaryKey
     val userId: String,
     val nickName: String,
+    val avatar: Int
 )
 
 @Entity(tableName = "Partecipazioni", primaryKeys = ["matchId","userId"], foreignKeys =[
