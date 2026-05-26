@@ -56,9 +56,9 @@ abstract class BaseGameViewModel(
     var secondPlayerId: String,
 ) : ViewModel(){
 
-    public var firstPlayerAvatar = R.drawable.avatar_1
+    public var firstPlayerAvatar:Int? = null
 
-    public var secondPlayerAvatar= R.drawable.avatar_1
+    public var secondPlayerAvatar: Int?= null
 
     protected val _uiState = MutableStateFlow(GameUIState())
     val uiState = _uiState.asStateFlow()
@@ -967,6 +967,7 @@ abstract class BaseGameViewModel(
         Log.d("coinFlip","turno inizio ms:${_uiState.value.p1Turn}")
         //devo metterlo da un'altra parte
         updateUsers(nickname=nickname)
+
         if (nickname!=null) this.opponentName = nickname
         val matchID = matchesDao.getNextMatchId()
         //inserisco il match nel db
@@ -990,20 +991,27 @@ abstract class BaseGameViewModel(
     }
 
     suspend fun updateUsers(nickname:String?){
+        Log.d("userId","$userID")
         //controllo se devo creare l'utente nel db
-        if (userDao.getUserById(userID)== null) userDao.insert(User(userID, nickName = "Semelion_User: $userID", avatar = R.drawable.avatar_1))
-        this.playerName = userDao.getUserById(userID)?.nickName ?: "Semelion User"
+        var localUser = userDao.getUserById(userID)
+        if (localUser == null) userDao.insert(User(userID, nickName = "Semelion_User: $userID", avatar = R.drawable.avatar_1))
+        else Log.d("nickelodeon","${localUser.nickName}")
+
+        //per essere sicuro di avere un utente
+        localUser = userDao.getUserById(userID)
+
+        this.playerName = localUser?.nickName ?: "Semelion User"
+
         //imposto l'avatar del primo player
-        firstPlayerAvatar =  userDao.getUserById(userID)?.avatar ?: R.drawable.avatar_1
+        if (firstPlayerAvatar!=null) userDao.update(User(userID,playerName,firstPlayerAvatar!!)) else localUser!!.avatar
 
         //controllo se esiste l'avversario nel db
         val opponent = userDao.getUserById(secondPlayerId)
 
-
         //controllo se in caso l'avversario esista il nickname sia diverso da quello in memoria, solo se il nickname non è null
         if (opponent == null) userDao.insert(User(secondPlayerId, nickName = nickname ?: "Sora", avatar = R.drawable.avatar_1))
-        else if (opponent.nickName != nickname && nickname!= null) userDao.update(User(userId=secondPlayerId,nickName=nickname,avatar=opponent.avatar))
-        if (opponent != null) secondPlayerAvatar = opponent.avatar
+        else if (opponent.nickName != nickname && nickname!= null ) userDao.update(User(userId=secondPlayerId,nickName=nickname,avatar=secondPlayerAvatar?:R.drawable.avatar_12))
+
 
         Log.d("DB","secondPlayerID:$secondPlayerId")
     }

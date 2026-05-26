@@ -70,7 +70,7 @@ data class UserData(
     val losses: Int,
     val wins: Int,
     val draws: Int,
-    val selectedAvatar: Int = R.drawable.avatar_1,
+    val selectedAvatar: Int
 )
 
 val mockProfile = UserData(
@@ -81,7 +81,8 @@ val mockProfile = UserData(
     bestWinStreak = 50,
     wins = 0,
     losses = 80,
-    draws = 50
+    draws = 50,
+    selectedAvatar = R.drawable.avatar_10
 )
  
 data class RecentMatch(
@@ -148,9 +149,6 @@ fun ProfileCard(profile: UserData, onEdit: (String) -> Unit,onAvatarChosen: (Int
         R.drawable.avatar_12,
     )
 
-//    avatars.forEachIndexed { i, res ->
-//        Image(painter = painterResource(res), contentDescription = "Avatar $i")
-//    }
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = GreenLight,

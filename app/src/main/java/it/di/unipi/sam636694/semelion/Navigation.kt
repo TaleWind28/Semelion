@@ -109,7 +109,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                 is Route.ProfilePage -> NavEntry(key){
                     val profileData =
                         if (user == null)
-                            UserData(userID,0f,0,0,0, losses = 0, draws = 0, wins = 0)
+                            UserData(userID,0f,0,0,0, losses = 0, draws = 0, wins = 0, selectedAvatar = userAvatar)
                         else
                             UserData(
                                 username = username,
@@ -119,7 +119,8 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                                 bestWinStreak=user!!.bestStreak,
                                 wins = user!!.matchesWon,
                                 losses = user!!.matchesLost,
-                                draws = user!!.matchesDrawn
+                                draws = user!!.matchesDrawn,
+                                selectedAvatar = userAvatar
                             )
                     Log.d("DBMS","preProfile: $username\n $profileData")
                     ProfilePage(

@@ -39,12 +39,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import android.content.Context
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.R
 import com.google.android.gms.nearby.Nearby
 import it.di.unipi.sam636694.semelion.database.GameModes
 import it.di.unipi.sam636694.semelion.ui.states.DiscoveredEndpoint
 import kotlinx.coroutines.Job
 import java.util.Locale.getDefault
+import it.di.unipi.sam636694.semelion.R
 
 class NearbyGameViewModel(
     private val appContext: Context,
@@ -337,7 +337,8 @@ class NearbyGameViewModel(
 
     fun updateNickname(nickname: String?){
         this.nickname = nickname?:userID
-        super.userID = nickname?: userID
+        super.playerName = this.nickname
+        //super.userID = nickname?: userID
     }
 
     fun updateFirstPlayerAvatar(avatar:Int){
@@ -366,11 +367,14 @@ class NearbyGameViewModel(
             when (messageType) {
                 "endpoint:" -> {
                     updateRemoteId(message)
+
+                    //mando avatar
+                    val avatarResName = appContext.resources.getResourceEntryName(firstPlayerAvatar?:R.drawable.avatar_1)
+                    sendMessage("avatar",avatarResName,connectionsClient,endpointId)
+
+                    //mando nickname
                     sendMessage("nickname",nickname,connectionsClient, endpointId)
                     Log.d("endpoint","endpoint Ottenuto")
-                    //mando avatar
-                    val avatarResName = appContext.resources.getResourceEntryName(firstPlayerAvatar)
-                    sendMessage(avatarResName,"avatar",connectionsClient,endpointId)
 
                     if(_connectionState.value.isHost){
                         setFirstPlayer()
@@ -388,6 +392,7 @@ class NearbyGameViewModel(
 
                     if (resId != 0) {
                         secondPlayerAvatar = resId
+                        Log.d("Avatar","$resId")
                     }
 
                 }
@@ -402,7 +407,6 @@ class NearbyGameViewModel(
                     viewModelScope.launch{
                         matchStart(GameModes.NearBy,message)
                     }
-
                 }
                 "grid:" -> {
                     _uiState.update {

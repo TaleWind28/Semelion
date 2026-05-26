@@ -73,7 +73,7 @@ fun SemelionConnectionsScreen(
     onBack: () -> Unit,
 ) {
     var nickname = "pino"
-    var avatar by remember { mutableIntStateOf(R.drawable.avatar_1) }
+    var avatar: Int
 
     val requiredPermissions = remember {
         buildList {
