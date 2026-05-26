@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -20,12 +19,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -50,7 +46,6 @@ import it.di.unipi.sam636694.semelion.utilities.CardSize
 import it.di.unipi.sam636694.semelion.utilities.GreenAccent
 import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.utilities.TextSecondary
-import it.di.unipi.sam636694.semelion.utilities.cardImageMap
 import it.di.unipi.sam636694.semelion.database.GameModes
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.BaseGameViewModel
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.NearbyGameViewModel
@@ -87,13 +82,33 @@ fun SemelionScreen(
     Log.d("message","${state.phase}")
 
     // SCHERMO PRINCIPALE //
-    when(viewModel){
-        is SemelionGameViewModel -> SinglePlayer(state = state, viewModel= viewModel, modifier = modifier, padding=padding)
-        is NearbyGameViewModel -> MultiPlayer(state= state, viewModel= viewModel, modifier = modifier)
+//    when(viewModel){
+//        is SemelionGameViewModel -> SinglePlayer(state = state, viewModel= viewModel, modifier = modifier, padding=padding)
+//        is NearbyGameViewModel -> MultiPlayer(state= state, viewModel= viewModel, modifier = modifier)
+//    }
+    val conf = when(viewModel){
+        is NearbyGameViewModel ->{
+            val connState by viewModel.connectionState.collectAsState()
+            if (connState.isHost) {
+                Pair(Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn),
+                    Triple(state.p1ActionsUsed,state.p1Actions,!state.p1Turn))
+            }
+            else{
+                Pair(
+                    Triple(state.p1ActionsUsed,state.p1Actions,!state.p1Turn),
+                    Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn)
+                )
+            }
+        }
+        else ->{
+            Pair(Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn),
+                Triple(state.p1ActionsUsed,state.p1Actions,!state.p1Turn))
+        }
     }
-    //FINE SCHERMO PRINCIPALE//
+    
+    GameScreen(viewModel = viewModel, state = state, conf = conf)
 
-    Log.d("finder","$dbOperationCompleted")
+    //FINE SCHERMO PRINCIPALE//
 
     BackHandler(enabled = !showExitDialog && dbOperationCompleted) {
         showExitDialog = true
@@ -108,9 +123,9 @@ fun SemelionScreen(
                         modifier = Modifier.padding(24.dp),
                         style = MaterialTheme.typography.titleLarge
                     )
-                    Row() {
+                    Row{
                         //Interruzione partita
-                        Button(onClick = {endMatch(viewModel, onBack = onBack,state=state)}, enabled = dbOperationCompleted) {
+                        Button(onClick = {endMatch(viewModel, onBack = onBack)}, enabled = dbOperationCompleted) {
                             Text("Interrompi")
                         }
                         //Richiesta interruzione
@@ -127,7 +142,7 @@ fun SemelionScreen(
     Dialogs(state = state, viewModel = viewModel, onBack = onBack)
 }
 
-fun endMatch(viewModel: BaseGameViewModel,onBack:() -> Unit,state: GameUIState){
+fun endMatch(viewModel: BaseGameViewModel,onBack:() -> Unit){
     when(viewModel){
         is SemelionGameViewModel -> viewModel.matchEnd(GameModes.ScreenSharing, loser = viewModel.userID)
         is NearbyGameViewModel ->{
@@ -164,14 +179,28 @@ fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGam
             }
 
             //victory fanfare ff7 a cappela
-            if (state.winner == viewModel.userID) viewModel.player.playFile(R.raw.victory_fanfare)
-            else viewModel.player.playFile(R.raw.gameover)
+            Log.d("winner","winner:${state.winner}\nuuid:${viewModel.userID}")
+            lateinit var gameoverText:String
+            when(state.winner){
+                viewModel.userID ->{
+                    gameoverText = "Complimenti hai vinto!!"
+                    viewModel.player.playFile(R.raw.victory_fanfare)
+                }
+                viewModel.secondPlayerId -> {
+                    gameoverText = "Peccato, andrà meglio la prossima volta..."
+                    viewModel.player.playFile(R.raw.gameover)
+                }
+                else ->{
+                    gameoverText = "Wow, è stato uno scontro ad armi pari"
+                    viewModel.player.playFile(R.raw.there)
+                }
+            }
 
             BasicAlertDialog(onDismissRequest = {}) {
                 Surface(shape = RoundedCornerShape(16.dp)) {
                     Column{
                         Text(
-                            text = "${state.winner}",
+                            text = gameoverText,
                             modifier = Modifier.padding(24.dp),
                             style = MaterialTheme.typography.titleLarge
                         )
@@ -187,7 +216,7 @@ fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGam
                                     if (viewModel is NearbyGameViewModel) {
                                         viewModel.matchEnd(mode= GameModes.NearBy)
                                         viewModel.disconnect()
-                                    };
+                                    }
                                     onBack()
                                 }
                             ) {
@@ -232,58 +261,36 @@ fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGam
         }
     }
 }
+
 @Composable
-fun SinglePlayer(modifier: Modifier = Modifier,state: GameUIState,viewModel: SemelionGameViewModel,padding: PaddingValues) {
+fun GameScreen(
+    modifier: Modifier = Modifier,
+    viewModel: BaseGameViewModel,
+    state: GameUIState,
+    conf:Pair<Triple<Int,Int, Boolean>,Triple<Int,Int, Boolean>>
+) {
     val configuration = LocalConfiguration.current
+
     when (configuration.orientation) {
         Configuration.ORIENTATION_LANDSCAPE -> {
-            GameScreen(modifier=Modifier.wrapContentWidth(),viewModel=viewModel, state = state, cardSize= CardSize.LARGE)
+            Landscape(modifier=Modifier.wrapContentWidth(),viewModel=viewModel, state = state, cardSize= CardSize.LARGE, conf = conf)
         }
         Configuration.ORIENTATION_PORTRAIT -> {
-            GameScreen(modifier=Modifier.wrapContentWidth(),viewModel=viewModel, state=state, cardSize = CardSize.SMALL)
+            Portrait(conf=conf, viewModel = viewModel, state = state)
         }
         else -> {
         }
     }
 }
-@Composable
-fun MultiPlayer(modifier: Modifier = Modifier,state: GameUIState,viewModel: NearbyGameViewModel) {
-    //Log.d("finder","jack:${state.grid.indexOfFirst { it.value == 8 }}")
-    val configuration = LocalConfiguration.current
-    when (configuration.orientation) {
-        Configuration.ORIENTATION_LANDSCAPE -> {
-            GameScreen(modifier=Modifier.wrapContentWidth(),viewModel=viewModel, state = state, cardSize= CardSize.LARGE)
-        }
-        Configuration.ORIENTATION_PORTRAIT -> {
-            GameScreen(modifier=Modifier.wrapContentWidth(),viewModel=viewModel, state=state, cardSize = CardSize.SMALL)
-        }
-        else -> {
-
-        }
-    }
-}
 
 @Composable
-fun GameScreen(modifier: Modifier = Modifier,viewModel: BaseGameViewModel,state: GameUIState, cardSize: CardSize) {
-    val conf = when(viewModel){
-        is NearbyGameViewModel ->{
-            if (viewModel.connectionState.value.isHost) {
-                Pair(Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn),
-                    Triple(state.p1ActionsUsed,state.p1Actions,!state.p1Turn))
-            }
-            else{
-                Pair(
-                    Triple(state.p1ActionsUsed,state.p1Actions,!state.p1Turn),
-                    Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn)
-                )
-            }
-        }
-        else ->{
-            Pair(Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn),
-                Triple(state.p1ActionsUsed,state.p1Actions,!state.p1Turn))
-        }
-    }
-
+fun Landscape(
+    modifier: Modifier = Modifier,
+    conf:Pair<Triple<Int,Int, Boolean>,Triple<Int,Int, Boolean>>,
+    cardSize: CardSize = CardSize.LARGE,
+    viewModel: BaseGameViewModel,
+    state: GameUIState
+){
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -295,21 +302,63 @@ fun GameScreen(modifier: Modifier = Modifier,viewModel: BaseGameViewModel,state:
             actionsTotal = conf.first.second,
             isWaiting = conf.first.third,
             playerName = viewModel.opponentName,
-            avatar = viewModel.secondPlayerAvatar?:R.drawable.avatar_12
+            avatar = viewModel.secondPlayerAvatar ?: R.drawable.avatar_12
         )
 
         FinalGrid(state = state, model = viewModel, cardSize = cardSize)
-        Log.d("avatar","${viewModel.firstPlayerAvatar}")
+
         //giocatore
         OpponentHeader(
             actionsUsed = conf.second.first,
             actionsTotal = conf.second.second,
             isWaiting = conf.second.third,
             playerName = viewModel.playerName,
-            avatar = viewModel.firstPlayerAvatar?:R.drawable.avatar_1
+            avatar = viewModel.firstPlayerAvatar ?: R.drawable.avatar_1
         )
     }
 }
+
+@Composable
+fun Portrait(
+    modifier: Modifier = Modifier,
+    conf:Pair<Triple<Int,Int, Boolean>,Triple<Int,Int, Boolean>>,
+    cardSize: CardSize = CardSize.SMALL,
+    viewModel: BaseGameViewModel,
+    state: GameUIState
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Spacer(Modifier.size(64.dp))
+        //avversario
+        OpponentHeader(
+            actionsUsed = conf.first.first,
+            actionsTotal = conf.first.second,
+            isWaiting = conf.first.third,
+            playerName = viewModel.opponentName,
+            avatar = viewModel.secondPlayerAvatar ?: R.drawable.avatar_12
+        )
+
+        Spacer(Modifier.size(32.dp))
+
+        FinalGrid(state = state, model = viewModel, cardSize = cardSize)
+
+        Spacer(Modifier.size(32.dp))
+
+        //giocatore
+        OpponentHeader(
+            actionsUsed = conf.second.first,
+            actionsTotal = conf.second.second,
+            isWaiting = conf.second.third,
+            playerName = viewModel.playerName,
+            avatar = viewModel.firstPlayerAvatar ?: R.drawable.avatar_1
+        )
+        Spacer(Modifier.size(64.dp))
+    }
+}
+
 @Composable
 fun OpponentHeader(
     actionsUsed: Int,
@@ -400,52 +449,52 @@ fun OpponentHeader(
     }
 }
 
-@Composable
-fun UncoverDeck(state: GameUIState){
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFF5F5F5),
-        modifier = Modifier.width(90.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                "MAZZO SCOPERTA",
-                fontSize = 9.sp,
-                color = TextSecondary,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(Modifier.height(6.dp))
-            // Mostra la carta scoperta se disponibile, altrimenti placeholder
-
-            val revealedCard =
-                if (state.uncoverDeck.isNotEmpty()) state.uncoverDeck.first() else null
-            if (revealedCard != null) {
-                val imageResId =
-                    if (revealedCard.isRevealed) cardImageMap[revealedCard.name]
-                        ?: R.drawable.purple_back else R.drawable.purple_back
-                Image(
-                    painter = painterResource(imageResId),
-                    contentDescription = "Carta scoperta",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(0.65f)
-                        .clip(RoundedCornerShape(6.dp))
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(0.65f)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFFE0E0E0)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("—", color = TextSecondary, fontSize = 20.sp)
-                }
-            }
-        }
-    }
-}
+//@Composable
+//fun UncoverDeck(state: GameUIState){
+//    Surface(
+//        shape = RoundedCornerShape(16.dp),
+//        color = Color(0xFFF5F5F5),
+//        modifier = Modifier.width(90.dp)
+//    ) {
+//        Column(
+//            modifier = Modifier.padding(8.dp),
+//            horizontalAlignment = Alignment.CenterHorizontally
+//        ) {
+//            Text(
+//                "MAZZO SCOPERTA",
+//                fontSize = 9.sp,
+//                color = TextSecondary,
+//                fontWeight = FontWeight.Bold
+//            )
+//            Spacer(Modifier.height(6.dp))
+//            // Mostra la carta scoperta se disponibile, altrimenti placeholder
+//
+//            val revealedCard =
+//                if (state.uncoverDeck.isNotEmpty()) state.uncoverDeck.first() else null
+//            if (revealedCard != null) {
+//                val imageResId =
+//                    if (revealedCard.isRevealed) cardImageMap[revealedCard.name]
+//                        ?: R.drawable.purple_back else R.drawable.purple_back
+//                Image(
+//                    painter = painterResource(imageResId),
+//                    contentDescription = "Carta scoperta",
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .aspectRatio(0.65f)
+//                        .clip(RoundedCornerShape(6.dp))
+//                )
+//            } else {
+//                Box(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .aspectRatio(0.65f)
+//                        .clip(RoundedCornerShape(6.dp))
+//                        .background(Color(0xFFE0E0E0)),
+//                    contentAlignment = Alignment.Center
+//                ) {
+//                    Text("—", color = TextSecondary, fontSize = 20.sp)
+//                }
+//            }
+//        }
+//    }
+//}

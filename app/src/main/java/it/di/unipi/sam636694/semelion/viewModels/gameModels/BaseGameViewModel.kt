@@ -812,8 +812,8 @@ abstract class BaseGameViewModel(
 
         return when{
             (predRows.first == 2 && predRows.second == 2) -> state.copy( winner = "Pareggio", phase = GamePhase.GameOver)
-            predRows.first == 2 -> state.copy( winner = "Vince p2", phase = GamePhase.GameOver)
-            predRows.second == 2 -> state.copy( winner = "Vince p1", phase = GamePhase.GameOver)
+            predRows.first == 2 -> state.copy( winner = secondPlayerId, phase = GamePhase.GameOver)
+            predRows.second == 2 -> state.copy( winner = userID, phase = GamePhase.GameOver)
             else -> state
         }
     }
