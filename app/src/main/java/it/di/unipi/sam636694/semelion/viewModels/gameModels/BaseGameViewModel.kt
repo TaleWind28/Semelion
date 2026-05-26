@@ -999,17 +999,16 @@ abstract class BaseGameViewModel(
     }
 
     suspend fun updateUsers(nickname:String?){
-        Log.d("userId","$userID")
         //controllo se devo creare l'utente nel db
         var localUser = userDao.getUserById(userID)
+
         if (localUser == null) userDao.insert(User(userID, nickName = "Semelion_User: $userID", avatar = R.drawable.avatar_1))
-        else Log.d("nickelodeon","${localUser.nickName}")
 
         //per essere sicuro di avere un utente
         localUser = userDao.getUserById(userID)
 
         this.playerName = localUser?.nickName ?: "Semelion User"
-
+        Log.d("avatar","avatar:${localUser!!.avatar}")
         //imposto l'avatar del primo player
         if (firstPlayerAvatar!=null) userDao.update(User(userID,playerName,firstPlayerAvatar!!)) else localUser!!.avatar
 

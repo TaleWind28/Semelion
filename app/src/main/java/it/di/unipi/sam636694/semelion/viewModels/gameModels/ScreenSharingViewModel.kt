@@ -60,6 +60,7 @@ class SemelionGameViewModel(
         viewModelScope.launch {
             if (_uiState.value.phase is GamePhase.Loading){
                 super.playerName = userDao.getUserById(userID)?.nickName ?: "Player 1"
+                firstPlayerAvatar = userDao.getUserById(userID)?.avatar
                 val suspendedMatch = matchesDao.getSuspendedMatch()
                 Log.d("Suspended","$suspendedMatch")
                 if ( suspendedMatch == null) {

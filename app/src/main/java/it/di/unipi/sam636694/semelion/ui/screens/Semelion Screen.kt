@@ -299,6 +299,7 @@ fun GameScreen(modifier: Modifier = Modifier,viewModel: BaseGameViewModel,state:
         )
 
         FinalGrid(state = state, model = viewModel, cardSize = cardSize)
+        Log.d("avatar","${viewModel.firstPlayerAvatar}")
         //giocatore
         OpponentHeader(
             actionsUsed = conf.second.first,
