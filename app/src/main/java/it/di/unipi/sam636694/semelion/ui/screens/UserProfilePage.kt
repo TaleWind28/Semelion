@@ -90,6 +90,7 @@ data class RecentMatch(
     val date: String,
     val time: String,
     val isWin: Boolean?,
+    val opponentAvatar:Int = R.drawable.avatar_1,
 )
 
 val mockMatches = listOf(
@@ -458,12 +459,7 @@ fun MatchRow(match: RecentMatch) {
 //                        .background(if (match.isWin == true) GreenPrimary else if (match.isWin == false) Color(0xFFBDBDBD) else ) ,
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Person,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
+                   Image(painterResource(match.opponentAvatar), contentDescription = "Opponent Avatar")
                 }
  
                 // Nome e data
