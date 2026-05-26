@@ -62,15 +62,15 @@ data class UserProfile(
 )
 
 data class UserData(
-    val username:String,
-    val winRate: Float,
-    val gamesPlayed: Int,
-    val winStreak: Int,
-    val bestWinStreak:Int,
-    val losses: Int,
-    val wins: Int,
-    val draws: Int,
-    val selectedAvatar: Int
+    val username:String = "",
+    val winRate: Float = 0f,
+    val gamesPlayed: Int = 0,
+    val winStreak: Int = 0,
+    val bestWinStreak:Int = 0,
+    val losses: Int = 0,
+    val wins: Int = 0,
+    val draws: Int = 0,
+    val selectedAvatar: Int = R.drawable.avatar_1
 )
 
 val mockProfile = UserData(

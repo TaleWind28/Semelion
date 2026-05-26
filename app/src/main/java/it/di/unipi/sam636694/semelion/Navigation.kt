@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
@@ -41,6 +42,7 @@ import it.di.unipi.sam636694.semelion.ui.screens.SemelionHome
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionRules
 import it.di.unipi.sam636694.semelion.ui.screens.UserData
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
+import it.di.unipi.sam636694.semelion.viewModels.UserProfileViewModel
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
@@ -51,36 +53,7 @@ import kotlin.String
 fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, player: AudioPlayer, userID:String){
 
     val backStack = rememberNavBackStack(Route.Home)
-    var user by remember {  mutableStateOf<PlayerStatistics?>(null)  }
-    var username by remember { mutableStateOf("none") }
-    var userAvatar by remember { mutableIntStateOf(R.drawable.avatar_1) }
-    var matches by remember { mutableStateOf(emptyList<Matches?>()) }
-    var recentMatches by remember {  mutableStateOf(emptyList<RecentMatch>()) }
     val scope = rememberCoroutineScope()
-
-    LaunchedEffect(userID, backStack.size) {
-        user = db.playerStatisticsDao().getStatsByUser(userID)
-        username = db.userDao().getUserById(userID)?.nickName ?: "not in db"
-        Log.d("DBMS","username:$username, user: ${db.userDao().getUserById(userID)}")
-        if (username == "not in db") db.userDao().insert(User(userId = userID, nickName = "Semelion User: $userID", avatar = R.drawable.avatar_1))
-        username = db.userDao().getUserById(userID)?.nickName ?: "not in db"
-        Log.d("nick","preComp:$username")
-        matches = db.matchesDao().getMatchesByUser(userID)
-        recentMatches = matches.mapNotNull { match ->
-            val matchStats = db.matchesDao().getMatchStats(match?.matchId ?: return@mapNotNull null)
-            val opponentMatch = matchStats.firstOrNull { it.userId != userID } ?: return@mapNotNull null
-            val date = SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH).format(Date(opponentMatch.date))
-            val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(opponentMatch.date))
-            val opponentName = db.userDao().getUserById(opponentMatch.userId)?.nickName
-
-            RecentMatch(
-                opponent = opponentName ?: opponentMatch.userId,
-                date = date,
-                time = time,
-                isWin = opponentMatch.winner
-            )
-        }
-    }
 
     NavDisplay(
         modifier = Modifier,
@@ -107,44 +80,33 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                 }
 
                 is Route.ProfilePage -> NavEntry(key){
-                    val profileData =
-                        if (user == null)
-                            UserData(userID,0f,0,0,0, losses = 0, draws = 0, wins = 0, selectedAvatar = userAvatar)
-                        else
-                            UserData(
-                                username = username,
-                                winRate=user!!.matchesWon.toFloat()/user!!.matchesPlayed.toFloat() * 100,
-                                gamesPlayed=user!!.matchesPlayed,
-                                winStreak=user!!.currentStreak,
-                                bestWinStreak=user!!.bestStreak,
-                                wins = user!!.matchesWon,
-                                losses = user!!.matchesLost,
-                                draws = user!!.matchesDrawn,
-                                selectedAvatar = userAvatar
-                            )
-                    Log.d("DBMS","preProfile: $username\n $profileData")
-                    ProfilePage(
-                        profile = profileData.copy(username = username, selectedAvatar = userAvatar),
-                        matches = recentMatches,
-                        onEditProfile = { nickname:String ->
-                            scope.launch {
-                                val user = db.userDao().getUserById(userID) ?: return@launch
-                                db.userDao().update(User(userId = userID, nickName = nickname, avatar = user.avatar))
-                                //forza la recomposition
-                                username = nickname
-                                Log.d("nick","nicck:$nickname")
-                            }
-                        },
-                        onAvatarChosen = { avatar:Int ->
-                            scope.launch {
-                                val user = db.userDao().getUserById(userID) ?: return@launch
-                                db.userDao().update(User(userId = userID, nickName = user.nickName,avatar= avatar))
-                                userAvatar = avatar
-                            }
 
-                        },
-                        onViewAllMatches = {}
-                    )
+                    val profileVm: UserProfileViewModel = viewModel {
+                        UserProfileViewModel(db = db, userId = userID)
+                    }
+
+                    val uiState by profileVm.uiState.collectAsState()
+
+                    if (uiState.isDataLoading){
+                        Text(text = "Loading...")
+                    }else{
+                        ProfilePage(
+                            profile = uiState.data,
+                            matches = uiState.matches,
+                            onEditProfile = { nickname:String ->
+                                scope.launch {
+                                    profileVm.onEditNickname(nickname)
+                                }
+                            },
+                            onAvatarChosen = { avatar:Int ->
+                                scope.launch {
+                                    profileVm.onEditAvatar(avatar)
+                                }
+                            },
+                            onViewAllMatches = {}
+                        )
+                    }
+
                 }
 
                 is Route.ScreenSharingGame -> NavEntry(key){
