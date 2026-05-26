@@ -1,6 +1,9 @@
 package it.di.unipi.sam636694.semelion.viewModels.gameModels
 
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
@@ -63,8 +66,8 @@ abstract class BaseGameViewModel(
     protected val _uiState = MutableStateFlow(GameUIState())
     val uiState = _uiState.asStateFlow()
 
-    var playerName = "Semelion User"
-    var opponentName = "Sora"
+    var playerName by mutableStateOf("Semelion User")
+    var opponentName by mutableStateOf("Sora")
 
     val isDBOperationComplete = MutableStateFlow(true)
 
@@ -964,11 +967,16 @@ abstract class BaseGameViewModel(
     }
 
     suspend fun matchStart(mode: GameModes, nickname:String? = null){
+
         Log.d("coinFlip","turno inizio ms:${_uiState.value.p1Turn}")
+
         //devo metterlo da un'altra parte
         updateUsers(nickname=nickname)
 
-        if (nickname!=null) this.opponentName = nickname
+        if (nickname!=null){
+            this.opponentName = nickname
+            //Log.d("conc","nick(nvm):$nickname, ${this.opponentName}")
+        }
         val matchID = matchesDao.getNextMatchId()
         //inserisco il match nel db
         matchesDao.insert(Matches(gameMode = mode, gameState = _uiState.value, isCompleted = false))

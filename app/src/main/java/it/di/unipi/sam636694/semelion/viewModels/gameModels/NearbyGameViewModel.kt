@@ -396,6 +396,7 @@ class NearbyGameViewModel(
                     }
 
                 }
+
                 "starting player:" ->{
                     Log.d("player",message)
                     if (message == "Guest") _uiState.update { it.copy(firstPlayer = message, p1Turn = false,p1Actions = it.p1Actions+1, phase = GamePhase.PlayerTurn) }
