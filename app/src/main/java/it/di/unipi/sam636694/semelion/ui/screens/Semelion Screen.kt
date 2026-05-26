@@ -71,6 +71,7 @@ fun SemelionScreen(
 ){
 
     val state by viewModel.uiState.collectAsState()
+
     val dbOperationCompleted by viewModel.isDBOperationComplete.collectAsState()
     val goBack by viewModel.wantsToGoBack.collectAsState()
 
@@ -106,7 +107,7 @@ fun SemelionScreen(
                     )
                     Row() {
                         //Interruzione partita
-                        Button(onClick = {endMatch(viewModel, onBack = onBack)}, enabled = dbOperationCompleted) {
+                        Button(onClick = {endMatch(viewModel, onBack = onBack,state=state)}, enabled = dbOperationCompleted) {
                             Text("Interrompi")
                         }
                         //Richiesta interruzione
@@ -123,11 +124,12 @@ fun SemelionScreen(
     Dialogs(state = state, viewModel = viewModel, onBack = onBack)
 }
 
-fun endMatch(viewModel: BaseGameViewModel,onBack:() -> Unit){
+fun endMatch(viewModel: BaseGameViewModel,onBack:() -> Unit,state: GameUIState){
     when(viewModel){
         is SemelionGameViewModel -> viewModel.matchEnd(GameModes.ScreenSharing, loser = viewModel.userID)
         is NearbyGameViewModel ->{
-            viewModel.matchEnd(GameModes.NearBy, loser = if (viewModel.connectionState.value.isHost) viewModel.userID else viewModel.secondPlayerId)
+            Log.d("fines","uid:${viewModel.userID}\nssId:${viewModel.secondPlayerId}")
+            viewModel.matchEnd(GameModes.NearBy, loser = viewModel.userID)
             viewModel.destroy()
             onBack()
         }
@@ -178,7 +180,11 @@ fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGam
                             }
                             Button(
                                 onClick = {
-                                    if (viewModel is NearbyGameViewModel) viewModel.disconnect();
+
+                                    if (viewModel is NearbyGameViewModel) {
+                                        viewModel.matchEnd(mode= GameModes.NearBy)
+                                        viewModel.disconnect()
+                                    };
                                     onBack()
                                 }
                             ) {
