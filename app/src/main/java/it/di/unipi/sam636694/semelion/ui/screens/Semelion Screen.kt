@@ -85,10 +85,13 @@ fun SemelionScreen(
     }
 
     Log.d("message","${state.phase}")
+
+    // SCHERMO PRINCIPALE //
     when(viewModel){
         is SemelionGameViewModel -> SinglePlayer(state = state, viewModel= viewModel, modifier = modifier, padding=padding)
         is NearbyGameViewModel -> MultiPlayer(state= state, viewModel= viewModel, modifier = modifier)
     }
+    //FINE SCHERMO PRINCIPALE//
 
     Log.d("finder","$dbOperationCompleted")
 
