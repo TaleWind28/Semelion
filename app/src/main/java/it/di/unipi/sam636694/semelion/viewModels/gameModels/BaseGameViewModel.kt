@@ -886,7 +886,6 @@ abstract class BaseGameViewModel(
             //update dei matchSummary
             matchSummary.value.forEach { stats ->
                 val stat = stats.copy(matchId = matchId,outcome = outcome, winner = winningUser)
-                Log.d("DB","inserting data: $stat")
                 matchStatisticsDao.upsert(stat)
             }
 
@@ -912,7 +911,6 @@ abstract class BaseGameViewModel(
                         //Log.d("DB","pre update:\nstreak:$currStr\nbest:${stats.bestStreak}")
                         stats = stats.copy(currentStreak = currStr, bestStreak = currStr)
                     }
-                    //Log.d("DB","pre update:$stats\nstreak:$currStr")
                 }
                 else{
                     stats = stats.copy(currentStreak = 0)
@@ -933,6 +931,7 @@ abstract class BaseGameViewModel(
                     matchesWon = playerStats.matchesWon + stats.matchesWon,
                     matchesLost = playerStats.matchesLost + stats.matchesLost,
                     matchesDrawn = playerStats.matchesDrawn + stats.matchesDrawn,
+                    bestStreak = playerStats.bestStreak
 
                 )
 
@@ -1008,7 +1007,7 @@ abstract class BaseGameViewModel(
         localUser = userDao.getUserById(userID)
 
         this.playerName = localUser?.nickName ?: "Semelion User"
-        Log.d("avatar","avatar:${localUser!!.avatar}")
+
         //imposto l'avatar del primo player
         if (firstPlayerAvatar!=null) userDao.update(User(userID,playerName,firstPlayerAvatar!!)) else localUser!!.avatar
 
@@ -1018,9 +1017,6 @@ abstract class BaseGameViewModel(
         //controllo se in caso l'avversario esista il nickname sia diverso da quello in memoria, solo se il nickname non è null
         if (opponent == null) userDao.insert(User(secondPlayerId, nickName = nickname ?: "Sora", avatar = R.drawable.avatar_1))
         else if (opponent.nickName != nickname && nickname!= null ) userDao.update(User(userId=secondPlayerId,nickName=nickname,avatar=secondPlayerAvatar?:R.drawable.avatar_12))
-
-
-        Log.d("DB","secondPlayerID:$secondPlayerId")
     }
 
     protected fun updateSecondPlayer(secondPlayerId: String){

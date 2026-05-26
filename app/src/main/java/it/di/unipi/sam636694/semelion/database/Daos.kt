@@ -61,7 +61,7 @@ interface MatchesDao {
     @Query("SELECT *" +
             "FROM Partite m " +
             "JOIN STATISTICHEPARTITE ms ON ms.matchId = m.matchId" +
-            " WHERE m.matchId =:matchId"
+            " WHERE m.matchId =:matchId AND m.isCompleted = 1"
     )
     suspend fun getMatchStats(matchId:Long):List<MatchStatistics>
 

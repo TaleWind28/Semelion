@@ -26,6 +26,7 @@ class UserProfileViewModel(
     val uiState = _uiState.asStateFlow()
 
     init{
+        Log.d("init","chiamato")
         viewModelScope.launch {
             val user = db.playerStatisticsDao().getStatsByUser(userId)
 
@@ -46,13 +47,17 @@ class UserProfileViewModel(
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(opponentMatch.date))
                 val opponentName = db.userDao().getUserById(opponentMatch.userId)?.nickName
 
+
+                Log.d("init","oppo:${opponentName?: opponentMatch.userId}\ndate:$date\ntime:$time\nisWin:${opponentMatch.winner}")
                 RecentMatch(
                     opponent = opponentName ?: opponentMatch.userId,
                     date = date,
                     time = time,
                     isWin = opponentMatch.winner
                 )
+
             }
+
 
             val data =
                 if (user == null)
