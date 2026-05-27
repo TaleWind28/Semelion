@@ -340,7 +340,7 @@ fun Portrait(
             actionsTotal = conf.first.second,
             isWaiting = conf.first.third,
             playerName = viewModel.opponentName,
-            avatar = viewModel.secondPlayerAvatar ?: R.drawable.avatar_12
+            avatar = viewModel.secondPlayerAvatar ?: R.drawable.sora_avatar
         )
 
         Spacer(Modifier.size(32.dp))

@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.utilities.RowOrder
 import it.di.unipi.sam636694.semelion.database.GameModes
@@ -61,6 +62,7 @@ class SemelionGameViewModel(
             if (_uiState.value.phase is GamePhase.Loading){
                 super.playerName = userDao.getUserById(userID)?.nickName ?: "Player 1"
                 firstPlayerAvatar = userDao.getUserById(userID)?.avatar
+                secondPlayerAvatar = R.drawable.sora_avatar
                 val suspendedMatch = matchesDao.getSuspendedMatch()
                 Log.d("Suspended","$suspendedMatch")
                 if ( suspendedMatch == null) {
@@ -128,7 +130,7 @@ class SemelionGameViewModel(
 
 }
 
-
+//trova le righe potenti
 fun List<CardUIStates>.findPowerRow(): Int{
     val order = this.getPredominantOrder()
     return when(order.size){
