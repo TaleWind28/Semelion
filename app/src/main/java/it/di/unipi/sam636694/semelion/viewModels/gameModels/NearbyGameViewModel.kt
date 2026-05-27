@@ -259,6 +259,7 @@ class NearbyGameViewModel(
     //OVERRIDE
     override fun setup() {
         val decks = createDecks()
+        Log.d("finder","${decks.first.indexOfFirst { it.value > 7 }}")
         _uiState.update { it.copy(grid = decks.first, uncoverDeck = decks.second, phase = GamePhase.PlayerTurn) }
         validation()
     }

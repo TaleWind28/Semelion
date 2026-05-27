@@ -1,8 +1,11 @@
 package it.di.unipi.sam636694.semelion.viewModels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import it.di.unipi.sam636694.semelion.utilities.SharedRepository
+//import it.di.unipi.sam636694.semelion.utilities.parseActionTemplate
+import it.di.unipi.sam636694.semelion.utilities.toActionData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -28,6 +31,107 @@ class LogViewModel: ViewModel() {
             )
         }
     }
+    fun translateAction(action: String): String {
+        val data = action.toActionData()
+        return when (data.type) {
+
+            "reveal" -> {
+                val card = data.outcome.first()
+                "È stata rivelata la carta in posizione ${card.value}: ${cardName(card.name)}"
+            }
+
+            "covered" -> {
+                val card = data.outcome.first()
+                "La carta in posizione ${card.value} è stata coperta"
+            }
+
+            "swap" -> {
+                val first = data.relevantCards[0]
+                val second = data.relevantCards[1]
+                val firstDesc = if (first.flag) cardName(first.name) else "posizione ${first.value}"
+                val secondDesc = if (second.flag) cardName(second.name) else "posizione ${second.value}"
+                "Sono state scambiate: $firstDesc con $secondDesc"
+            }
+
+            "King's Rule" -> {
+                val first = data.relevantCards[0]
+                val second = data.relevantCards[1]
+                val firstDesc = if (first.flag) cardName(first.name) else "posizione ${first.value}"
+                val secondDesc = if (second.flag) cardName(second.name) else "posizione ${second.value}"
+                "Re: scambiate $firstDesc con $secondDesc"
+            }
+
+            "Queen'Swipe" -> {
+                val first = data.relevantCards[0]
+                val second = data.relevantCards[1]
+                val firstDesc = if (first.flag) cardName(first.name) else "posizione ${first.value}"
+                val secondDesc = if (second.flag) cardName(second.name) else "posizione ${second.value}"
+                "Regina: scambiate $firstDesc con $secondDesc"
+            }
+
+            "Jack' chain" -> {
+                val cards = data.relevantCards.joinToString(" -> ") { card ->
+                    if (card.flag) cardName(card.name) else "posizione ${card.value}"
+                }
+                "Jack: catena di scambi $cards"
+            }
+
+            "addedFromUncover" -> {
+                val card = data.outcome.first()
+                "Aggiunta dalla pesca: ${cardName(card.name)} in posizione ${card.value}"
+            }
+
+            else -> "Azione sconosciuta: ${data.type}"
+        }
+    }
+
+    fun cardName(raw: String): String {
+        // raw è nel formato "XY" dove X è il valore e Y è il seme (es. "7F", "joker_red")
+        return when {
+            raw.startsWith("joker_red") -> "Jolly Rosso"
+            raw.startsWith("joker_black") -> "Jolly Nero"
+            else -> {
+                val value = raw.dropLast(1)
+                val suit = raw.last().toString()
+                "${mapValue(value)} di ${mapSuit(suit)}"
+            }
+        }
+    }
+
+    fun mapValue(value: String): String {
+        return when (value) {
+            "1"  -> "Asso"
+            "11" -> "Fante"
+            "12" -> "Regina"
+            "13" -> "Re"
+            else -> value
+        }
+    }
+
+    fun mapSuit(suit: String): String {
+        return when (suit) {
+            "H" -> "Cuori"
+            "D" -> "Quadri"
+            "C" -> "Fiori"
+            "S" -> "Picche"
+            else -> suit
+        }
+    }
+
+//    fun translateAction(action:String):String{
+//        val data = action.toActionData()
+//        return when(data.type){
+//            "reveal" -> "Ha rivelato il ${data.relevantCards.first().value} di ${mapShortHouse(data.relevantCards.first().name)}"
+//            else -> "kys"
+//        }
+//    }
+//
+//    fun mapShortHouse(shortHouse:String):String{
+//        return when(shortHouse){
+//
+//
+//        }
+//    }
 
 }
 

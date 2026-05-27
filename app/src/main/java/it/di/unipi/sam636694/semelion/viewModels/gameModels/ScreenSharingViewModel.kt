@@ -47,6 +47,8 @@ class SemelionGameViewModel(
 
     override fun setup(){
         val decks = createDecks()
+        Log.d("finder","${decks.first.indexOfFirst { it.value > 7 }}")
+        Log.d("finder","${decks.second.indexOfFirst { it.value == 7 }}")
         _uiState.value = GameUIState(
             grid = decks.first,
             uncoverDeck = decks.second,

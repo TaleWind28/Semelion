@@ -102,6 +102,37 @@ fun actionTemplate(type:String, relevantCards:List<Triple<String,Int, Boolean>>,
     return "$type:{$relevantCards} -> {$outcome} "
 }
 
+
+data class CardInfo(val name: String, val value: Int, val flag: Boolean)
+data class ActionData(val type: String, val relevantCards: List<CardInfo>, val outcome: List<CardInfo>)
+
+fun String.toActionData(): ActionData {
+    val mainRegex = Regex("""^(\w+):\{(.*)\} -> \{(.*)\}\s*$""")
+    val match = mainRegex.find(this) ?: throw IllegalArgumentException("Formato non valido: $this")
+
+    val type = match.groupValues[1]
+    val relevantCardsRaw = match.groupValues[2]
+    val outcomeRaw = match.groupValues[3]
+
+    return ActionData(
+        type = type,
+        relevantCards = parseCards(relevantCardsRaw),
+        outcome = parseCards(outcomeRaw)
+    )
+}
+
+fun parseCards(raw: String): List<CardInfo> {
+    if (raw.isBlank()) return emptyList()
+    val tripleRegex = Regex("""\(([^,]+),\s*(\d+),\s*(true|false)\)""")
+    return tripleRegex.findAll(raw).map {
+        CardInfo(
+            name = it.groupValues[1].trim(),
+            value = it.groupValues[2].toInt(),
+            flag = it.groupValues[3].toBoolean()
+        )
+    }.toList()
+}
+
 fun GameIntent.serialize(): String = when (this) {
     is GameIntent.CardClicked -> "cardclicked:$cardId"
     is GameIntent.SwapCards -> "swapcards:$id1:$id2"

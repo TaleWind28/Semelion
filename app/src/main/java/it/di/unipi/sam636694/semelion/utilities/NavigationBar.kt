@@ -51,7 +51,7 @@ fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel = viewModel
     val state by viewModel.uiState.collectAsState()
     Log.d("padding","$padding")
     LazyColumn(modifier = modifier.background(Color.LightGray).fillMaxSize().padding(15.dp)) {
-        items(state.actions){
+        items(state.actions.reversed()){
             Text(text=it,color=Color.Black)
         }
     }

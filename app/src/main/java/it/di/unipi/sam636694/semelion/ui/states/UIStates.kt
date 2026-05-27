@@ -24,7 +24,8 @@ data class GameUIState (
     val figureWasRevealed:Boolean = false,
     val winner : String? = null,
     val p2FirstTurn: Boolean = true,
-    val jackSwaps: List<Int> = emptyList()
+    val jackSwaps: List<Int> = emptyList(
+    )
 )
 
 sealed class GamePhase {
