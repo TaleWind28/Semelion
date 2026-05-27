@@ -36,6 +36,8 @@ sealed class GamePhase {
 
     object Validation : GamePhase()
 
+    object RevealFromDeck: GamePhase()
+
     object GameOver     : GamePhase()
 
     object Loading : GamePhase()

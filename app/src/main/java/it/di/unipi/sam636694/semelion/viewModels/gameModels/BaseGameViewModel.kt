@@ -98,9 +98,7 @@ abstract class BaseGameViewModel(
     //HANDLER PER GESTIRE EVENTI RELATIVI ALLA UI
     protected fun handleCardClicked(cardId: String): Boolean {
 
-        val needsDelay = _uiState.value.grid
-            .find { it.name == cardId }
-            ?.let { it.value >= 7 } ?: false
+
         //azione per log
         val pos = _uiState.value.grid.indexOfFirst { it.name == cardId }
         val relevantCards = listOf(Triple(cardId ,pos , findCard(cardId,_uiState.value)?.isRevealed ?: false))
@@ -118,12 +116,36 @@ abstract class BaseGameViewModel(
 
         sendScreenMessage("reveal",relevantCards, outcome =outcome)
 
+        val needsDelay = _uiState.value.grid
+            .find { it.name == cardId }
+            ?.let { it.value >= 7 } ?: false
+
         viewModelScope.launch {
             if (needsDelay) delay(300)
             _uiState.update { validateState(cardId, it) }
+            if (_uiState.value.incorrectSevenReveled){
+                delay(DELAY_TIME)
+                _uiState.update { state ->
+                    state.grid.fold(state.copy(phase = GamePhase.Validation, incorrectSevenReveled = false)) { acc, card ->
+                        validateState(card.name, acc)
+                    }
+                }
+            }
         }
         return true
     }
+
+    fun validateWithDelay(cardId:String,state: GameUIState): GameUIState{
+        val needsDelay = state.grid.find { it.name == cardId }?.let { it.value >= 7 } ?: false
+
+        if (!needsDelay) return validateState(cardId,state)
+        else viewModelScope.launch {
+            delay(300)
+            _uiState.update { validateState(cardId, it) }
+        }
+        return state
+    }
+
 
     protected fun handleSwapCards(id1: String, id2: String): Boolean {
 
@@ -181,8 +203,9 @@ abstract class BaseGameViewModel(
        if (_uiState.value.phase !is GamePhase.JackMadness) return false
         player.playFile(R.raw.jack)
 
+        //scelgo come primo id quello della carta rivelata in modo da gestire il 7
         val cardId = _uiState.value.grid[swaps.first()].name
-        val position = swaps.first()
+
         //droppo il primo elemento che è la posizione attuale del jack
         val jackSwaps = swaps.drop(1)
         //se non ho altre pozioni termino
@@ -193,23 +216,21 @@ abstract class BaseGameViewModel(
 
         Log.d("jackSwap","passo")
 
-        val swapped =
-            swaps.fold(cardId to _uiState.value) { (currentId, currentState), nextPosition ->
-                val nextCard = currentState.grid[nextPosition]
+        _uiState.update { state->
+            val swappedState =
+                swaps.fold(cardId to state) { (currentId, currentState), nextPosition ->
+                    val nextCard = currentState.grid[nextPosition]
 
-                val currentPos = currentState.grid.indexOfFirst { it.name == currentId }
+                    val currentPos = currentState.grid.indexOfFirst { it.name == currentId }
 
-                Log.d("jackSwap", "from: $currentPos card: $currentId, to: $nextPosition, nextCard: ${nextCard.name}")
+                    Log.d("jackSwap", "from: $currentPos card: $currentId, to: $nextPosition, nextCard: ${nextCard.name}")
 
-                currentId to figureSwap(currentId, nextCard.name, currentState, "Jack' chain")
-            }
-        //valido tutte le posizioni
-        val validatedState = swaps.fold( swapped.second.copy(phase = GamePhase.Validation)){ state, position ->
-            val card = state.grid[position]
+                    currentId to figureSwap(currentId, nextCard.name, currentState, "Jack' chain")
+                }.second
 
-            validateState( card.name , state)
+            applyAndValidate(swappedState,swaps)
+
         }
-        _uiState.update { validatedState }
 
         return true
     }
@@ -229,11 +250,7 @@ abstract class BaseGameViewModel(
                 phase = GamePhase.Validation          // transizione dentro lo stato
             )
 
-            (0 until 3 ).fold(modifiedState){ acc, i ->
-                val card = acc.grid[direction(i,0)]
-
-                validateState( card.name , acc)
-            }
+            applyAndValidate(modifiedState,(0 until 3).map { direction(it,0) })
         }
 
         return true
@@ -243,6 +260,7 @@ abstract class BaseGameViewModel(
         //controllo di essere nello stato giusto
         if (_uiState.value.phase !is GamePhase.KingPending) return false
         player.playFile(R.raw.king)
+
         //controllo che il giocatore non abbia selezionato una riga potente
         if (_uiState.value.grid.chunked(7)[rowIndex].findPowerRow() == 1){
             viewModelScope.launch {
@@ -257,23 +275,31 @@ abstract class BaseGameViewModel(
 
         //aggiorno lo stato shiftando la griglia
         _uiState.update { state ->
-            var modifiedState = state.copy(
+
+            val modifiedState = state.copy(
                 grid = (0 until 6).fold(state) { acc, i ->
                     val id1 = findCard(acc.grid[direction(i, 0)].name, state)?.name ?: "none"
                     val id2 = findCard(acc.grid[direction(i, 1)].name, state)?.name ?: "none"
                     figureSwap(id1, id2, acc,"King's Rule")
                 }.grid,
                 phase = GamePhase.Validation,
-                //figureWasRevealed = true// transizione dentro lo stato
             )
-            modifiedState = (0 until 6 ).fold(modifiedState){ acc, i ->
-                val card = acc.grid[(rowIndex * 7) + i]
-                validateState( card.name , acc)
-            }
-            modifiedState
+
+            //validazione postuma
+            applyAndValidate(modifiedState,(0 until 6).map { (rowIndex * 7) + it })
+
         }
 
         return true
+    }
+
+    protected fun applyAndValidate(
+        state: GameUIState,
+        positions: List<Int>
+    ): GameUIState {
+        return positions.fold(state.copy(phase = GamePhase.Validation)) { acc, pos ->
+            validateWithDelay(acc.grid[pos].name,acc)
+        }
     }
 
     //FUNZIONI HELPER PER GLI HANDLER
@@ -368,6 +394,7 @@ abstract class BaseGameViewModel(
         if (card.isRevealed) {
             //controlla se la carta rivelata è una figura
             modifiedState = figureRevealed(cardId, modifiedState)
+            if (modifiedState.incorrectSevenReveled) return modifiedState
         }
 
         //cercare jolly sulla griglia -> actually vorrei usare uno stato diverso per le invocazioni però non so
@@ -375,6 +402,7 @@ abstract class BaseGameViewModel(
             modifiedState = jollyApplier(modifiedState, "joker_$it")
             modifiedState = substituteJolly(modifiedState, "joker_$it")
         }
+
 
         //controllo se la carta deve essere coperta
         modifiedState = coverCard(cardId,modifiedState)
@@ -579,9 +607,13 @@ abstract class BaseGameViewModel(
     }
 
     fun substituteJolly(state: GameUIState, suit: String): GameUIState {
-        val currentState = swapJolly(state, suit)
+        val position = state.grid.indexOfFirst { it.name == suit }
+        var currentState = swapJolly(state, suit)
         return if (currentState == state) state
-        else replaceCard(currentState, suit)
+        else{
+            currentState = replaceCard(currentState, suit)
+            return validateState(currentState.grid[position].name,currentState)
+        }
     }
 
     fun jollyApplier(state: GameUIState, cardId: String): GameUIState {
@@ -719,7 +751,8 @@ abstract class BaseGameViewModel(
         sendScreenMessage("addedFromUncover",relevantCards,outcome)
         state.uncoverDeck.forEach { Log.d("uncover",it.name) }
         Log.d("uncover","carta:${nextCard.name}")
-        return validateState(cardId=nextCard.name,state=state.copy(
+
+        val currState = state.copy(
             grid = state.grid.map {
                 when (it.name) {
                     card.name -> nextCard.copy()
@@ -728,11 +761,11 @@ abstract class BaseGameViewModel(
             },
             uncoverDeck = newUncover - nextCard,
             revealedCards = state.revealedCards + nextCard.name,
-            lastReplacedCard = nextCard.name
+            lastReplacedCard = nextCard.name,
+            incorrectSevenReveled = nextCard.value == 7
         )
-        )
-
-
+        if (nextCard.value == 7) return currState
+        else return validateState(nextCard.name,currState)
     }
 
     fun actionCounter(state: GameUIState, rows: List<List<CardUIStates>>): GameUIState {
