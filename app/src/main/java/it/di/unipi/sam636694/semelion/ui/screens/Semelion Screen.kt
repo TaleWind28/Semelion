@@ -332,6 +332,8 @@ fun Portrait(
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Spacer(Modifier.size(64.dp))
+
+        Log.d("uuid","uuid:${viewModel.userID}\nopponentId:${viewModel.secondPlayerId}")
         //avversario
         OpponentHeader(
             actionsUsed = conf.first.first,

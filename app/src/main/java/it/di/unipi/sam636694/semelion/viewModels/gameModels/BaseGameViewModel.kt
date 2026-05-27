@@ -397,11 +397,16 @@ abstract class BaseGameViewModel(
             }
         }
 
+        //divido la griglia in parti per assegnarle ai giocatori e fare i controlli adeguati
+        val rows = modifiedState.grid.chunked(7)
+        val upperHalf = listOf(rows[0], rows[1])
+        val bottomHalf = listOf(rows[2], rows[3])
+
         //controllo se devo passare il turno
-        modifiedState = actionCounter(modifiedState, modifiedState.grid.chunked(7))
+        modifiedState = actionCounter(modifiedState, rows)
 
         //controllo se un giocatore ha vinto
-        modifiedState = findWinner(modifiedState)
+        modifiedState = findWinner(upperHalf,bottomHalf,modifiedState)
 
         //se la validazione ha avuto successo torna al turno del giocatore
         return if (modifiedState.phase == GamePhase.Validation) {
@@ -795,19 +800,20 @@ abstract class BaseGameViewModel(
         }
     }
 
-    fun findWinner(state: GameUIState): GameUIState {
-        val rows = state.grid.chunked(7)
-        val p2r = listOf(rows[0], rows[1])
-        val p1r = listOf(rows[2], rows[3])
+    open fun findWinner(upperHalf:List<List<CardUIStates>>, bottomHalf:List<List<CardUIStates>>, state: GameUIState): GameUIState {
+//        val rows = state.grid.chunked(7)
+//        val p2r = listOf(rows[0], rows[1])
+//        val p1r = listOf(rows[2], rows[3])
 
         val predRows = Pair(
-            first = p2r.fold(0) { acc:Int, row ->
+            first = upperHalf.fold(0) { acc:Int, row ->
                 acc + row.findPowerRow()
             },
-            second = p1r.fold(0){ acc, row ->
+            second = bottomHalf.fold(0){ acc, row ->
                 acc + row.findPowerRow()
             }
         )
+
         Log.d("winner","p2:${predRows.first}, p1:${predRows.second} ")
 
         return when{

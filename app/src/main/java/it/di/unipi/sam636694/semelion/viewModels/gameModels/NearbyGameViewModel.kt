@@ -45,6 +45,7 @@ import it.di.unipi.sam636694.semelion.ui.states.DiscoveredEndpoint
 import kotlinx.coroutines.Job
 import java.util.Locale.getDefault
 import it.di.unipi.sam636694.semelion.R
+import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 
 class NearbyGameViewModel(
     private val appContext: Context,
@@ -304,6 +305,15 @@ class NearbyGameViewModel(
         }
     }
 
+    override fun findWinner(upperHalf:List<List<CardUIStates>>, bottomHalf:List<List<CardUIStates>>,state: GameUIState): GameUIState{
+
+        return if (connectionState.value.isHost){
+            super.findWinner(upperHalf=upperHalf,bottomHalf=bottomHalf,state=state)
+        }
+        else {
+            super.findWinner(upperHalf = bottomHalf,bottomHalf=upperHalf,state=state)
+        }
+    }
     override fun destroy() {
         endpoint?.let {
             sendMessage("destruction", "player gave up", connectionsClient, it)
