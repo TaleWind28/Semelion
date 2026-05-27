@@ -46,6 +46,7 @@ import kotlinx.coroutines.Job
 import java.util.Locale.getDefault
 import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
+import it.di.unipi.sam636694.semelion.utilities.avatarMap
 
 class NearbyGameViewModel(
     private val appContext: Context,
@@ -357,12 +358,14 @@ class NearbyGameViewModel(
 
     fun updateFirstPlayer(){
         _matchSummary.update {
-            it.map { stat ->
-                if (stat.userId == userID){
-                    stat.copy(wasFirstPLayer = (connectionState.value.isHost && _uiState.value.firstPlayer == "Host") || (!connectionState.value.isHost && _uiState.value.firstPlayer == "Guest") )
-                }
-                else stat
-            }
+            val (first, second) = it
+            val isFirstPlayer = (connectionState.value.isHost && _uiState.value.firstPlayer == "Host") ||
+                    (!connectionState.value.isHost && _uiState.value.firstPlayer == "Guest")
+
+            Pair(
+                if (first.userId == userID) first.copy( wasFirstPLayer = isFirstPlayer) else first,
+                if (second.userId == userID) second.copy( wasFirstPLayer = isFirstPlayer) else second
+            )
         }
     }
 
@@ -374,17 +377,18 @@ class NearbyGameViewModel(
             val message = raw.substringAfter(":")
 
             Log.d("message","$messageType$message,${messageType ==  "endpoint:"} ")
+            Log.d("msg","tipo:$messageType")
             when (messageType) {
                 "endpoint:" -> {
                     updateRemoteId(message)
 
                     //mando avatar
                     val avatarResName = appContext.resources.getResourceEntryName(firstPlayerAvatar?:R.drawable.avatar_1)
-                    sendMessage("avatar",avatarResName,connectionsClient,endpointId)
 
                     //mando nickname
                     sendMessage("nickname",nickname,connectionsClient, endpointId)
-                    Log.d("endpoint","endpoint Ottenuto")
+                    sendMessage("avatar",avatarResName,connectionsClient,endpointId)
+
 
                     if(_connectionState.value.isHost){
                         setFirstPlayer()
@@ -394,16 +398,9 @@ class NearbyGameViewModel(
                 }
 
                 "avatar:" -> {
-                    val resId = appContext.resources.getIdentifier(
-                        message,
-                        "drawable",
-                        appContext.packageName
-                    )
-
-                    if (resId != 0) {
-                        secondPlayerAvatar = resId
-                        Log.d("Avatar","$resId")
-                    }
+                    Log.d("avatar","avatar_mess:$message")
+                    secondPlayerAvatar = avatarMap[message]
+                    Log.d("avatar","avatar_Settato:$secondPlayerAvatar")
 
                 }
 

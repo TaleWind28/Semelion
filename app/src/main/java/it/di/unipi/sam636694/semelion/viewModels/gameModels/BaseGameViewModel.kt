@@ -77,7 +77,7 @@ abstract class BaseGameViewModel(
 
     private val startTime:Long = System.currentTimeMillis()
 
-    protected val _matchSummary = MutableStateFlow(listOf(
+    protected val _matchSummary = MutableStateFlow(Pair(
         MatchStatistics(matchId=-1, userId= userID,outcome = "still playing...",  figureRevealed = 0, winner = null, date = startTime, wasFirstPLayer = true,totalActions = 0),
         MatchStatistics(matchId=-1,userId= secondPlayerId,outcome = "still playing...",  figureRevealed = 0,winner = null, date=startTime, wasFirstPLayer = false,totalActions = 0)
     ))
@@ -391,9 +391,9 @@ abstract class BaseGameViewModel(
             //update dei summary
             _matchSummary.update { summary ->
                 if(state.p1Turn)
-                    listOf(summary.first().copy( totalActions = summary.first().totalActions +1),summary.last())
+                    Pair(summary.first.copy( totalActions = summary.first.totalActions +1),summary.second)
                 else
-                    listOf(summary.first(),summary.last().copy(totalActions = summary.last().totalActions + 1))
+                    Pair(summary.first,summary.second.copy(totalActions = summary.second.totalActions + 1))
             }
         }
 
@@ -696,11 +696,10 @@ abstract class BaseGameViewModel(
         }
 
         _matchSummary.update { summary ->
-            summary.first().figureRevealed
             if(state.p1Turn)
-                listOf(summary.first().copy(figureRevealed= summary.first().figureRevealed + 1),summary.last())
+                Pair(summary.first.copy(figureRevealed= summary.first.figureRevealed + 1),summary.second)
             else
-                listOf(summary.first(),summary.last().copy(figureRevealed= summary.last().figureRevealed + 1))
+                Pair(summary.first,summary.second.copy(figureRevealed= summary.second.figureRevealed + 1))
         }
 
         modifiedState = replaceCard(modifiedState, cardId)
@@ -801,10 +800,6 @@ abstract class BaseGameViewModel(
     }
 
     open fun findWinner(upperHalf:List<List<CardUIStates>>, bottomHalf:List<List<CardUIStates>>, state: GameUIState): GameUIState {
-//        val rows = state.grid.chunked(7)
-//        val p2r = listOf(rows[0], rows[1])
-//        val p1r = listOf(rows[2], rows[3])
-
         val predRows = Pair(
             first = upperHalf.fold(0) { acc:Int, row ->
                 acc + row.findPowerRow()
@@ -881,71 +876,87 @@ abstract class BaseGameViewModel(
 
         isDBOperationComplete.value = false
 
-        _matchSummary.update { lists -> lists.map { it.copy(outcome = outcome) } }
+        _matchSummary.update { it.copy(first = it.first.copy(outcome=outcome), second = it.second.copy(outcome=outcome)) }
 
         //db operations
         viewModelScope.launch {
-            val matchId = resumedMatchId ?: (matchesDao.getNextMatchId() - 1)
-            //inserisco il match nel db
-            matchesDao.update(Matches(matchId = matchId,gameMode= mode,gameState=_uiState.value, isCompleted = true))
-            Log.d("DBMS","$matchId")
-            //update dei matchSummary
-            matchSummary.value.forEach { stats ->
-                val stat = stats.copy(matchId = matchId,outcome = outcome, winner = winningUser)
-                matchStatisticsDao.upsert(stat)
-            }
+            //aggiorno la tabella Partite
+            updateMatch(resumedMatchId,mode,outcome,winningUser)
 
             //update dei playerSummary
             listOf(userID,secondPlayerId).forEach{ userId ->
-                Log.d("DB","inserting data for user:$userId")
-                //se non ha delle statistiche le creo
-
-                //winninguser sarà true se il vincitore è l'utente locale, false se il vincitore è l'avversario, null altrimenti
-                var stats = PlayerStatistics(
-                    userId= userId,
-                    matchesPlayed = 1,
-                    matchesWon = if (winningUser == true) 1 else 0,
-                    matchesLost=if (winningUser == false) 1 else 0,
-                    matchesDrawn = if (winningUser == null) 1 else 0
-                )
-
-                //controllo la streak
-                if (outcome.contains(userId)){
-                    val currStr = stats.currentStreak + 1
-                    //Log.d("DB","pre update:\nstreak:$currStr\nbest:${stats.bestStreak}")
-                    if (currStr > stats.bestStreak){
-                        //Log.d("DB","pre update:\nstreak:$currStr\nbest:${stats.bestStreak}")
-                        stats = stats.copy(currentStreak = currStr, bestStreak = currStr)
-                    }
+                when{
+                    winningUser == null -> updatePlayerStats(userId,winningUser)
+                    userId == userID -> updatePlayerStats(userId,winningUser)
+                    userId != userID -> updatePlayerStats(userId,!winningUser)
                 }
-                else{
-                    stats = stats.copy(currentStreak = 0)
-                }
-
-                //ottengo le statistiche del player dal db
-                val playerStats: PlayerStatistics? = playersStatisticsDao.getStatsByUser(userId)
-
-                //se non ho la riga allora la creo con le stats ottenute attualmente
-                if (playerStats == null ){
-                    playersStatisticsDao.insert(stats.copy(currentStreak = if (stats.matchesWon == 1) 1 else 0, bestStreak = if (stats.matchesWon == 1) 1 else 0))
-                    return@forEach
-                }
-
-                //aggiorno stats in base ai valori presi dal db
-                stats = stats.copy(
-                    matchesPlayed = playerStats.matchesPlayed + stats.matchesPlayed,
-                    matchesWon = playerStats.matchesWon + stats.matchesWon,
-                    matchesLost = playerStats.matchesLost + stats.matchesLost,
-                    matchesDrawn = playerStats.matchesDrawn + stats.matchesDrawn,
-                    bestStreak = playerStats.bestStreak
-
-                )
-
-                //aggiorno la entry nel database
-                playersStatisticsDao.update(stats)
             }
             isDBOperationComplete.value = true
         }
+    }
+
+    suspend fun updateMatch(resumedMatchId: Long?,mode: GameModes,outcome:String,winningUser: Boolean?){
+        val matchId = resumedMatchId ?: (matchesDao.getNextMatchId() - 1)
+        //inserisco il match nel db
+        matchesDao.update(Matches(matchId = matchId,gameMode= mode,gameState=_uiState.value, isCompleted = true))
+        Log.d("DBMS","$matchId")
+
+        //update dei matchSummary
+        val p1Stats = matchSummary.value.first.copy(matchId = matchId,outcome = outcome, winner = winningUser)
+        val p2Stats = matchSummary.value.second.copy(matchId = matchId,outcome = outcome, winner = winningUser?.not())
+
+        matchStatisticsDao.upsert(p1Stats)
+        matchStatisticsDao.upsert(p2Stats)
+    }
+
+    suspend fun updatePlayerStats(userId:String,winningUser: Boolean?){
+        Log.d("DB","inserting data for user:$userId")
+        //se non ha delle statistiche le creo
+
+        //winninguser sarà true se il vincitore è l'utente locale, false se il vincitore è l'avversario, null altrimenti
+        var stats = PlayerStatistics(
+            userId= userId,
+            matchesPlayed = 1,
+            matchesWon = if (winningUser == true) 1 else 0,
+            matchesLost=if (winningUser == false) 1 else 0,
+            matchesDrawn = if (winningUser == null) 1 else 0
+        )
+
+        //ottengo le statistiche del player dal db
+        val playerStats: PlayerStatistics? = playersStatisticsDao.getStatsByUser(userId)
+
+        //se non ho la riga allora la creo con le stats ottenute attualmente
+        if (playerStats == null ){
+            playersStatisticsDao.insert(stats.copy(currentStreak = if (stats.matchesWon == 1) 1 else 0, bestStreak = if (stats.matchesWon == 1) 1 else 0))
+            return
+        }
+
+
+        //controllo la streak
+        if (winningUser == true){
+            //se ho vinto incremento la streak
+            val currStr = playerStats.currentStreak + 1
+            //controllo se ho superato la migliore
+            if (currStr > playerStats.bestStreak){
+                //aggiorno la streak migliore oltre a quella attuale
+                stats = stats.copy(currentStreak = currStr, bestStreak = currStr)
+            }
+        }
+        else{
+            //annullo la streak se ho perso
+            stats = stats.copy(currentStreak = 0, bestStreak = playerStats.bestStreak)
+        }
+
+        //aggiorno stats in base ai valori presi dal db
+        stats = stats.copy(
+            matchesPlayed = playerStats.matchesPlayed + stats.matchesPlayed,
+            matchesWon = playerStats.matchesWon + stats.matchesWon,
+            matchesLost = playerStats.matchesLost + stats.matchesLost,
+            matchesDrawn = playerStats.matchesDrawn + stats.matchesDrawn,
+        )
+
+        //aggiorno la entry nel database
+        playersStatisticsDao.update(stats)
     }
 
     open fun interruptMatch(mode: GameModes){
@@ -962,11 +973,12 @@ abstract class BaseGameViewModel(
             if (suspendedMatches >1) matchesDao.deleteAllExceptLast()
 
             //salvataggio matchSummary in caso di ripresa della partita
-            matchSummary.value.forEach { stats ->
+            matchSummary.value.toList().forEach { stats ->
                 val stat = stats.copy(matchId = matchId,outcome = "interrupted", winner = null)
                 Log.d("DB","inserting data: $stat")
                 matchStatisticsDao.upsert(stat)
             }
+
             isDBOperationComplete.value = true
         }
     }
@@ -980,7 +992,6 @@ abstract class BaseGameViewModel(
 
         if (nickname!=null){
             this.opponentName = nickname
-            //Log.d("conc","nick(nvm):$nickname, ${this.opponentName}")
         }
         val matchID = matchesDao.getNextMatchId()
         //inserisco il match nel db
@@ -1015,19 +1026,21 @@ abstract class BaseGameViewModel(
         this.playerName = localUser?.nickName ?: "Semelion User"
 
         //imposto l'avatar del primo player
-        if (firstPlayerAvatar!=null) userDao.update(User(userID,playerName,firstPlayerAvatar!!)) else localUser!!.avatar
+        if (firstPlayerAvatar!=null) userDao.update(User(userID,playerName,firstPlayerAvatar!!))
 
         //controllo se esiste l'avversario nel db
         val opponent = userDao.getUserById(secondPlayerId)
 
+        Log.d("avatar","avatar_DB:$secondPlayerAvatar")
+
         //controllo se in caso l'avversario esista il nickname sia diverso da quello in memoria, solo se il nickname non è null
         if (opponent == null) userDao.insert(User(secondPlayerId, nickName = nickname ?: "Sora", avatar = R.drawable.avatar_1))
-        else if (opponent.nickName != nickname && nickname!= null ) userDao.update(User(userId=secondPlayerId,nickName=nickname,avatar=secondPlayerAvatar?:R.drawable.avatar_12))
+        else  userDao.update(User(userId=secondPlayerId,nickName=nickname?:opponent.nickName,avatar=secondPlayerAvatar?:opponent.avatar))
     }
 
     protected fun updateSecondPlayer(secondPlayerId: String){
         this.secondPlayerId = secondPlayerId
-        _matchSummary.update { listOf(it.first(),it.last().copy(userId=secondPlayerId)) }
+        _matchSummary.update { Pair(it.first,it.second.copy(userId=secondPlayerId)) }
     }
 
     abstract fun destroy()

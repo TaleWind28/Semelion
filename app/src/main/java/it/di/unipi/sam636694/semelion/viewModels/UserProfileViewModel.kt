@@ -100,12 +100,12 @@ class UserProfileViewModel(
         val opponentName = opponent?.nickName
         val opponentAvatar = opponent?.avatar
 
-        Log.d("init","oppo:${opponentName?: opponentMatch.userId}\ndate:$date\ntime:$time\nisWin:${opponentMatch.winner}")
+        Log.d("init","oppo:${opponentName?: opponentMatch.userId}\ndate:$date\ntime:$time\nisWin:${opponentMatch.winner}\n${opponentAvatar ?: R.drawable.avatar_1}")
         return RecentMatch(
             opponent = opponentName ?: opponentMatch.userId,
             date = date,
             time = time,
-            isWin = opponentMatch.winner,
+            isWin = opponentMatch.winner?.not(),
             opponentAvatar = opponentAvatar ?: R.drawable.avatar_1
         )
     }
