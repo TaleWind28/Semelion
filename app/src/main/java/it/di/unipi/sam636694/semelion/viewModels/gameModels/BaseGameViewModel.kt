@@ -798,7 +798,7 @@ abstract class BaseGameViewModel(
         else validateState(nextCard.name,currState)
     }
 
-    fun actionCounter(state: GameUIState, rows: List<List<CardUIStates>>): GameUIState {
+    open fun actionCounter(state: GameUIState, rows: List<List<CardUIStates>>): GameUIState {
         val p1Actions = calcActions(listOf(rows[2], rows[3]))
         val p2Actions = calcActions(listOf(rows[0], rows[1]))
 

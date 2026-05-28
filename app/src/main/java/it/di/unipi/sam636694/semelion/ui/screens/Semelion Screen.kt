@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -54,6 +55,8 @@ import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
+import it.di.unipi.sam636694.semelion.utilities.Pergamena
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,11 +84,6 @@ fun SemelionScreen(
 
     Log.d("message","${state.phase}")
 
-    // SCHERMO PRINCIPALE //
-//    when(viewModel){
-//        is SemelionGameViewModel -> SinglePlayer(state = state, viewModel= viewModel, modifier = modifier, padding=padding)
-//        is NearbyGameViewModel -> MultiPlayer(state= state, viewModel= viewModel, modifier = modifier)
-//    }
     val conf = when(viewModel){
         is NearbyGameViewModel ->{
             val connState by viewModel.connectionState.collectAsState()
@@ -269,16 +267,30 @@ fun GameScreen(
     state: GameUIState,
     conf:Pair<Triple<Int,Int, Boolean>,Triple<Int,Int, Boolean>>
 ) {
-    val configuration = LocalConfiguration.current
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Pergamena)  // <-- qui
+    ) {
+        val configuration = LocalConfiguration.current
 
-    when (configuration.orientation) {
-        Configuration.ORIENTATION_LANDSCAPE -> {
-            Landscape(modifier=Modifier.wrapContentWidth(),viewModel=viewModel, state = state, cardSize= CardSize.LARGE, conf = conf)
-        }
-        Configuration.ORIENTATION_PORTRAIT -> {
-            Portrait(conf=conf, viewModel = viewModel, state = state)
-        }
-        else -> {
+        when (configuration.orientation) {
+            Configuration.ORIENTATION_LANDSCAPE -> {
+                Landscape(
+                    modifier = Modifier.wrapContentWidth(),
+                    viewModel = viewModel,
+                    state = state,
+                    cardSize = CardSize.LARGE,
+                    conf = conf
+                )
+            }
+
+            Configuration.ORIENTATION_PORTRAIT -> {
+                Portrait(conf = conf, viewModel = viewModel, state = state)
+            }
+
+            else -> {
+            }
         }
     }
 }

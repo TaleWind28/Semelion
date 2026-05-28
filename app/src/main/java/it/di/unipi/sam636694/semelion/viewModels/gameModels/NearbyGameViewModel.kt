@@ -102,22 +102,22 @@ class NearbyGameViewModel(
         }
     }
     //hosta una partita
-    fun startHosting(serviceId: String) {
+    fun startHosting(serviceId: String, nickname: String) {
         _connectionState.update {
             it.copy(isSearching = true, isHost = true, status = "In attesa di connessioni...")
         }
         val options = AdvertisingOptions.Builder()
             .setStrategy(Strategy.P2P_POINT_TO_POINT).build()
-        connectionsClient.startAdvertising(localId, serviceId, connectionCallback, options)
+        val encodedAvatar = appContext.resources.getResourceEntryName(firstPlayerAvatar?:R.drawable.avatar_1)
+        val encodedInfo = "$nickname|$encodedAvatar"
+        connectionsClient.startAdvertising(encodedInfo, serviceId, connectionCallback, options)
     }
 
     //cerca un host
-    fun startDiscovery(serviceId: String) {
-        //modifico lo stato di connessione
+    fun startDiscovery(serviceId: String, nickname: String) {
         _connectionState.update {
             it.copy(isSearching = true, isHost = false, status = "Cerco un host...")
         }
-        //svouto la griglia
         this.blankGrid()
 
         val options = DiscoveryOptions.Builder()
@@ -129,19 +129,20 @@ class NearbyGameViewModel(
                 override fun onEndpointFound(endpointId: String, info: DiscoveredEndpointInfo) {
                     _connectionState.update { state ->
                         val updated = state.discoveredEndpoints.toMutableList()
-                        if (updated.none{ it.endpointId == endpointId }){
-                            updated.add(DiscoveredEndpoint(endpointId, info.endpointName))
+                        val parts = info.endpointName.split("|")
+                        val name = parts.getOrElse(0) { info.endpointName }
+                        val avatar = avatarMap[parts.getOrElse(1) { "default" }]
+                        if (updated.none { it.endpointId == endpointId }) {
+                            updated.add(DiscoveredEndpoint(endpointId, name,avatar?:R.drawable.avatar_1))
                         }
                         state.copy(
                             discoveredEndpoints = updated,
                             status = "${updated.size} host trovati"
                         )
-                        //state.copy(status = "Host trovato! Connessione...")
                     }
                 }
 
                 override fun onEndpointLost(endpointId: String) {
-                    // Rimuove dalla lista se l'host sparisce
                     _connectionState.update { state ->
                         val updated = state.discoveredEndpoints.filter { it.endpointId != endpointId }
                         state.copy(
@@ -154,11 +155,12 @@ class NearbyGameViewModel(
             options
         )
     }
-
     //inizia la connessione con un endpoint
     fun connectToEndpoint(endpointId:String){
         _connectionState.update { it.copy(status = "Connessione a $endpointId...") }
-        connectionsClient.requestConnection(localId, endpointId, connectionCallback)
+        val encodedAvatar = appContext.resources.getResourceEntryName(firstPlayerAvatar?:R.drawable.avatar_1)
+        val encodedInfo = "$nickname|$encodedAvatar"
+        connectionsClient.requestConnection(encodedInfo, endpointId, connectionCallback)
         connectionsClient.stopDiscovery()
     }
 
@@ -289,22 +291,20 @@ class NearbyGameViewModel(
         return true
     }
 
-    override fun validateState(cardId: String, state: GameUIState): GameUIState {//cannolo
-        val validatedState = super.validateState(cardId, state)
-
-        Log.d("coinFlip", "${validatedState.p1Turn}")
-
-        if (!(validatedState.phase is GamePhase.Validation || validatedState.phase is GamePhase.PlayerTurn)) return validatedState
+    override fun actionCounter(state: GameUIState, rows: List<List<CardUIStates>>): GameUIState{
+        val modifiedState = super.actionCounter(state, rows)
+        if (!(modifiedState.phase is GamePhase.Validation || modifiedState.phase is GamePhase.PlayerTurn)) return modifiedState
 
         return if (
-            validatedState.p1Turn && !connectionState.value.isHost
+            modifiedState.p1Turn && !connectionState.value.isHost
             ||
-            !validatedState.p1Turn && connectionState.value.isHost
+            !modifiedState.p1Turn && connectionState.value.isHost
         ) {
-            validatedState.copy(phase = GamePhase.WaitingForOpponent)
+            modifiedState.copy(phase = GamePhase.WaitingForOpponent)
         } else {
-            validatedState
+            modifiedState
         }
+
     }
 
     override fun findWinner(upperHalf:List<List<CardUIStates>>, bottomHalf:List<List<CardUIStates>>,state: GameUIState): GameUIState{
@@ -377,20 +377,18 @@ class NearbyGameViewModel(
             val messageType = raw.substringBefore(":") + ":"
             val message = raw.substringAfter(":")
 
-            Log.d("message","$messageType$message,${messageType ==  "endpoint:"} ")
-            Log.d("msg","tipo:$messageType")
+//            Log.d("message","$messageType$message,${messageType ==  "endpoint:"} ")
+//            Log.d("msg","tipo:$messageType")
             when (messageType) {
                 "endpoint:" -> {
                     updateRemoteId(message)
 
-                    //mando avatar
-                    val avatarResName = appContext.resources.getResourceEntryName(firstPlayerAvatar?:R.drawable.avatar_1)
+                    //inizio il match
+                    viewModelScope.launch{
+                        matchStart(GameModes.NearBy,opponentName)
+                    }
 
-                    //mando nickname
-                    sendMessage("nickname",nickname,connectionsClient, endpointId)
-                    sendMessage("avatar",avatarResName,connectionsClient,endpointId)
-
-
+                    //se sono host, decido chi è il primo giocatore, aggiorno la variabile relativa e lo comunico al guest
                     if(_connectionState.value.isHost){
                         setFirstPlayer()
                         updateFirstPlayer()
@@ -398,25 +396,13 @@ class NearbyGameViewModel(
                     }
                 }
 
-                "avatar:" -> {
-                    Log.d("avatar","avatar_mess:$message")
-                    secondPlayerAvatar = avatarMap[message]
-                    Log.d("avatar","avatar_Settato:$secondPlayerAvatar")
-
-                }
-
                 "starting player:" ->{
-                    Log.d("player",message)
                     if (message == "Guest") _uiState.update { it.copy(firstPlayer = message, p1Turn = false,p1Actions = it.p1Actions+1, phase = GamePhase.PlayerTurn) }
                     if (message == "Host") _uiState.update { it.copy(firstPlayer = message,p2Actions = it.p2Actions+1, phase = GamePhase.WaitingForOpponent) }
                     updateFirstPlayer()
                     Log.d("coinFlip","fp:${_uiState.value.firstPlayer}")
                 }
-                "nickname:" ->{
-                    viewModelScope.launch{
-                        matchStart(GameModes.NearBy,message)
-                    }
-                }
+
                 "grid:" -> {
                     _uiState.update {
                         it.copy(grid = deserializeCardList(message))
@@ -458,6 +444,11 @@ class NearbyGameViewModel(
     val connectionCallback = object : ConnectionLifecycleCallback() {
         override fun onConnectionInitiated(endpointId: String, info: ConnectionInfo) {
             _connectionState.update { it.copy(status = "Connessione in arrivo da ${info.endpointName}...") }
+            val parts = info.endpointName.split("|")
+            //salvo il nickname dell'oppo ed il suo avatar
+            opponentName = parts.getOrElse(0) { info.endpointName }
+            secondPlayerAvatar = avatarMap[parts.getOrElse(1) { "default" }]
+            // accetta la connessione
             connectionsClient.acceptConnection(endpointId, payloadCallback)
         }
 
@@ -470,6 +461,7 @@ class NearbyGameViewModel(
                 sendMessage("endpoint", localId, connectionsClient, endpointId)
                 startHeartbeat(endpointId)
                 if (_connectionState.value.isHost) {
+                    //comunico la griglia al guest
                     sendGrid(endpointId)
                     _connectionState.update { it.copy(gameStarted = true) }
                 }

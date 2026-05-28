@@ -220,5 +220,10 @@ val avatarMap = mapOf(
     "avatar_10" to R.drawable.avatar_10,
     "avatar_11" to R.drawable.avatar_11,
     "avatar_12" to R.drawable.avatar_12,
-
 )
+
+val Pergamena = Color(0xFFF5EFE0)
+val SabbiaCalda = Color(0xFFEDE0C8)
+val BeigeMiddio = Color(0xFFD6C9A8)
+val OcraMorbida = Color(0xFFC8B98A)
+val Scuro = Color(0xFF3D3526)

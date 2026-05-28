@@ -3,6 +3,7 @@ import android.os.Build
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -56,6 +57,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import it.di.unipi.sam636694.semelion.R
@@ -193,7 +195,7 @@ fun DiscoveryScreen(
             Log.d("disconnect","isHosting:$isHosting")
             if (!isHosting) {
                 viewModel.disconnect()
-                viewModel.startDiscovery(serviceId)
+                viewModel.startDiscovery(serviceId,viewModel.nickname)
             }
         }
 
@@ -251,6 +253,7 @@ fun GuestScreen(state: ConnectionUiState,viewModel: NearbyGameViewModel){
         items(state.discoveredEndpoints) { endpoint ->
             PlayerCard(
                 name = endpoint.endpointName,
+                avatar = endpoint.avatarIndex,
                 onJoin = {
                     joiningDialog = true
                     viewModel.connectToEndpoint(endpoint.endpointId)
@@ -293,7 +296,7 @@ fun GuestScreen(state: ConnectionUiState,viewModel: NearbyGameViewModel){
 
 
 @Composable
-fun PlayerCard(name: String, onJoin: () -> Unit) {
+fun PlayerCard(name: String,avatar:Int, onJoin: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -309,7 +312,8 @@ fun PlayerCard(name: String, onJoin: () -> Unit) {
                 .background(Color(0xFFC8D8F8)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF2255AA), modifier = Modifier.size(24.dp))
+            Image(painter = painterResource(avatar), contentDescription = "Avatar")
+            //Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF2255AA), modifier = Modifier.size(24.dp))
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -375,7 +379,7 @@ fun HostScreen(
             )
 
             Button(
-                onClick = { viewModel.startHosting(serviceId) },
+                onClick = { viewModel.startHosting(serviceId, nickname = viewModel.nickname) },
                 enabled = !state.isSearching,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),

@@ -13,5 +13,6 @@ data class ConnectionUiState(
 
 data class DiscoveredEndpoint(
     val endpointId:String,
-    val endpointName:String
+    val endpointName:String,
+    val avatarIndex: Int
 )
