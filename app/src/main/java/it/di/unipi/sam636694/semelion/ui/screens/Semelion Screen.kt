@@ -55,9 +55,8 @@ import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
+import it.di.unipi.sam636694.semelion.ui.states.produceConfigs
 import it.di.unipi.sam636694.semelion.utilities.Pergamena
-
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -303,6 +302,9 @@ fun Landscape(
     viewModel: BaseGameViewModel,
     state: GameUIState
 ){
+    val colorsConf = produceConfigs(state,viewModel)
+    val p1Color = colorsConf.first().third.first
+    val p2Color = colorsConf.last().third.first
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -313,6 +315,7 @@ fun Landscape(
             actionsUsed = conf.first.first,
             actionsTotal = conf.first.second,
             isWaiting = conf.first.third,
+            playerColor = p1Color,
             playerName = viewModel.opponentName,
             avatar = viewModel.secondPlayerAvatar ?: R.drawable.avatar_12
         )
@@ -324,6 +327,7 @@ fun Landscape(
             actionsUsed = conf.second.first,
             actionsTotal = conf.second.second,
             isWaiting = conf.second.third,
+            playerColor = p2Color,
             playerName = viewModel.playerName,
             avatar = viewModel.firstPlayerAvatar ?: R.drawable.avatar_1
         )
@@ -338,6 +342,9 @@ fun Portrait(
     viewModel: BaseGameViewModel,
     state: GameUIState
 ) {
+    val colorsConf = produceConfigs(state,viewModel)
+    val p1Color = colorsConf.first().third.first
+    val p2Color = colorsConf.last().third.first
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -351,6 +358,7 @@ fun Portrait(
             actionsUsed = conf.first.first,
             actionsTotal = conf.first.second,
             isWaiting = conf.first.third,
+            playerColor= p1Color,
             playerName = viewModel.opponentName,
             avatar = viewModel.secondPlayerAvatar ?: R.drawable.sora_avatar
         )
@@ -366,6 +374,7 @@ fun Portrait(
             actionsUsed = conf.second.first,
             actionsTotal = conf.second.second,
             isWaiting = conf.second.third,
+            playerColor=p2Color,
             playerName = viewModel.playerName,
             avatar = viewModel.firstPlayerAvatar ?: R.drawable.avatar_1
         )
@@ -378,6 +387,7 @@ fun OpponentHeader(
     actionsUsed: Int,
     actionsTotal: Int,
     isWaiting: Boolean,
+    playerColor:Color,
     playerName: String,
     avatar: Int
 ) {
@@ -385,8 +395,8 @@ fun OpponentHeader(
         shape = RoundedCornerShape(20.dp),
         color = if (!isWaiting) Color.White else Color(0xFFF5F5F5),
         border = if (!isWaiting) BorderStroke(
-            2.dp,
-            GreenAccent
+            width=2.dp,
+            color=playerColor
         ) else null,
         modifier = Modifier.wrapContentWidth(),
         shadowElevation = if (!isWaiting) 4.dp else 1.dp,
