@@ -13,8 +13,10 @@ import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.utilities.RowOrder
 import it.di.unipi.sam636694.semelion.database.GameModes
 import it.di.unipi.sam636694.semelion.database.MatchStatisticsDao
+import it.di.unipi.sam636694.semelion.database.Matches
 import it.di.unipi.sam636694.semelion.database.MatchesDao
 import it.di.unipi.sam636694.semelion.database.ParticipationsDao
+import it.di.unipi.sam636694.semelion.database.PlayerStatistics
 import it.di.unipi.sam636694.semelion.database.PlayerStatisticsDao
 import it.di.unipi.sam636694.semelion.database.UserDao
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
@@ -46,9 +48,7 @@ class SemelionGameViewModel(
     private var resumedMatchState: GameUIState = GameUIState()
 
     override fun setup(){
-        val decks = createTestDecks()
-        Log.d("finder","${decks.first.indexOfFirst { it.value == 8 }}")
-//        Log.d("finder","${decks.second.indexOfFirst { it.value == 7 }}")
+        val decks = createDecks()
         _uiState.value = GameUIState(
             grid = decks.first,
             uncoverDeck = decks.second,
@@ -56,20 +56,14 @@ class SemelionGameViewModel(
         )
         //imposto il primo giocatore
         setFirstPlayer()
-        Log.d("coinFlip","turno dopo coinflip:${_uiState.value.p1Turn}")
-
-        Log.d("decks","sevenPosition: ${_uiState.value.uncoverDeck.indexOfFirst { it.value == 7 }}\n")
-
         viewModelScope.launch {
             if (_uiState.value.phase is GamePhase.Loading){
                 super.playerName = userDao.getUserById(userID)?.nickName ?: "Player 1"
                 firstPlayerAvatar = userDao.getUserById(userID)?.avatar
                 secondPlayerAvatar = R.drawable.sora_avatar
                 val suspendedMatch = matchesDao.getSuspendedMatch()
-                Log.d("Suspended","$suspendedMatch")
                 if ( suspendedMatch == null) {
                     matchStart(GameModes.ScreenSharing)
-                    Log.d("coinFlip","turno dopo coinflip:${_uiState.value.p1Turn}")
                     _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }
                 }
                 else{
@@ -88,10 +82,63 @@ class SemelionGameViewModel(
 
     fun newMatch(){
         viewModelScope.launch {
+            Log.d("finn","cerco:$resumedMatchId")
+
+            endResumedMatch()
+
+            matchesDao.update(Matches(matchId = resumedMatchId, GameModes.ScreenSharing,resumedMatchState, isCompleted = true))
+
             matchStart(GameModes.ScreenSharing)
-            Log.d("coinFlip","turno dopo coinflip:${_uiState.value.p1Turn}")
+
             _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }
         }
+    }
+
+    suspend fun endResumedMatch(){
+        //se non trovo il match le statistiche a lui relative anch'esse non verranno trovate
+        val match = matchesDao.getMatchById(resumedMatchId) ?: return
+        matchesDao.update(match.copy(isCompleted = true))
+
+        val stats = matchStatisticsDao.getStatsByMatch(resumedMatchId)
+
+        stats.forEach {
+            val isLocalUser = userID == it.userId
+            val userStats = playersStatisticsDao.getStatsByUser(it.userId)
+            //aggiorno le statistiche dei giocatori
+            if (userStats != null){
+                playersStatisticsDao.update(
+                    userStats.copy(
+                        matchesPlayed = userStats.matchesPlayed + 1,
+                        matchesLost = if (isLocalUser)userStats.matchesLost + 1 else 0,
+                        matchesWon = if (!isLocalUser)userStats.matchesWon + 1 else 0,
+                        currentStreak = if (!isLocalUser)userStats.currentStreak + 1 else 0,
+                        bestStreak = if (!isLocalUser) if(userStats.currentStreak +1 > userStats.bestStreak)userStats.currentStreak +1  else userStats.bestStreak else userStats.bestStreak,
+
+                    )
+                )
+            }else{
+                playersStatisticsDao.insert(
+                    PlayerStatistics(
+                        userId = userID,
+                        matchesPlayed = 1,
+                        matchesLost = if (isLocalUser)1 else 0,
+                        matchesWon = if (!isLocalUser)1 else 0,
+                        matchesDrawn = 0,
+                        currentStreak = if (!isLocalUser)1 else 0,
+                        bestStreak = if (!isLocalUser)1 else 0
+                    )
+                )
+            }
+            //aggiorno le statistiche relative al match, queste sono sicuro che esistano perchè:
+            // se il match è presente nella tabella allora sono state create le statistiche
+            matchStatisticsDao.update(
+                it.copy(
+                    outcome = "Not Continued",
+                    winner = !isLocalUser //l'utente locale viene considerato sconfitto
+                )
+            )
+        }
+
     }
 
     override fun matchEnd(mode: GameModes,loser:String?,resumedMatchId:Long?) {

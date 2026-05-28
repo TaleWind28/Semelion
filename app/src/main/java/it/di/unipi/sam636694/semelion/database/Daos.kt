@@ -48,7 +48,7 @@ interface MatchesDao {
     @Query("SELECT * FROM Partite WHERE matchId = :matchId")
     suspend fun getMatchById(matchId: Long): Matches?
 
-    @Query("SELECT * FROM Partite WHERE isCompleted=:completion")
+    @Query("SELECT * FROM Partite p WHERE p.isCompleted=:completion AND p.gameMode = 'ScreenSharing'")
     suspend fun getSuspendedMatch(completion: Boolean= false): Matches?
 
     @Query("SELECT COALESCE(MAX(matchId), 0) + 1 FROM Partite")
