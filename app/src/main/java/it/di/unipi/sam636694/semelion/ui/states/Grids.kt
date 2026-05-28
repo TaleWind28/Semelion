@@ -266,9 +266,9 @@ fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp,enabled:Boo
     val sizePx = with(density) { size.toPx().toInt()}
 
     val imageResId = if (card.isRevealed)
-        (cardImageMap[card.name]) ?: R.drawable.purple_back
+        (cardImageMap[card.name]) ?: R.drawable.semelion_back
     else
-        R.drawable.purple_back
+        R.drawable.semelion_back
 
     val view = LocalView.current
 

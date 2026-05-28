@@ -72,7 +72,7 @@ fun SemelionConnectionsScreen(
     userId: String,
     onBack: () -> Unit,
 ) {
-    var nickname = "pino"
+    var nickname = "Semelion User:$userId"
     var avatar: Int
 
     val requiredPermissions = remember {
