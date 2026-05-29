@@ -63,6 +63,10 @@ import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
+import it.di.unipi.sam636694.semelion.ui.theme.Arancione
+import it.di.unipi.sam636694.semelion.ui.theme.Blu
+import it.di.unipi.sam636694.semelion.ui.theme.GreenAccent
+import it.di.unipi.sam636694.semelion.ui.theme.Rosso
 import it.di.unipi.sam636694.semelion.utilities.GameStrings
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
@@ -125,43 +129,37 @@ fun produceConfigs(state: GameUIState, viewModel: BaseGameViewModel):List<Triple
     val rows = state.grid.chunked(7)
     return when(viewModel){
         is SemelionGameViewModel -> {
-            Log.d("coinFlip","turno:${state.p1Turn}")
             listOf(
                 //g2
-                //rosso 0xFFE53935
-                Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFFE53935), 180f)),
+                Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Rosso, 180f)),
                 //g1
-                //blu 0xFF2196F3
-                Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFF2196F3), 0f))
+                Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Blu, 0f))
             )
         }
         is NearbyGameViewModel ->{
             if (viewModel.connectionState.value.isHost){
                 listOf(
                     //guest
-                    //arancione 0xFFFF9800
-                    Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFFFF9800), 180f)),
+                    Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Arancione, 180f)),
                     //host
-                    //verde 0xFF3BFF7C
-                    Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFF3BFF7C), 0f))
+                    Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(GreenAccent, 0f))
                     )
             }else{
                 listOf(
                     //host
-                    //arancione 0xFFFF9800
-                    Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFFFF9800), 0f)),
+                    Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Arancione, 0f)),
                     //guest
-                    //verde 0xFF3BFF7C
-                    Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFF3BFF7C), 180f))
+                    Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(GreenAccent, 180f))
                 )
             }
 
         }
         else -> {
              listOf(
-                Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Color(0xFF009688), 180f)),
+                 //g2
+                Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Arancione, 180f)),
                 //g1
-                Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(Color(0xFF9C27B0), 0f))
+                Triple(state.p1Turn, listOf(rows[2], rows[3]), Pair(GreenAccent, 0f))
             )
         }
     }
@@ -170,8 +168,6 @@ fun produceConfigs(state: GameUIState, viewModel: BaseGameViewModel):List<Triple
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewModel, rowBackground: Color, phase: GamePhase, enabled:Boolean, grid: List<CardUIStates>, cardSize:Dp) {
-    //preparazione misure
-    val density = LocalDensity.current
 
     val draggableState = remember {
         AnchoredDraggableState(initialValue = 0)

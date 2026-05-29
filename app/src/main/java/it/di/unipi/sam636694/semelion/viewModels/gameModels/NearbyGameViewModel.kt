@@ -30,7 +30,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import sendMessage
+import it.di.unipi.sam636694.semelion.ui.screens.sendMessage
 import com.google.android.gms.nearby.connection.*
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.utilities.serializeList

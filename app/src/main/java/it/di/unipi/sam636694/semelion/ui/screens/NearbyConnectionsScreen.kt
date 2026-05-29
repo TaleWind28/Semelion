@@ -1,3 +1,5 @@
+package it.di.unipi.sam636694.semelion.ui.screens
+
 import android.Manifest
 import android.app.Application
 import android.os.Build
@@ -28,7 +30,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -54,14 +55,12 @@ import com.google.android.gms.nearby.connection.*
 import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.NearbyGameViewModel
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.ui.states.ConnectionUiState
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
