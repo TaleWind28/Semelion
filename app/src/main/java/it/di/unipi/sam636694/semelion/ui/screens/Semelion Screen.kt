@@ -46,6 +46,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import it.di.unipi.sam636694.semelion.utilities.CardSize
 import it.di.unipi.sam636694.semelion.utilities.GreenAccent
 import it.di.unipi.sam636694.semelion.R
+import it.di.unipi.sam636694.semelion.Route
 import it.di.unipi.sam636694.semelion.utilities.TextSecondary
 import it.di.unipi.sam636694.semelion.database.GameModes
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.BaseGameViewModel
@@ -177,22 +178,33 @@ fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGam
 
             //victory fanfare ff7 a cappela
             Log.d("winner","winner:${state.winner}\nuuid:${viewModel.userID}")
-            lateinit var gameoverText:String
-            when(state.winner){
-                viewModel.userID ->{
-                    gameoverText = "Complimenti hai vinto!!"
-                    viewModel.player.playFile(R.raw.victory_fanfare)
-                }
-                viewModel.secondPlayerId -> {
-                    gameoverText = "Peccato, andrà meglio la prossima volta..."
-                    viewModel.player.playFile(R.raw.gameover)
-                }
-                else ->{
-                    gameoverText = "Wow, è stato uno scontro ad armi pari"
-                    viewModel.player.playFile(R.raw.there)
-                }
-            }
 
+
+            val gameoverText = resolveGameoverText(state.winner,viewModel)
+            viewModel.playEndSound()
+//            when(state.winner){
+//                viewModel.userID ->{
+//                    if (viewModel is SemelionGameViewModel){
+//                        gameoverText = "Vince il giocatore Blu"
+//                    }else{
+//                        gameoverText = "Complimenti hai vinto!!"
+//                        viewModel.player.playFile(R.raw.victory_fanfare)
+//                    }
+//                }
+//                viewModel.secondPlayerId -> {
+//                    if (viewModel is SemelionGameViewModel){
+//                        gameoverText = "Vince il giocatore Rosso"
+//                    }else{
+//                        gameoverText = "Peccato, andrà meglio la prossima volta..."
+//                        viewModel.player.playFile(R.raw.gameover)
+//                    }
+//                }
+//                else ->{
+//                    gameoverText = "Wow, è stato uno scontro ad armi pari"
+//                    viewModel.player.playFile(R.raw.there)
+//                }
+//            }
+//
             BasicAlertDialog(onDismissRequest = {}) {
                 Surface(shape = RoundedCornerShape(16.dp)) {
                     Column{
@@ -242,20 +254,41 @@ fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGam
                 }
             }
         is GamePhase.JackMadness -> {
-
-            BasicAlertDialog(onDismissRequest = {viewModel.processIntent(GameIntent.JackMadness(state.jackSwaps))}) {
-                Surface(shape = RoundedCornerShape(16.dp)) {
-                    Text(
-                        text = "il jack farà questi scambi:${state.jackSwaps}, ovviamente le carte in quelle posizioni sono del suo stesso colore",
-                        modifier = Modifier.padding(24.dp),
-                        style = MaterialTheme.typography.titleLarge
-                    )
+            if (state.jackSwaps.size == 1){
+                BasicAlertDialog(onDismissRequest = {viewModel.processIntent(GameIntent.JackMadness(state.jackSwaps))}) {
+                    Surface(shape = RoundedCornerShape(16.dp)) {
+                        Text(
+                            text = "il jack non farà scambi perchè la prima carta del mazzo scoperta era un asso",
+                            modifier = Modifier.padding(24.dp),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
+                }
+            }else{
+                BasicAlertDialog(onDismissRequest = {viewModel.processIntent(GameIntent.JackMadness(state.jackSwaps))}) {
+                    Surface(shape = RoundedCornerShape(16.dp)) {
+                        Text(
+                            text = "il jack farà questi scambi:${state.jackSwaps}, ovviamente le carte in quelle posizioni sono del suo stesso colore",
+                            modifier = Modifier.padding(24.dp),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
                 }
             }
+
         }
         else -> {
 
         }
+    }
+}
+
+fun resolveGameoverText(winner: String?, viewModel: BaseGameViewModel): String {
+    val isMultiplayer = viewModel is SemelionGameViewModel
+    return when (winner) {
+        viewModel.userID -> if (isMultiplayer) "Vince il giocatore Blu" else "Complimenti hai vinto!!"
+        viewModel.secondPlayerId -> if (isMultiplayer) "Vince il giocatore Rosso" else "Peccato, andrà meglio la prossima volta..."
+        else -> "Wow, è stato uno scontro ad armi pari"
     }
 }
 

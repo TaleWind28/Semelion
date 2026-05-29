@@ -49,6 +49,7 @@ class SemelionGameViewModel(
 
     override fun setup(){
         val decks = createDecks()
+//        val decks = createDecks()
         _uiState.value = GameUIState(
             grid = decks.first,
             uncoverDeck = decks.second,

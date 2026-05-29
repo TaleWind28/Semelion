@@ -220,7 +220,10 @@ abstract class BaseGameViewModel(
         val jackSwaps = swaps.drop(1)
         //se non ho altre pozioni termino
         if (jackSwaps.isEmpty()){
-            _uiState.update { validateState(cardId = cardId,_uiState.value.copy(phase = GamePhase.Validation))}
+            _uiState.update {
+                val modifiedState = validateState(cardId = cardId,_uiState.value.copy(phase = GamePhase.Validation))
+                actionCounter(modifiedState,modifiedState.grid.chunked(7))
+            }
             return false
         }
 
@@ -484,14 +487,14 @@ abstract class BaseGameViewModel(
         val allCards = createCards(figures = SEMELION_FIGURES, jolly = JOLLY_COLOR).shuffled()
 
         //testing filtro solo carte <7
-        val noFiguresDeck = allCards.filter { it.value in 1..6 }
+        val noFiguresDeck = allCards.filter { it.value in 2..7 }
 
         val specialDeck = allCards.filter { it.value > 7 || it.value == 0 }
 
         val gridDeck = noFiguresDeck.drop(UNCOVER_DECK_SIZE - 4) + specialDeck
 
         //val uncoverDeck = noFiguresDeck.take(UNCOVER_DECK_SIZE).map { it.copy(isRevealed = true) }
-        val uncoverDeck = allCards.filter { it.value == 7 }
+        val uncoverDeck = allCards.filter { it.value == 1 }
         return Pair(gridDeck.shuffled(), uncoverDeck.map{it.copy(isRevealed = true)}.shuffled())
     }
 
@@ -1102,6 +1105,16 @@ abstract class BaseGameViewModel(
     protected fun updateSecondPlayer(secondPlayerId: String){
         this.secondPlayerId = secondPlayerId
         _matchSummary.update { Pair(it.first,it.second.copy(userId=secondPlayerId)) }
+    }
+
+    fun playEndSound() {
+        if (this is SemelionGameViewModel) return
+        val sound = when (_uiState.value.winner) {
+            userID -> R.raw.victory_fanfare
+            secondPlayerId -> R.raw.gameover
+            else -> R.raw.there
+        }
+        player.playFile(sound)
     }
 
     abstract fun destroy()
