@@ -1,9 +1,11 @@
 package it.di.unipi.sam636694.semelion.viewModels.gameModels
 
+import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
@@ -57,7 +59,8 @@ abstract class BaseGameViewModel(
     val player: AudioPlayer,
     var userID: String,
     var secondPlayerId: String,
-) : ViewModel(){
+    private val app: Application
+) : AndroidViewModel(app) {
 
     public var firstPlayerAvatar:Int? = null
 
@@ -142,7 +145,7 @@ abstract class BaseGameViewModel(
                     is GamePhase.QueenPending ->{
                         SnackBarController.sendEvent(
                             event = SnackBarEvent(
-                                message = "Hai rivelato una Donna, puoi shiftare una colonna!\n Per farlo fai swipe nella direzione desiderata(Up/Down)"
+                                message = app.getString(R.string.queenRevealed)
                             )
                         )
 
@@ -151,7 +154,7 @@ abstract class BaseGameViewModel(
                     is GamePhase.KingPending ->{
                         SnackBarController.sendEvent(
                             event = SnackBarEvent(
-                                message = "Hai rivelato il Re, puoi shiftare una riga!\n Per farlo fai swipe nella direzione desiderata(Left/Right)"
+                                message = app.getString(R.string.kingRevealed)
                             )
                         )
                     }
@@ -302,7 +305,7 @@ abstract class BaseGameViewModel(
             viewModelScope.launch {
                 SnackBarController.sendEvent(
                     event = SnackBarEvent(
-                        message = "Non puoi spostare Righe Potenti"
+                        message = app.getString(R.string.kingEffectNotAllowedOnPowerRows)
                     )
                 )
             }
@@ -384,13 +387,13 @@ abstract class BaseGameViewModel(
 
         fun errorMessage(positionValid: Boolean,fairness: Boolean):String?{
             return if (!positionValid && !fairness){
-                "Lo scambio deve consentire ad almeno una carta di essere in posizione corretta e rispettare le regole di correttezza!"
+                app.getString(R.string.swapViolatesAll)
             }
             else if (!positionValid){
-                "Lo scambio deve consentire ad almeno una carta di essere in posizione corretta!"
+                app.getString(R.string.swapViolatesPosition)
 
             }else if(!fairness) {
-                "Lo scambio deve seguire le regole di correttezza"
+                app.getString(R.string.swapViolatesFairness)
             }
             else{
                 null
@@ -400,7 +403,7 @@ abstract class BaseGameViewModel(
         Log.d("swap","$cardInfos")
 
         if (row[cardInfos.first.second].findPowerRow() == 1 || row[cardInfos.second.second].findPowerRow() == 1) {
-            return "Non puoi scambiare carte appartenenti ad una riga potente"
+            return app.getString(R.string.swapViolatesPowerRow)
         }
 
         val c2SwapValid = !card2.isRevealed || card2.name.contains("joker") ||

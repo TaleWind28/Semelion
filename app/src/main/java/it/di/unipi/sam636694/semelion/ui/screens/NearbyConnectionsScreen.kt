@@ -1,4 +1,5 @@
 import android.Manifest
+import android.app.Application
 import android.os.Build
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -102,15 +103,15 @@ fun SemelionConnectionsScreen(
 
     val nvm: NearbyGameViewModel = viewModel(
         factory = NearbyGameViewModel.factory(
-            matchesDao= db.matchesDao(),
+            matchesDao = db.matchesDao(),
             participationsDao = db.participationsDao(),
             matchStatisticsDao = db.matchStatisticsDao(),
             playerStatisticsDao = db.playerStatisticsDao(),
             userDao = db.userDao(),
             player = player,
             localId = userId,
-            nickname= nickname,
-            context = LocalContext.current
+            nickname = nickname,
+            application = LocalContext.current.applicationContext as Application,
         )
     )
 

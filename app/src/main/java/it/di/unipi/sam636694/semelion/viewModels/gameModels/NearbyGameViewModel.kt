@@ -37,8 +37,6 @@ import it.di.unipi.sam636694.semelion.utilities.serializeList
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import android.content.Context
-import androidx.compose.ui.platform.LocalContext
 import com.google.android.gms.nearby.Nearby
 import it.di.unipi.sam636694.semelion.database.GameModes
 import it.di.unipi.sam636694.semelion.ui.states.DiscoveredEndpoint
@@ -47,9 +45,10 @@ import java.util.Locale.getDefault
 import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 import it.di.unipi.sam636694.semelion.utilities.avatarMap
+import android.app.Application
 
 class NearbyGameViewModel(
-    private val appContext: Context,
+    private val application: Application,
     matchesDao: MatchesDao,
     participationsDao: ParticipationsDao,
     matchStatisticsDao: MatchStatisticsDao,
@@ -60,14 +59,25 @@ class NearbyGameViewModel(
     var endpoint: String?,
     var remoteId: String,
     val localId: String,
-) : BaseGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao, userDao, player,userID=localId,remoteId) {
+) :
+    BaseGameViewModel(
+        matchesDao,
+        participationsDao,
+        matchStatisticsDao,
+        playersStatisticsDao,
+        userDao,
+        player,
+        userID=localId,
+        remoteId,
+        app = application
+    ) {
 
     private var heartbeatJob: Job? = null
     private var lastHeartbeat = System.currentTimeMillis()
     private val pingInterval = 1000L
     private val pingTimeout = 8000L
-    
-    private val connectionsClient: ConnectionsClient = Nearby.getConnectionsClient(appContext)
+
+    private val connectionsClient: ConnectionsClient = Nearby.getConnectionsClient(application)
 
     private val _connectionState = MutableStateFlow(ConnectionUiState())
     val connectionState: StateFlow<ConnectionUiState> = _connectionState.asStateFlow()
@@ -108,7 +118,7 @@ class NearbyGameViewModel(
         }
         val options = AdvertisingOptions.Builder()
             .setStrategy(Strategy.P2P_POINT_TO_POINT).build()
-        val encodedAvatar = appContext.resources.getResourceEntryName(firstPlayerAvatar?:R.drawable.avatar_1)
+        val encodedAvatar = application.resources.getResourceEntryName(firstPlayerAvatar?:R.drawable.avatar_1)
         val encodedInfo = "$nickname|$encodedAvatar"
         connectionsClient.startAdvertising(encodedInfo, serviceId, connectionCallback, options)
     }
@@ -158,7 +168,7 @@ class NearbyGameViewModel(
     //inizia la connessione con un endpoint
     fun connectToEndpoint(endpointId:String){
         _connectionState.update { it.copy(status = "Connessione a $endpointId...") }
-        val encodedAvatar = appContext.resources.getResourceEntryName(firstPlayerAvatar?:R.drawable.avatar_1)
+        val encodedAvatar = application.resources.getResourceEntryName(firstPlayerAvatar?:R.drawable.avatar_1)
         val encodedInfo = "$nickname|$encodedAvatar"
         connectionsClient.requestConnection(encodedInfo, endpointId, connectionCallback)
         connectionsClient.stopDiscovery()
@@ -484,12 +494,12 @@ class NearbyGameViewModel(
             nickname:String,
             userDao: UserDao,
             localId: String,
-            context: Context
+            application: Application
         ): ViewModelProvider.Factory {
             return viewModelFactory {
                 initializer {
                     NearbyGameViewModel(
-                        appContext = context,
+                        application = application,
                         matchesDao = matchesDao,
                         participationsDao = participationsDao,
                         matchStatisticsDao = matchStatisticsDao,

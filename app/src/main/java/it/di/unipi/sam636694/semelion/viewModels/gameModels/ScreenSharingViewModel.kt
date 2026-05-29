@@ -1,5 +1,6 @@
 package it.di.unipi.sam636694.semelion.viewModels.gameModels
 
+import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,8 +34,9 @@ class SemelionGameViewModel(
     userDao: UserDao,
     player: AudioPlayer,
     userID:String,
-    secondPlayerId:String
-) : BaseGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao, userDao,player,userID,secondPlayerId) {
+    secondPlayerId:String,
+    application: Application
+) : BaseGameViewModel(matchesDao, participationsDao, matchStatisticsDao, playersStatisticsDao, userDao, player, userID, secondPlayerId, app = application){
 
     init {
         setup()
@@ -159,7 +161,8 @@ class SemelionGameViewModel(
             userDao: UserDao,
             player: AudioPlayer,
             userID:String,
-            secondPlayerId:String
+            secondPlayerId:String,
+            application: Application
         ): ViewModelProvider.Factory {
             return viewModelFactory {
                 initializer {
@@ -171,7 +174,8 @@ class SemelionGameViewModel(
                         userDao = userDao,
                         player= player,
                         userID= userID,
-                        secondPlayerId= secondPlayerId
+                        secondPlayerId= secondPlayerId,
+                        application = application
                         )
                 }
             }

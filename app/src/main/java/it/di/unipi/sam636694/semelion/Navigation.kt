@@ -1,6 +1,7 @@
 package it.di.unipi.sam636694.semelion
 
 import SemelionConnectionsScreen
+import android.app.Application
 import android.icu.text.SimpleDateFormat
 import android.util.Log
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -119,7 +121,8 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                             userDao = db.userDao(),
                             player= player,
                             userID=userID,
-                            secondPlayerId = "screenSharing"
+                            secondPlayerId = "screenSharing",
+                            application = LocalContext.current.applicationContext as Application
                         )
                     )
 

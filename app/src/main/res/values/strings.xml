@@ -1,10 +1,14 @@
 <resources>
     <string name="app_name" translatable="false">Semelion</string>
     <string name="screenSharingOpponent" translatable="false">Sora</string>
+    <string name="queenRevealed">Hai rivelato una Donna, puoi shiftare una colonna!\n Per farlo fai swipe nella direzione desiderata(Up/Down)</string>
     <string name="queenEffectResolverHint" translatable="true">Per usare l\'effetto della donna, fai swipe up/down sulla colonna che vuoi shiftare</string>
+    <string name="kingRevealed">Hai rivelato il Re, puoi shiftare una riga!\n Per farlo fai swipe nella direzione desiderata(Left/Right)</string>
     <string name="kingEffectResolverHint">Per usare l\'effetto del re, fai swipe Left/Right sulla riga che vuoi shiftare</string>
+    <string name="kingEffectNotAllowedOnPowerRows">Non puoi shiftare righe potenti</string>
     <string name="opponentTurnNotice">Attendi che l\'avversario finisca il suo turno</string>
-    <string name="queenUncovered">Hai rivelato una Donna, puoi shiftare una colonna!\\n Per farlo fai swipe nella direzione desiderata(Up/Down)</string>
-    <string name="kingRevealed">Hai rivelato il Re, puoi shiftare una riga!\\n Per farlo fai swipe nella direzione desiderata(Left/Right)</string>
-
+    <string name="swapViolatesAll">Lo scambio deve consentire ad almeno una carta di essere in posizione corretta e rispettare le regole di correttezza!</string>
+    <string name="swapViolatesPosition">Lo scambio deve consentire ad almeno una carta di essere in posizione corretta!</string>
+    <string name="swapViolatesFairness">Lo scambio deve seguire le regole di correttezza!</string>
+    <string name="swapViolatesPowerRow">Non puoi scambiare carte appartenenti ad una riga potente!</string>
 </resources>
