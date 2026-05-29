@@ -44,7 +44,7 @@ enum class AppDestinations(
     val icon: ImageVector,
     val screen: @Composable (PaddingValues, SemelionDB, BaseGameViewModel, ()->Unit ) -> Unit  // ← aggiunto
 ) {
-    HOME("Home", Icons.Default.Home, { padding,_, viewModel,onBack -> SemelionScreen(padding = padding, viewModel = viewModel, onBack = onBack) }),
+    HOME("Home", Icons.Default.Home, { _,_, viewModel,onBack -> SemelionScreen(viewModel = viewModel, onBack = onBack) }),
     FAVORITES("Rules", Icons.Default.Favorite, { _, _,_,_-> SemelionRules() }),
     PROFILE("Profile", Icons.Default.AccountBox, { padding, _,_,_ -> LogScreen(padding = padding)}),
 }

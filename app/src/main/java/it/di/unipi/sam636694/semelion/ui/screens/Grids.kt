@@ -52,7 +52,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.scale
@@ -114,7 +113,6 @@ fun FinalGrid(state: GameUIState, model: BaseGameViewModel, cardSize: CardSize =
                                 rowBackground = style.first.copy(alpha = if (index == 0) 0.15f else 0.08f),
                                 phase = state.phase,
                                 enabled= true,
-                                grid=state.grid,
                                 cardSize = cardSize.dp
                             )
                         }
@@ -167,7 +165,7 @@ fun produceConfigs(state: GameUIState, viewModel: BaseGameViewModel):List<Triple
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewModel, rowBackground: Color, phase: GamePhase, enabled:Boolean, grid: List<CardUIStates>, cardSize:Dp) {
+fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewModel, rowBackground: Color, phase: GamePhase, enabled:Boolean, cardSize:Dp) {
 
     val draggableState = remember {
         AnchoredDraggableState(initialValue = 0)
@@ -246,21 +244,15 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
                     .anchoredDraggable(colState, orientation = Orientation.Vertical))
                 {
                     // CARTE
-                    RevealCard(card = card, model = model, size = cardSize, enabled= enabled)
-                    //AnimationCard(card=card, model = model, size = cardSize, enabled = enabled,row=cardRow,col=cardCol)
+                    RevealCard(card = card, model = model, size = cardSize)
                 }
             }
         }
     }
 }
-// Calcola riga e colonna di una carta nella griglia flat (28 carte, 7 per riga)
-fun gridPositionOf(cardName: String, grid: List<CardUIStates>): Pair<Int, Int> {
-    val index = grid.indexOfFirst { it.name == cardName }
-    return if (index < 0) Pair(0, 0) else Pair(index / 7, index % 7)
-}
 
 @Composable
-fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp, enabled:Boolean) {
+fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp) {
     //context densità e size in pixel
     val density = LocalDensity.current
     val strings = rememberGameStrings()
@@ -365,7 +357,7 @@ fun comunicateUnexpectedAction(gamePhase: GamePhase, scope: CoroutineScope,strin
     }
 }
 @Composable
-fun RevealCard(card: CardUIStates, model: BaseGameViewModel, size: Dp, enabled:Boolean){
+fun RevealCard(card: CardUIStates, model: BaseGameViewModel, size: Dp){
     AnimatedContent(
         targetState = card.isRevealed,
         transitionSpec = {
@@ -373,8 +365,11 @@ fun RevealCard(card: CardUIStates, model: BaseGameViewModel, size: Dp, enabled:B
                     (scaleOut(targetScale = 0.75f) + fadeOut(tween(120)))
         },
         label = "card_reveal_${card.name}"
-    ) { _ ->
-        FinalCard(card = card, model = model,size=size,enabled = true)
+    ) { isRevealed ->
+        //se il parametro della lambda non viene usato il compilatore dà errore, che non blocca l'esecuzione però mi dava noia.
+        //ps: la lambda lo richiede per forza però non ha senso aggiungere un parametro ad una funzione che prende la classe dalla quale deriva suddetto parametro
+        Log.d("uselessErrorRemover","$isRevealed")
+        FinalCard(card = card, model = model,size=size)
     }
 
 }

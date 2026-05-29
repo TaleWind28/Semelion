@@ -1,6 +1,5 @@
 package it.di.unipi.sam636694.semelion.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,39 +25,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import it.di.unipi.sam636694.semelion.R
+import it.di.unipi.sam636694.semelion.ui.theme.BgPage
+import it.di.unipi.sam636694.semelion.ui.theme.CardBg
+import it.di.unipi.sam636694.semelion.ui.theme.DrawColor
+import it.di.unipi.sam636694.semelion.ui.theme.GreenDark
+import it.di.unipi.sam636694.semelion.ui.theme.GreenLight
+import it.di.unipi.sam636694.semelion.ui.theme.GreenPrimary
+import it.di.unipi.sam636694.semelion.ui.theme.LossColor
+import it.di.unipi.sam636694.semelion.ui.theme.OrangeAccent
+import it.di.unipi.sam636694.semelion.ui.theme.TextPrimary
+import it.di.unipi.sam636694.semelion.ui.theme.TextSecondary
+import it.di.unipi.sam636694.semelion.ui.theme.WinColor
+import it.di.unipi.sam636694.semelion.utilities.avatars
 import kotlin.math.roundToInt
-import kotlin.math.roundToLong
-
-// ── Colori ───────────────────────────────────────────────────
-private val GreenPrimary   = Color(0xFF3DBE5A)
-private val GreenDark      = Color(0xFF1F6B32)
-private val GreenLight     = Color(0xFFE8F5E9)
-private val GreenCard      = Color(0xFFDCF0DC)
-private val BgPage         = Color(0xFFF0F7F0)
-private val CardBg         = Color(0xFFECF4EC)
-private val TextPrimary    = Color(0xFF1A1A1A)
-private val TextSecondary  = Color(0xFF6B6B6B)
-private val WinColor       = Color(0xFF2E7D32)
-private val DrawColor = Color(0xFF1565C0)
-private val LossColor      = Color(0xFFC62828)
-private val OrangeAccent   = Color(0xFFBF6020)
- 
-// ── Mock Data ─────────────────────────────────────────────────
-data class UserProfile(
-    val username: String,
-    val role: String,
-    val joinDate: String,
-    val winRate: Int,
-    val gamesPlayed: Int,
-    val righePotenti: Int,
-    val currentRank: String
-)
 
 data class UserData(
     val username:String = "",
@@ -135,20 +118,7 @@ fun ProfileCard(profile: UserData, onEdit: (String) -> Unit,onAvatarChosen: (Int
     var nicknameInput by remember { mutableStateOf(profile.username) }
     var editAvatar by remember { mutableStateOf(false) }
 
-    val avatars = listOf(
-        R.drawable.avatar_1,
-        R.drawable.avatar_2,
-        R.drawable.avatar_3,
-        R.drawable.avatar_4,
-        R.drawable.avatar_5,
-        R.drawable.avatar_6,
-        R.drawable.avatar_7,
-        R.drawable.avatar_8,
-        R.drawable.avatar_9,
-        R.drawable.avatar_10,
-        R.drawable.avatar_11,
-        R.drawable.avatar_12,
-    )
+
 
     Surface(
         shape = RoundedCornerShape(16.dp),

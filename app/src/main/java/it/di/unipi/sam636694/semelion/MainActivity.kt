@@ -1,6 +1,5 @@
 package it.di.unipi.sam636694.semelion
 
-import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
@@ -10,16 +9,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import it.di.unipi.sam636694.semelion.database.SemelionDB
-import it.di.unipi.sam636694.semelion.database.User
 import it.di.unipi.sam636694.semelion.utilities.ObserveAsEvents
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.ui.theme.SemelionTheme
@@ -42,7 +37,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prefs = getSharedPreferences("settings", Context.MODE_PRIVATE)
+        prefs = getSharedPreferences("settings", MODE_PRIVATE)
         enableEdgeToEdge()
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
 
@@ -91,7 +86,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
-                            delay(SNACKBAR_DELAY_TIME)  // durata in ms che vuoi tu (es. 1 secondo)
+                            delay(SNACKBAR_DELAY_TIME)
                             job.cancel()
                         }
 

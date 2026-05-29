@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.database.MatchStatistics
-import it.di.unipi.sam636694.semelion.database.Matches
 import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.database.User
 import it.di.unipi.sam636694.semelion.ui.screens.RecentMatch
@@ -34,14 +33,12 @@ class UserProfileViewModel(
             val userStats = db.playerStatisticsDao().getStatsByUser(userId)
             //controllo se esiste un utente associato all'userId locale
             var player = db.userDao().getUserById(userId)
-            //se non esiste lo inserisco nel database ed assegno l'utente appena creato alla variabile player
+            //se non esiste lo inserisco nel database e assegno l'utente appena creato alla variabile player
             if (player == null){
                 db.userDao().insert(User(userId = userId, nickName = "Semelion User: $userId", avatar = R.drawable.avatar_1))
                 player = db.userDao().getUserById(userId)
             }
 
-            //recupero l'username dell'utente
-            var username =player?.nickName ?: "Semelion User: $userId"
             //recupero le partite disputate dall'utente locale
             val matches = db.matchesDao().getMatchesByUser(userId)
 
@@ -110,12 +107,11 @@ class UserProfileViewModel(
         )
     }
 
-    //callBack per permettere allìutente di modificare il nome
+    //callBack per permettere all'utente di modificare il nome
     suspend fun onEditNickname(nickname:String){
             val user = db.userDao().getUserById(userId) ?: return
             db.userDao().update(User(userId = userId, nickName = nickname, avatar = user.avatar))
             _uiState.update { it.copy(data = it.data.copy(username = nickname)) }
-            Log.d("nick","nicck:$nickname")
     }
 
     //callback per permettere all'utente di modificare l'avatar

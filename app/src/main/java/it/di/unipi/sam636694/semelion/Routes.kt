@@ -1,8 +1,6 @@
 package it.di.unipi.sam636694.semelion
 
 import androidx.navigation3.runtime.NavKey
-import com.google.android.gms.nearby.connection.ConnectionsClient
-import com.google.android.gms.nearby.connection.PayloadCallback
 import kotlinx.serialization.Serializable
 
 @Serializable

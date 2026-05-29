@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -59,8 +58,6 @@ import it.di.unipi.sam636694.semelion.utilities.Pergamena
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SemelionScreen(
-    modifier: Modifier = Modifier,
-    padding: PaddingValues,
     viewModel: BaseGameViewModel = viewModel(),
     onBack : () -> Unit
 ){
@@ -162,7 +159,7 @@ fun interruptMatch(viewModel: BaseGameViewModel){
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Dialogs(modifier: Modifier = Modifier,state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
+fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
     when(state.phase){
         is GamePhase.GameOver -> {
             LaunchedEffect(Unit) {
@@ -291,7 +288,6 @@ fun resolveGameoverText(winner: String?, viewModel: BaseGameViewModel): String {
 
 @Composable
 fun GameScreen(
-    modifier: Modifier = Modifier,
     viewModel: BaseGameViewModel,
     state: GameUIState,
     conf:Pair<Triple<Int,Int, Boolean>,Triple<Int,Int, Boolean>>
@@ -306,7 +302,6 @@ fun GameScreen(
         when (configuration.orientation) {
             Configuration.ORIENTATION_LANDSCAPE -> {
                 Landscape(
-                    modifier = Modifier.wrapContentWidth(),
                     viewModel = viewModel,
                     state = state,
                     cardSize = CardSize.LARGE,
@@ -326,7 +321,6 @@ fun GameScreen(
 
 @Composable
 fun Landscape(
-    modifier: Modifier = Modifier,
     conf:Pair<Triple<Int,Int, Boolean>,Triple<Int,Int, Boolean>>,
     cardSize: CardSize = CardSize.LARGE,
     viewModel: BaseGameViewModel,
@@ -366,7 +360,6 @@ fun Landscape(
 
 @Composable
 fun Portrait(
-    modifier: Modifier = Modifier,
     conf:Pair<Triple<Int,Int, Boolean>,Triple<Int,Int, Boolean>>,
     cardSize: CardSize = CardSize.SMALL,
     viewModel: BaseGameViewModel,

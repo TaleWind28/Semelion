@@ -117,9 +117,9 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                         Text(text = "Loading..")
                         if (viewModel.suspendedFound){
                             BasicAlertDialog(onDismissRequest = {}) {
-                                Column() {
+                                Column{
                                     Text(text = "È stata trovata una partita sospesa, vui riprenderla")
-                                    Row() {
+                                    Row{
                                         Button(onClick = {viewModel.resumeMatch()}) {
                                             Text(text = "Riprendi partita")
                                         }

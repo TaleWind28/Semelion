@@ -16,3 +16,18 @@ val avatarMap = mapOf(
     "avatar_11" to R.drawable.avatar_11,
     "avatar_12" to R.drawable.avatar_12,
 )
+
+val avatars = listOf(
+    R.drawable.avatar_1,
+    R.drawable.avatar_2,
+    R.drawable.avatar_3,
+    R.drawable.avatar_4,
+    R.drawable.avatar_5,
+    R.drawable.avatar_6,
+    R.drawable.avatar_7,
+    R.drawable.avatar_8,
+    R.drawable.avatar_9,
+    R.drawable.avatar_10,
+    R.drawable.avatar_11,
+    R.drawable.avatar_12,
+)

@@ -96,7 +96,7 @@ fun SemelionConnectionsScreen(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         if (!permissions.values.all { it }) {
-            throw Exception("permissions Denied(Dioboia)")
+            throw Exception("permissions Denied")
         }
     }
 
@@ -195,7 +195,7 @@ fun DiscoveryScreen(
             Log.d("disconnect","isHosting:$isHosting")
             if (!isHosting) {
                 viewModel.disconnect()
-                viewModel.startDiscovery(serviceId,viewModel.nickname)
+                viewModel.startDiscovery(serviceId)
             }
         }
 

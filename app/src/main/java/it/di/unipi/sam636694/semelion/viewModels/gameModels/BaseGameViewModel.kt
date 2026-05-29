@@ -6,7 +6,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.utilities.DELAY_TIME
@@ -37,6 +36,8 @@ import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
+import it.di.unipi.sam636694.semelion.utilities.findPowerRow
+import it.di.unipi.sam636694.semelion.utilities.getPredominantOrder
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,9 +63,9 @@ abstract class BaseGameViewModel(
     private val app: Application
 ) : AndroidViewModel(app) {
 
-    public var firstPlayerAvatar:Int? = null
+    var firstPlayerAvatar:Int? = null
 
-    public var secondPlayerAvatar: Int?= null
+    var secondPlayerAvatar: Int?= null
 
     protected val _uiState = MutableStateFlow(GameUIState())
     val uiState = _uiState.asStateFlow()
@@ -167,16 +168,7 @@ abstract class BaseGameViewModel(
         return true
     }
 
-    fun validateWithDelay(cardId:String,state: GameUIState): GameUIState{
-        val needsDelay = state.grid.find { it.name == cardId }?.let { it.value >= 7 } ?: false
 
-        if (!needsDelay) return validateState(cardId,state)
-        else viewModelScope.launch {
-            delay(300)
-            _uiState.update { validateState(cardId, it) }
-        }
-        return state
-    }
 
 
     protected fun handleSwapCards(id1: String, id2: String): Boolean {
@@ -508,6 +500,7 @@ abstract class BaseGameViewModel(
 
     }
 
+    //funzione per testing
     fun createTestDecks(): Pair<List<CardUIStates>, List<CardUIStates>>{
         val allCards = createCards(figures = SEMELION_FIGURES, jolly = JOLLY_COLOR).shuffled()
 
@@ -671,7 +664,7 @@ abstract class BaseGameViewModel(
         return if (currentState == state) state
         else{
             currentState = replaceCard(currentState, suit)
-            return validateState(currentState.grid[position].name,currentState)
+            validateState(currentState.grid[position].name,currentState)
         }
     }
 

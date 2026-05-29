@@ -16,12 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import it.di.unipi.sam636694.semelion.utilities.GreenAccent
@@ -226,7 +224,7 @@ fun ActionItem(
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = buildAnnotatedString {
-                    append(title + " ")
+                    append("$title ")
                     append(description)
                 },
                 fontSize = 14.sp,
@@ -335,7 +333,7 @@ data class SpecialCard(
 @Composable
 fun SpecialCards() {
     val cards = listOf(
-        SpecialCard("J", "JACK", "Scambio di un numero randomico di carte sul tavolo, determinato dal valore della prima carta del mazzo scoperta diminuito di 1."),
+        SpecialCard("J", "JACK", "Scambio di un numero random di carte sul tavolo, determinato dal valore della prima carta del mazzo scoperta diminuito di 1."),
         SpecialCard("Q", "QUEEN", "Sposta una colonna verticalmente."),
         SpecialCard("K", "KING", "Sposta una riga orizzontalmente."),
         SpecialCard("★", "JOLLY", "È sempre considerato in posizione, quando compare la carta che sostituisce viene rimosso", isDashed = true),
@@ -462,14 +460,4 @@ fun RoundedCard(content: @Composable ColumnScope.() -> Unit) {
             content = content
         )
     }
-}
-
-// Estensione per testo misto bold/normal (usata in ActionItem)
-private fun buildAnnotatedString(builder: AnnotatedString.Builder.() -> Unit) =
-    buildAnnotatedString(builder)
-
-@Preview
-@Composable
-fun ScreenPreview(modifier: Modifier = Modifier) {
-    SemelionRules()
 }

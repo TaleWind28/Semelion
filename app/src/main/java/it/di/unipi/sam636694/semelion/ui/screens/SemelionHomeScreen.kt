@@ -15,12 +15,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -219,11 +216,10 @@ fun CardFanDisplay() {
 @Composable
 fun PlayingCard(
     color: Color,
+    modifier: Modifier = Modifier,
     isCenter: Boolean = false,
-    modifier: Modifier = Modifier
 ) {
     val isWhite = color == CardWhite
-    val dotColor = if (isWhite) Color.Transparent else Color.White.copy(alpha = 0.25f)
     val textColor = if (isWhite) GreenDark else Color.White
 
     Box(

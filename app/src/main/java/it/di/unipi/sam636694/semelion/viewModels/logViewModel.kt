@@ -1,10 +1,8 @@
 package it.di.unipi.sam636694.semelion.viewModels
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import it.di.unipi.sam636694.semelion.utilities.SharedRepository
-//import it.di.unipi.sam636694.semelion.utilities.parseActionTemplate
 import it.di.unipi.sam636694.semelion.utilities.toActionData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -86,7 +84,7 @@ class LogViewModel: ViewModel() {
     }
 
     fun cardName(raw: String): String {
-        // raw è nel formato "XY" dove X è il valore e Y è il seme (es. "7F", "joker_red")
+        // Raw è nel formato "XY" dove X è il valore e Y è il seme (es. "7F", "joker_red")
         return when {
             raw.startsWith("joker_red") -> "Jolly Rosso"
             raw.startsWith("joker_black") -> "Jolly Nero"
@@ -117,22 +115,6 @@ class LogViewModel: ViewModel() {
             else -> suit
         }
     }
-
-//    fun translateAction(action:String):String{
-//        val data = action.toActionData()
-//        return when(data.type){
-//            "reveal" -> "Ha rivelato il ${data.relevantCards.first().value} di ${mapShortHouse(data.relevantCards.first().name)}"
-//            else -> "kys"
-//        }
-//    }
-//
-//    fun mapShortHouse(shortHouse:String):String{
-//        return when(shortHouse){
-//
-//
-//        }
-//    }
-
 }
 
 data class LogUIState(

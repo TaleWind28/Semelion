@@ -124,7 +124,7 @@ class NearbyGameViewModel(
     }
 
     //cerca un host
-    fun startDiscovery(serviceId: String, nickname: String) {
+    fun startDiscovery(serviceId: String) {
         _connectionState.update {
             it.copy(isSearching = true, isHost = false, status = "Cerco un host...")
         }
@@ -455,7 +455,7 @@ class NearbyGameViewModel(
         override fun onConnectionInitiated(endpointId: String, info: ConnectionInfo) {
             _connectionState.update { it.copy(status = "Connessione in arrivo da ${info.endpointName}...") }
             val parts = info.endpointName.split("|")
-            //salvo il nickname dell'oppo ed il suo avatar
+            //salvo il nickname dell'oppo e il suo avatar
             opponentName = parts.getOrElse(0) { info.endpointName }
             secondPlayerAvatar = avatarMap[parts.getOrElse(1) { "default" }]
             // accetta la connessione
