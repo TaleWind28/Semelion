@@ -1,4 +1,10 @@
 <resources>
-    <string name="app_name">Semelion</string>
+    <string name="app_name" translatable="false">Semelion</string>
     <string name="screenSharingOpponent" translatable="false">Sora</string>
+    <string name="queenEffectResolverHint" translatable="true">Per usare l\'effetto della donna, fai swipe up/down sulla colonna che vuoi shiftare</string>
+    <string name="kingEffectResolverHint">Per usare l\'effetto del re, fai swipe Left/Right sulla riga che vuoi shiftare</string>
+    <string name="opponentTurnNotice">Attendi che l\'avversario finisca il suo turno</string>
+    <string name="queenUncovered">Hai rivelato una Donna, puoi shiftare una colonna!\\n Per farlo fai swipe nella direzione desiderata(Up/Down)</string>
+    <string name="kingRevealed">Hai rivelato il Re, puoi shiftare una riga!\\n Per farlo fai swipe nella direzione desiderata(Left/Right)</string>
+
 </resources>

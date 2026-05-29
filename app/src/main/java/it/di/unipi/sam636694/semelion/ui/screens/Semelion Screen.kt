@@ -46,17 +46,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import it.di.unipi.sam636694.semelion.utilities.CardSize
 import it.di.unipi.sam636694.semelion.utilities.GreenAccent
 import it.di.unipi.sam636694.semelion.R
-import it.di.unipi.sam636694.semelion.Route
 import it.di.unipi.sam636694.semelion.utilities.TextSecondary
 import it.di.unipi.sam636694.semelion.database.GameModes
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.BaseGameViewModel
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.NearbyGameViewModel
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.SemelionGameViewModel
-import it.di.unipi.sam636694.semelion.ui.states.FinalGrid
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
-import it.di.unipi.sam636694.semelion.ui.states.produceConfigs
 import it.di.unipi.sam636694.semelion.utilities.Pergamena
 
 @OptIn(ExperimentalMaterial3Api::class)

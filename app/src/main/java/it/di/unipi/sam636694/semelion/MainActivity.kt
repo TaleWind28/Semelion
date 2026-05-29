@@ -27,6 +27,8 @@ import it.di.unipi.sam636694.semelion.ui.theme.SemelionTheme
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
+import it.di.unipi.sam636694.semelion.utilities.SNACKBAR_DELAY_TIME
+import kotlinx.coroutines.delay
 import java.util.UUID
 
 class MainActivity : ComponentActivity() {
@@ -76,15 +78,24 @@ class MainActivity : ComponentActivity() {
                         scope.launch {
                             snackBarHostState.currentSnackbarData?.dismiss()
 
-                            val result = snackBarHostState.showSnackbar(
-                                message = event.message,
-                                actionLabel = event.action?.name,
-                                duration = SnackbarDuration.Short
-                            )
-                            if (result == SnackbarResult.ActionPerformed) {
-                                event.action?.action?.invoke()
+
+
+                            val job = scope.launch {
+                                val result = snackBarHostState.showSnackbar(
+                                    message = event.message,
+                                    actionLabel = event.action?.name,
+                                    duration = SnackbarDuration.Indefinite
+                                )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    event.action?.action?.invoke()
+                                }
                             }
+
+                            delay(SNACKBAR_DELAY_TIME)  // durata in ms che vuoi tu (es. 1 secondo)
+                            job.cancel()
                         }
+
+
                     }
 
                     SemelionNavigation(snackBarHostState,db, player=player,userID=deviceUser)

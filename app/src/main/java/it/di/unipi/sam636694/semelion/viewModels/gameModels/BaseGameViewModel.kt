@@ -121,6 +121,7 @@ abstract class BaseGameViewModel(
             ?.let { it.value >= 7 } ?: false
 
         viewModelScope.launch {
+
             if (needsDelay) delay(300)
             _uiState.update { validateState(cardId, it) }
             Log.d("handle","lrc:${_uiState.value.lastReplacedCard}")
@@ -136,6 +137,27 @@ abstract class BaseGameViewModel(
                 }
             }else{
                 _uiState.update { actionCounter(it,it.grid.chunked(7)) }
+                when(_uiState.value.phase){
+
+                    is GamePhase.QueenPending ->{
+                        SnackBarController.sendEvent(
+                            event = SnackBarEvent(
+                                message = "Hai rivelato una Donna, puoi shiftare una colonna!\n Per farlo fai swipe nella direzione desiderata(Up/Down)"
+                            )
+                        )
+
+                    }
+
+                    is GamePhase.KingPending ->{
+                        SnackBarController.sendEvent(
+                            event = SnackBarEvent(
+                                message = "Hai rivelato il Re, puoi shiftare una riga!\n Per farlo fai swipe nella direzione desiderata(Left/Right)"
+                            )
+                        )
+                    }
+
+                    else -> return@launch
+                }
             }
 
         }

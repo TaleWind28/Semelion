@@ -1,4 +1,4 @@
-package it.di.unipi.sam636694.semelion.ui.states
+package it.di.unipi.sam636694.semelion.ui.screens
 
 import android.annotation.SuppressLint
 import android.content.ClipData
@@ -52,22 +52,30 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.scale
 import it.di.unipi.sam636694.semelion.utilities.CardSize
 import it.di.unipi.sam636694.semelion.utilities.Direction
 import it.di.unipi.sam636694.semelion.R
+import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
+import it.di.unipi.sam636694.semelion.ui.states.GameIntent
+import it.di.unipi.sam636694.semelion.ui.states.GamePhase
+import it.di.unipi.sam636694.semelion.ui.states.GameUIState
+import it.di.unipi.sam636694.semelion.utilities.GameStrings
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import it.di.unipi.sam636694.semelion.utilities.cardImageMap
+import it.di.unipi.sam636694.semelion.utilities.rememberGameStrings
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.BaseGameViewModel
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.NearbyGameViewModel
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.SemelionGameViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
-fun FinalGrid(state: GameUIState, model: BaseGameViewModel,cardSize: CardSize = CardSize.SMALL) {
+fun FinalGrid(state: GameUIState, model: BaseGameViewModel, cardSize: CardSize = CardSize.SMALL) {
     Log.d("coinFlip", "FinalGrid ricevuto p1Turn=${state.p1Turn}")
     Box(modifier= Modifier.wrapContentWidth()) {
 
@@ -113,7 +121,7 @@ fun FinalGrid(state: GameUIState, model: BaseGameViewModel,cardSize: CardSize = 
     }
 }
 
-fun produceConfigs(state: GameUIState,viewModel: BaseGameViewModel):List<Triple<Boolean,List<List<CardUIStates>>,Pair<Color,Float>>>{
+fun produceConfigs(state: GameUIState, viewModel: BaseGameViewModel):List<Triple<Boolean,List<List<CardUIStates>>,Pair<Color,Float>>>{
     val rows = state.grid.chunked(7)
     return when(viewModel){
         is SemelionGameViewModel -> {
@@ -161,7 +169,7 @@ fun produceConfigs(state: GameUIState,viewModel: BaseGameViewModel):List<Triple<
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewModel, rowBackground: Color, phase: GamePhase, enabled:Boolean,grid: List<CardUIStates>, cardSize:Dp) {
+fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewModel, rowBackground: Color, phase: GamePhase, enabled:Boolean, grid: List<CardUIStates>, cardSize:Dp) {
     //preparazione misure
     val density = LocalDensity.current
 
@@ -242,10 +250,6 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
                     .anchoredDraggable(colState, orientation = Orientation.Vertical))
                 {
                     // CARTE
-                    //FinalCard(card = card, model = model, size = cardSize, enabled= enabled)
-//                    val (cardRow, cardCol) = remember(card.name, grid) {
-//                        gridPositionOf(card.name, grid)
-//                    }
                     RevealCard(card = card, model = model, size = cardSize, enabled= enabled)
                     //AnimationCard(card=card, model = model, size = cardSize, enabled = enabled,row=cardRow,col=cardCol)
                 }
@@ -260,9 +264,10 @@ fun gridPositionOf(cardName: String, grid: List<CardUIStates>): Pair<Int, Int> {
 }
 
 @Composable
-fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp,enabled:Boolean) {
+fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp, enabled:Boolean) {
     //context densità e size in pixel
     val density = LocalDensity.current
+    val strings = rememberGameStrings()
     val sizePx = with(density) { size.toPx().toInt()}
 
     val imageResId = if (card.isRevealed)
@@ -282,50 +287,14 @@ fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp,enabled:Boo
             .pointerInput(card.name, card.isRevealed) {
                 detectTapGestures(
                     onTap = {
-                        Log.d("grid","fase:${model.uiState.value.phase}")
-                        if(model.uiState.value.phase is GamePhase.WaitingForOpponent){
-                            scope.launch {
-                                SnackBarController.sendEvent(
-                                    event = SnackBarEvent(
-                                        message = "Attendi che l'avversario finisca il suo turno"
-                                    )
-                                )
-                            }
-                            return@detectTapGestures
-                        }
-                        if (model.uiState.value.phase !is GamePhase.PlayerTurn){
-                            scope.launch {
-                                SnackBarController.sendEvent(
-                                    event = SnackBarEvent(
-                                        message = "Risolvi Prima l'effetto della figura"
-                                    )
-                                )
-                            }
-                            return@detectTapGestures
-                        }
-                        if (!card.isRevealed) model.processIntent(GameIntent.CardClicked(cardId = card.name))
+                        if (!card.isRevealed && model.uiState.value.phase is GamePhase.PlayerTurn)
+                            model.processIntent(GameIntent.CardClicked(cardId = card.name))
+                        else comunicateUnexpectedAction(model.uiState.value.phase,scope,strings)
                     },
                     onLongPress = {
                         Log.d("grid","fase:${model.uiState.value.phase}")
-                        if(model.uiState.value.phase is GamePhase.WaitingForOpponent){
-                            scope.launch {
-                                SnackBarController.sendEvent(
-                                    event = SnackBarEvent(
-                                        message = "Attendi che l'avversario finisca il suo turno"
-                                    )
-                                )
-                            }
-                            return@detectTapGestures
-                        }
-
-                        if (model.uiState.value.phase !is GamePhase.PlayerTurn){
-                            scope.launch {
-                                SnackBarController.sendEvent(
-                                    event = SnackBarEvent(
-                                        message = "Risolvi Prima l'effetto della figura"
-                                    )
-                                )
-                            }
+                        if (model.uiState.value.phase !is GamePhase.PlayerTurn) {
+                            comunicateUnexpectedAction(model.uiState.value.phase, scope,strings)
                             return@detectTapGestures
                         }
 
@@ -370,8 +339,37 @@ fun FinalCard(card: CardUIStates, model: BaseGameViewModel, size: Dp,enabled:Boo
     )
 }
 
+fun comunicateUnexpectedAction(gamePhase: GamePhase, scope: CoroutineScope,strings: GameStrings) {
+    when (gamePhase) {
+        is GamePhase.QueenPending -> scope.launch {
+            SnackBarController.sendEvent(
+                event = SnackBarEvent(
+                    message = strings.queenHint
+                )
+            )
+        }
+
+        is GamePhase.KingPending -> scope.launch {
+            SnackBarController.sendEvent(
+                event = SnackBarEvent(
+                    message = strings.kingHint
+                )
+            )
+        }
+
+        is GamePhase.WaitingForOpponent -> scope.launch {
+            SnackBarController.sendEvent(
+                event = SnackBarEvent(
+                    message = strings.waitingHint
+                )
+            )
+        }
+
+        else -> {}
+    }
+}
 @Composable
-fun RevealCard(card: CardUIStates, model: BaseGameViewModel, size: Dp,enabled:Boolean){
+fun RevealCard(card: CardUIStates, model: BaseGameViewModel, size: Dp, enabled:Boolean){
     AnimatedContent(
         targetState = card.isRevealed,
         transitionSpec = {
