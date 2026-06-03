@@ -47,12 +47,14 @@ import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 import it.di.unipi.sam636694.semelion.utilities.avatarMap
 import android.app.Application
 
+
 class NearbyGameViewModel(
     private val application: Application,
     matchesDao: MatchesDao,
     participationsDao: ParticipationsDao,
     matchStatisticsDao: MatchStatisticsDao,
     playersStatisticsDao: PlayerStatisticsDao,
+
     userDao: UserDao,
     player: AudioPlayer,
     var nickname: String,
@@ -74,8 +76,12 @@ class NearbyGameViewModel(
 
     private var heartbeatJob: Job? = null
     private var lastHeartbeat = System.currentTimeMillis()
+    // Salvi il riferimento alla coroutine
+
     private val pingInterval = 1000L
     private val pingTimeout = 8000L
+
+    private var connectionTimeoutJob: Job? = null
 
     private val connectionsClient: ConnectionsClient = Nearby.getConnectionsClient(application)
 
@@ -165,6 +171,8 @@ class NearbyGameViewModel(
             options
         )
     }
+
+
     //inizia la connessione con un endpoint
     fun connectToEndpoint(endpointId:String){
         _connectionState.update { it.copy(status = "Connessione a $endpointId...") }
@@ -172,6 +180,15 @@ class NearbyGameViewModel(
         val encodedInfo = "$nickname|$encodedAvatar"
         connectionsClient.requestConnection(encodedInfo, endpointId, connectionCallback)
         connectionsClient.stopDiscovery()
+
+        connectionTimeoutJob = viewModelScope.launch {
+            delay(5000)
+            endpointId.let {
+                connectionsClient.disconnectFromEndpoint(it)
+            }
+            Log.d("Pippo","qui")
+            _connectionState.update { it.copy(status = "Connessione non riuscita", discoveredEndpoints =emptyList()) }
+        }
     }
 
     fun onSent() {
@@ -195,6 +212,7 @@ class NearbyGameViewModel(
     fun cancelSearch() {
         connectionsClient.stopAdvertising()
         connectionsClient.stopDiscovery()
+        connectionTimeoutJob?.cancel()
         _connectionState.update {
             it.copy(isSearching = false, status = "Ricerca annullata")  // non resettare tutto
         }
@@ -210,9 +228,7 @@ class NearbyGameViewModel(
 
                 // Controlla se l'ultimo heartbeat ricevuto è troppo vecchio
                 if (System.currentTimeMillis() - lastHeartbeat > pingTimeout) {
-                    Log.d("disc","dio")
                     if (_uiState.value.phase !is GamePhase.GameOver) destroy()
-                    Log.d("disc","porco")
                     break
                 }
             }
@@ -464,16 +480,24 @@ class NearbyGameViewModel(
 
         override fun onConnectionResult(endpointId: String, result: ConnectionResolution) {
             onConnectionResult(endpointId, result.status.isSuccess)
-            if (result.status.isSuccess) {
-                connectionsClient.stopAdvertising()
-                connectionsClient.stopDiscovery()
-                endpoint = endpointId
-                sendMessage("endpoint", localId, connectionsClient, endpointId)
-                startHeartbeat(endpointId)
-                if (_connectionState.value.isHost) {
-                    //comunico la griglia al guest
-                    sendGrid(endpointId)
-                    _connectionState.update { it.copy(gameStarted = true) }
+
+            when{
+                result.status.isSuccess -> {
+                    connectionTimeoutJob?.cancel()
+                    connectionsClient.stopAdvertising()
+                    connectionsClient.stopDiscovery()
+                    endpoint = endpointId
+
+                    sendMessage("endpoint", localId, connectionsClient, endpointId)
+                    startHeartbeat(endpointId)
+
+                    if (_connectionState.value.isHost) {
+                        //comunico la griglia al guest
+                        sendGrid(endpointId)
+                        _connectionState.update { it.copy(gameStarted = true) }
+                    }
+                }
+                else -> {
                 }
             }
         }
@@ -515,4 +539,5 @@ class NearbyGameViewModel(
             }
         }
     }
+
 }

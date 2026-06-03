@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.ui.states.ConnectionUiState
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
+import kotlinx.coroutines.delay
 
 
 @Composable
@@ -193,7 +194,7 @@ fun DiscoveryScreen(
         LaunchedEffect(isHosting) {
             viewModel.cancelSearch()
             Log.d("disconnect","isHosting:$isHosting")
-            if (!isHosting) {
+            if (!isHosting) {//l'utente vuole cercare una partita
                 viewModel.disconnect()
                 viewModel.startDiscovery(serviceId)
             }
@@ -202,15 +203,22 @@ fun DiscoveryScreen(
         if (isHosting) {
             HostScreen(viewModel = viewModel, serviceId = serviceId )
         } else {
-            GuestScreen(viewModel = viewModel,state=state)
+            GuestScreen(viewModel = viewModel,state=state, serviceId = serviceId)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GuestScreen(state: ConnectionUiState,viewModel: NearbyGameViewModel){
+fun GuestScreen(state: ConnectionUiState,viewModel: NearbyGameViewModel,serviceId: String){
     var joiningDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state.status){
+        if(state.status == "Connessione non riuscita"){
+            joiningDialog = false
+            viewModel.startDiscovery(serviceId =serviceId )
+        }
+    }
     // Radar
     Box(modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp), contentAlignment = Alignment.Center) {
         Box(
@@ -379,9 +387,11 @@ fun HostScreen(
             )
 
             Button(
-                onClick = { if (state.isSearching)
-                    viewModel.disconnect()
-                else viewModel.startHosting(serviceId, nickname = viewModel.nickname) },
+                onClick = {
+                    if (state.isSearching)
+                        viewModel.cancelSearch()
+                    else viewModel.startHosting(serviceId, nickname = viewModel.nickname)
+                          },
                 enabled = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
