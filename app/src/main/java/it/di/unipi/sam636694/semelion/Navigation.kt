@@ -31,7 +31,7 @@ import it.di.unipi.sam636694.semelion.ui.screens.ProfilePage
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionHome
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionRules
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
-import it.di.unipi.sam636694.semelion.viewModels.UserProfileViewModel
+import it.di.unipi.sam636694.semelion.viewModels.utilityModels.UserProfileViewModel
 import kotlinx.coroutines.launch
 import kotlin.String
 

@@ -99,7 +99,7 @@ fun SemelionConnectionsScreen(
             throw Exception("permissions Denied")
         }
     }
-
+    //creo il viewmodel per gestire la connessione e la partita
     val nvm: NearbyGameViewModel = viewModel(
         factory = NearbyGameViewModel.factory(
             matchesDao = db.matchesDao(),
@@ -243,10 +243,11 @@ fun GuestScreen(state: ConnectionUiState,viewModel: NearbyGameViewModel){
 
     // Label sezione
     Text(
-        "NEARBY PLAYERS FOUND",
+        "Stanze attive nelle vicinanze",
         modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 8.dp),
         fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp, color = Color(0xFF4A7A4A)
     )
+    Log.d("endpoint","${state.discoveredEndpoints}")
 
     // Lista host
     LazyColumn(modifier = Modifier) {
@@ -313,7 +314,6 @@ fun PlayerCard(name: String,avatar:Int, onJoin: () -> Unit) {
             contentAlignment = Alignment.Center
         ) {
             Image(painter = painterResource(avatar), contentDescription = "Avatar")
-            //Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF2255AA), modifier = Modifier.size(24.dp))
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -379,19 +379,28 @@ fun HostScreen(
             )
 
             Button(
-                onClick = { viewModel.startHosting(serviceId, nickname = viewModel.nickname) },
-                enabled = !state.isSearching,
+                onClick = { if (state.isSearching)
+                    viewModel.disconnect()
+                else viewModel.startHosting(serviceId, nickname = viewModel.nickname) },
+                enabled = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A5C1A)),
                 contentPadding = PaddingValues(vertical = 18.dp)
             ) {
-                Icon(Icons.Default.LocationOn, contentDescription = null,
-                    modifier = Modifier.size(20.dp))
+
+                Icon(
+                        Icons.Default.LocationOn, contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+        )
                 Spacer(Modifier.width(10.dp))
-                Text("START SCANNING", fontSize = 15.sp, fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp)
-            }
+                Text(
+                    if (state.isSearching) "Annulla ricerca" else "Crea una partita",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    color = Color.White
+                )
         }
 
         Log.d("conn","stato:$state")
@@ -419,4 +428,5 @@ fun HostScreen(
 
         Spacer(Modifier.weight(1f))
     }
+}
 }

@@ -32,7 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import it.di.unipi.sam636694.semelion.viewModels.LogViewModel
+import it.di.unipi.sam636694.semelion.viewModels.utilityModels.LogViewModel
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionRules
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionScreen
 import it.di.unipi.sam636694.semelion.database.SemelionDB

@@ -1,4 +1,4 @@
-package it.di.unipi.sam636694.semelion.viewModels
+package it.di.unipi.sam636694.semelion.viewModels.utilityModels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

@@ -1,4 +1,4 @@
-package it.di.unipi.sam636694.semelion.viewModels
+package it.di.unipi.sam636694.semelion.viewModels.utilityModels
 
 import android.icu.text.SimpleDateFormat
 import android.util.Log
