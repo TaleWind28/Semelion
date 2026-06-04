@@ -59,12 +59,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.ui.states.ConnectionUiState
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
-import kotlinx.coroutines.delay
+import it.di.unipi.sam636694.semelion.utilities.serviceId
 
 
 @Composable
@@ -144,18 +146,12 @@ fun SemelionConnectionsScreen(
     }
 }
 
-fun sendMessage(messageType:String,message:String, clientConnectionsClient: ConnectionsClient,endpoint:String){
-    val formattedMessage = "$messageType:$message"
-    val payload = Payload.fromBytes(formattedMessage.toByteArray(Charsets.UTF_8))
-    clientConnectionsClient.sendPayload(endpoint,payload)
-    Log.d("Payload","Message: $formattedMessage sent")
-}
+
 
 @Composable
 fun DiscoveryScreen(
     viewModel: NearbyGameViewModel,
 ) {
-    val serviceId = "semelion_nearbyConnections"
     val state by viewModel.connectionState.collectAsState()
     var isHosting by remember { mutableStateOf(true) }
 
@@ -174,7 +170,7 @@ fun DiscoveryScreen(
                 .padding(4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            listOf("Create Match" to true, "Join Match" to false).forEach { (label, tabIsHost) ->
+            listOf(stringResource(R.string.semelionHost) to true, stringResource(R.string.semelionGuest) to false).forEach { (label, tabIsHost) ->
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -193,7 +189,6 @@ fun DiscoveryScreen(
 
         LaunchedEffect(isHosting) {
             viewModel.cancelSearch()
-            Log.d("disconnect","isHosting:$isHosting")
             if (!isHosting) {//l'utente vuole cercare una partita
                 viewModel.disconnect()
                 viewModel.startDiscovery(serviceId)
@@ -201,16 +196,16 @@ fun DiscoveryScreen(
         }
 
         if (isHosting) {
-            HostScreen(viewModel = viewModel, serviceId = serviceId )
+            HostScreen(viewModel = viewModel)
         } else {
-            GuestScreen(viewModel = viewModel,state=state, serviceId = serviceId)
+            GuestScreen(viewModel = viewModel,state=state)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GuestScreen(state: ConnectionUiState,viewModel: NearbyGameViewModel,serviceId: String){
+fun GuestScreen(state: ConnectionUiState,viewModel: NearbyGameViewModel){
     var joiningDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.status){
@@ -244,14 +239,14 @@ fun GuestScreen(state: ConnectionUiState,viewModel: NearbyGameViewModel,serviceI
 
     // Titolo
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Searching for Rooms", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1A5C1A))
+        Text(stringResource(R.string.semelionRoomSearching), fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1A5C1A))
         Spacer(Modifier.height(4.dp))
-        Text("STAY WITHIN 10 METERS OF YOUR OPPONENT", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF4A7A4A), letterSpacing = 1.sp, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.semelionNearbyAdvice), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF4A7A4A), letterSpacing = 1.sp, textAlign = TextAlign.Center)
     }
 
     // Label sezione
     Text(
-        "Stanze attive nelle vicinanze",
+        stringResource(R.string.semelionRoomsFound),
         modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 8.dp),
         fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp, color = Color(0xFF4A7A4A)
     )
@@ -284,7 +279,7 @@ fun GuestScreen(state: ConnectionUiState,viewModel: NearbyGameViewModel,serviceI
             ) {
                 Icon(Icons.Default.Info, contentDescription = null, tint = Color(0xFF4A7A4A), modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(10.dp))
-                Text("Ensure Bluetooth and Location services are enabled for the most accurate nearby discovery.", fontSize = 12.sp, color = Color(0xFF4A7A4A), lineHeight = 18.sp)
+                Text(stringResource(R.string.semelionNearbyGuestAdvice), fontSize = 12.sp, color = Color(0xFF4A7A4A), lineHeight = 18.sp)
             }
         }
     }
@@ -294,7 +289,7 @@ fun GuestScreen(state: ConnectionUiState,viewModel: NearbyGameViewModel,serviceI
             Surface(shape = RoundedCornerShape(16.dp)) {
                 Column {
                     Text(
-                        text = "Creazione della partita in corso...",
+                        text = stringResource(R.string.semelionGameCreation),
                         modifier = Modifier.padding(24.dp),
                         style = MaterialTheme.typography.titleLarge
                     )
@@ -334,7 +329,7 @@ fun PlayerCard(name: String,avatar:Int, onJoin: () -> Unit) {
             shape = RoundedCornerShape(8.dp),
             contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp)
         ) {
-            Text("JOIN", fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Text(stringResource(R.string.semelionJoinRoom), fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         }
     }
 }
@@ -342,7 +337,6 @@ fun PlayerCard(name: String,avatar:Int, onJoin: () -> Unit) {
 @Composable
 fun HostScreen(
     viewModel: NearbyGameViewModel,
-    serviceId: String,
 ) {
     val state by viewModel.connectionState.collectAsState()
 
@@ -380,10 +374,11 @@ fun HostScreen(
                 }
             }
 
-            Text("Searching for Rivals", fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Text(
-                if (state.isSearching) "In attesa di giocatori..." else "Premi per iniziare",
-                fontSize = 14.sp, color = Color(0xFF5A7A5A)
+                if (state.isSearching) stringResource(R.string.semelionOpponentSearch) else stringResource(R.string.semelionOpponentSearch),
+                fontSize = 22.sp,
+                color = Color(0xFF5A7A5A),
+                fontWeight = FontWeight.Bold
             )
 
             Button(
@@ -405,7 +400,10 @@ fun HostScreen(
         )
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    if (state.isSearching) "Annulla ricerca" else "Crea una partita",
+                    if (state.isSearching)
+                        stringResource(R.string.semelionStopRoomSearching)
+                    else
+                        stringResource(R.string.semelionStartRoomSearching),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
@@ -431,7 +429,7 @@ fun HostScreen(
                 tint = Color(0xFF3A5A9A), modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(10.dp))
             Text(
-                "Semelion uses nearby connections to find opponents in your immediate vicinity.",
+                stringResource(R.string.semelionNearbyUsageAdvice),
                 fontSize = 13.sp, color = Color(0xFF3A5A7A), lineHeight = 20.sp
             )
         }

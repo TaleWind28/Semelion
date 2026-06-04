@@ -11,4 +11,18 @@
     <string name="swapViolatesPosition">Lo scambio deve consentire ad almeno una carta di essere in posizione corretta!</string>
     <string name="swapViolatesFairness">Lo scambio deve seguire le regole di correttezza!</string>
     <string name="swapViolatesPowerRow">Non puoi scambiare carte appartenenti ad una riga potente!</string>
+    <string name="semelionOpponentSearch">Premi per creare una stanza</string>
+    <string name="semelionOpponentSearching">In attesa di Giocatori</string>
+    <string name="semelionRoomSearching">Ricerca di stanze in corso…</string>
+    <string name="semelionStartRoomSearching">Crea una stanza</string>
+    <string name="semelionStopRoomSearching">Annulla ricerca</string>
+    <string name="semelionNearbyAdvice">Verranno rilevate le stanze entro 20m da te</string>
+    <string name="semelionRoomsFound">Stanze attive nelle vicinanze</string>
+    <string name="semelionJoinRoom">Unisciti</string>
+    <string name="semelionHost">Crea una stanza</string>
+    <string name="semelionGuest">Cerca stanze disponibili</string>
+    <string name="semelionGameCreation">Creazione della partita in corso</string>
+    <string name="semelionNearbyGuestAdvice">Assicurati aver attivato Bluetooth e Posizione per poter rilevare correttamente le stanze nelle vicinanze</string>
+    <string name="semelionNearbyUsageAdvice">Semelion usa Google Nearby Connections per trovare giocatori nelle vicinanze</string>
+    <string name="semelionPermissionDenied">Semelion usa Google Nearby Connections per stabilire la connessione tra dispositivi vicini, per farlo è necessario consentire all\'utilizzo della posizione</string>
 </resources>

@@ -30,7 +30,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import it.di.unipi.sam636694.semelion.ui.screens.sendMessage
 import com.google.android.gms.nearby.connection.*
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.utilities.serializeList
@@ -219,12 +218,12 @@ class NearbyGameViewModel(
     }
 
     //PING UTILITY
-    fun startHeartbeat(endpointId: String) {
+    fun startHeartbeat() {
         lastHeartbeat = System.currentTimeMillis()
         heartbeatJob = viewModelScope.launch {
             while (true) {
                 delay(pingInterval)
-                sendMessage("ping", "", connectionsClient, endpointId)
+                sendMessage("ping", "")
 
                 // Controlla se l'ultimo heartbeat ricevuto è troppo vecchio
                 if (System.currentTimeMillis() - lastHeartbeat > pingTimeout) {
@@ -240,6 +239,15 @@ class NearbyGameViewModel(
         heartbeatJob = null
     }
 
+    //INVIO MESSAGGI PER COMUNICARE TRA PEER
+    fun sendMessage(messageType:String,message:String){
+        val formattedMessage = "$messageType:$message"
+        val payload = Payload.fromBytes(formattedMessage.toByteArray(Charsets.UTF_8))
+        if (endpoint == null) return
+        this.connectionsClient.sendPayload(endpoint!!,payload)
+        Log.d("Payload","Message: $formattedMessage sent")
+    }
+
     //inizializzazione del viewModel -> chiama solo setup
     init {
         setup()
@@ -250,8 +258,8 @@ class NearbyGameViewModel(
         viewModelScope.launch {
             Log.d("send", "provo a mandare su $endpointId")
             delay(300)
-            sendMessage("grid", _uiState.value.grid.serializeList(), connectionsClient, endpointId)
-            sendMessage("uncover", _uiState.value.uncoverDeck.serializeList(), connectionsClient, endpointId)
+            sendMessage("grid", _uiState.value.grid.serializeList())
+            sendMessage("uncover", _uiState.value.uncoverDeck.serializeList())
             onSent()
         }
     }
@@ -270,7 +278,7 @@ class NearbyGameViewModel(
         val action = intent.serialize()
         Log.d("nvm", "$endpoint:$connectionsClient")
         if (endpoint == null) return
-        sendMessage("gameaction", action, clientConnectionsClient = connectionsClient, endpoint = endpoint!!)
+        sendMessage("gameaction", action)
     }
 
     //interpreta la direzione del re
@@ -344,7 +352,7 @@ class NearbyGameViewModel(
     }
     override fun destroy() {
         endpoint?.let {
-            sendMessage("destruction", "player gave up", connectionsClient, it)
+            sendMessage("destruction", "player gave up")
         }
         if (endpoint == null){
             matchEnd(GameModes.NearBy,"Connection Lost")
@@ -418,7 +426,7 @@ class NearbyGameViewModel(
                     if(_connectionState.value.isHost){
                         setFirstPlayer()
                         updateFirstPlayer()
-                        sendMessage("starting player",_uiState.value.firstPlayer,connectionsClient,endpointId)
+                        sendMessage("starting player",_uiState.value.firstPlayer)
                     }
                 }
 
@@ -449,7 +457,7 @@ class NearbyGameViewModel(
                     Log.d("message","fase post destruction:${_uiState.value.phase}")
                 }
                 "ping:" -> {
-                    sendMessage("pong", "", connectionsClient, endpointId)
+                    sendMessage("pong", "")
                 }
                 "pong:" -> {
                     lastHeartbeat = System.currentTimeMillis()
@@ -488,9 +496,8 @@ class NearbyGameViewModel(
                     connectionsClient.stopDiscovery()
                     endpoint = endpointId
 
-                    sendMessage("endpoint", localId, connectionsClient, endpointId)
-                    startHeartbeat(endpointId)
-
+                    sendMessage("endpoint", localId)
+                    startHeartbeat()
                     if (_connectionState.value.isHost) {
                         //comunico la griglia al guest
                         sendGrid(endpointId)
