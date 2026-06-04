@@ -1,6 +1,7 @@
 package it.di.unipi.sam636694.semelion.utilities
 
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,8 +12,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
@@ -42,11 +43,11 @@ import it.di.unipi.sam636694.semelion.viewModels.gameModels.BaseGameViewModel
 enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
-    val screen: @Composable (PaddingValues, SemelionDB, BaseGameViewModel, ()->Unit ) -> Unit  // ← aggiunto
+    val screen: @Composable (PaddingValues, SemelionDB, BaseGameViewModel, ()->Unit ) -> Unit
 ) {
-    HOME("Home", Icons.Default.Home, { _,_, viewModel,onBack -> SemelionScreen(viewModel = viewModel, onBack = onBack) }),
-    FAVORITES("Rules", Icons.Default.Favorite, { _, _,_,_-> SemelionRules() }),
-    PROFILE("Profile", Icons.Default.AccountBox, { padding, _,_,_ -> LogScreen(padding = padding)}),
+    GAME("Game", Icons.Default.Home, { _,_, viewModel,onBack -> SemelionScreen(viewModel = viewModel, onBack = onBack) }),
+    RULES("Rules", Icons.Outlined.Settings, { _, _,_,_-> SemelionRules() }),
+    ACTIONS("Actions", Icons.Default.AccountBox, { padding, _,_,_ -> LogScreen(padding = padding)}),
 }
 
 @Composable
@@ -62,7 +63,12 @@ fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel = viewModel
 
 @Composable
 fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewModel: BaseGameViewModel, onNavigateBack: () -> Unit) {
-    var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
+    var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.GAME) }
+    //intercetto il back per tornare alla schermata di gioco e gestirlo effettivamente da lì
+    BackHandler(enabled = currentDestination != AppDestinations.GAME) {
+        currentDestination = AppDestinations.GAME
+    }
+
     NavigationSuiteScaffold(
         navigationSuiteItems = {
             AppDestinations.entries.forEach {

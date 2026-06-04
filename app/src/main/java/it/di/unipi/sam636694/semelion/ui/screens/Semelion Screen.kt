@@ -63,21 +63,10 @@ fun SemelionScreen(
 ){
 
     val state by viewModel.uiState.collectAsState()
-
     val dbOperationCompleted by viewModel.isDBOperationComplete.collectAsState()
     val goBack by viewModel.wantsToGoBack.collectAsState()
-
     var showExitDialog by remember { mutableStateOf(false) }
-
-    LaunchedEffect(dbOperationCompleted, goBack) {
-        if (dbOperationCompleted && showExitDialog){
-            viewModel.destroy()
-            onBack()
-        }
-    }
-
-    Log.d("message","${state.phase}")
-
+    //configurazioni per i giocatori
     val conf = when(viewModel){
         is NearbyGameViewModel ->{
             val connState by viewModel.connectionState.collectAsState()
@@ -97,17 +86,23 @@ fun SemelionScreen(
                 Triple(state.p1ActionsUsed,state.p1Actions,!state.p1Turn))
         }
     }
-    
-    GameScreen(viewModel = viewModel, state = state, conf = conf)
 
-    //FINE SCHERMO PRINCIPALE//
+    LaunchedEffect(dbOperationCompleted, goBack) {
+        if (dbOperationCompleted && showExitDialog){
+            viewModel.destroy()
+            onBack()
+        }
+    }
 
     BackHandler(enabled = !showExitDialog && dbOperationCompleted) {
         showExitDialog = true
     }
 
+    GameScreen(viewModel = viewModel, state = state, conf = conf)
+
+    //Dialog per chiedere all'utente se vuole davvero uscire dalla schermata
     if (showExitDialog){
-        BasicAlertDialog(onDismissRequest = {}) {
+        BasicAlertDialog(onDismissRequest = {showExitDialog = false}) {
             Surface(shape = RoundedCornerShape(16.dp)) {
                 Column{
                     Text(
@@ -116,11 +111,11 @@ fun SemelionScreen(
                         style = MaterialTheme.typography.titleLarge
                     )
                     Row{
-                        //Interruzione partita
+                        //Terminazione partita
                         Button(onClick = {endMatch(viewModel, onBack = onBack)}, enabled = dbOperationCompleted) {
                             Text("Interrompi")
                         }
-                        //Richiesta interruzione
+                        //Sospensione Partita
                         Button(onClick = {interruptMatch(viewModel)}, enabled = viewModel is SemelionGameViewModel && dbOperationCompleted) {
                             Text("Sospendi")
                         }
@@ -130,7 +125,7 @@ fun SemelionScreen(
         }
     }
 
-    // Game over dialog
+    //Dialog di gioco
     Dialogs(state = state, viewModel = viewModel, onBack = onBack)
 }
 
@@ -162,6 +157,7 @@ fun interruptMatch(viewModel: BaseGameViewModel){
 fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
     when(state.phase){
         is GamePhase.GameOver -> {
+
             LaunchedEffect(Unit) {
                 when(viewModel){
                     is NearbyGameViewModel -> viewModel.matchEnd(GameModes.NearBy)
@@ -173,32 +169,9 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
             //victory fanfare ff7 a cappela
             Log.d("winner","winner:${state.winner}\nuuid:${viewModel.userID}")
 
-
             val gameoverText = resolveGameoverText(state.winner,viewModel)
             viewModel.playEndSound()
-//            when(state.winner){
-//                viewModel.userID ->{
-//                    if (viewModel is SemelionGameViewModel){
-//                        gameoverText = "Vince il giocatore Blu"
-//                    }else{
-//                        gameoverText = "Complimenti hai vinto!!"
-//                        viewModel.player.playFile(R.raw.victory_fanfare)
-//                    }
-//                }
-//                viewModel.secondPlayerId -> {
-//                    if (viewModel is SemelionGameViewModel){
-//                        gameoverText = "Vince il giocatore Rosso"
-//                    }else{
-//                        gameoverText = "Peccato, andrà meglio la prossima volta..."
-//                        viewModel.player.playFile(R.raw.gameover)
-//                    }
-//                }
-//                else ->{
-//                    gameoverText = "Wow, è stato uno scontro ad armi pari"
-//                    viewModel.player.playFile(R.raw.there)
-//                }
-//            }
-//
+
             BasicAlertDialog(onDismissRequest = {}) {
                 Surface(shape = RoundedCornerShape(16.dp)) {
                     Column{
@@ -248,7 +221,7 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
                 }
             }
         is GamePhase.JackMadness -> {
-            if (state.jackSwaps.size == 1){
+            if (state.jackSwaps.size == 1) {
                 BasicAlertDialog(onDismissRequest = {viewModel.processIntent(GameIntent.JackMadness(state.jackSwaps))}) {
                     Surface(shape = RoundedCornerShape(16.dp)) {
                         Text(
@@ -258,7 +231,8 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
                         )
                     }
                 }
-            }else{
+            }
+            else{
                 BasicAlertDialog(onDismissRequest = {viewModel.processIntent(GameIntent.JackMadness(state.jackSwaps))}) {
                     Surface(shape = RoundedCornerShape(16.dp)) {
                         Text(
@@ -269,7 +243,6 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
                     }
                 }
             }
-
         }
         else -> {
 
@@ -495,53 +468,3 @@ fun OpponentHeader(
         }
     }
 }
-
-//@Composable
-//fun UncoverDeck(state: GameUIState){
-//    Surface(
-//        shape = RoundedCornerShape(16.dp),
-//        color = Color(0xFFF5F5F5),
-//        modifier = Modifier.width(90.dp)
-//    ) {
-//        Column(
-//            modifier = Modifier.padding(8.dp),
-//            horizontalAlignment = Alignment.CenterHorizontally
-//        ) {
-//            Text(
-//                "MAZZO SCOPERTA",
-//                fontSize = 9.sp,
-//                color = TextSecondary,
-//                fontWeight = FontWeight.Bold
-//            )
-//            Spacer(Modifier.height(6.dp))
-//            // Mostra la carta scoperta se disponibile, altrimenti placeholder
-//
-//            val revealedCard =
-//                if (state.uncoverDeck.isNotEmpty()) state.uncoverDeck.first() else null
-//            if (revealedCard != null) {
-//                val imageResId =
-//                    if (revealedCard.isRevealed) cardImageMap[revealedCard.name]
-//                        ?: R.drawable.purple_back else R.drawable.purple_back
-//                Image(
-//                    painter = painterResource(imageResId),
-//                    contentDescription = "Carta scoperta",
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .aspectRatio(0.65f)
-//                        .clip(RoundedCornerShape(6.dp))
-//                )
-//            } else {
-//                Box(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .aspectRatio(0.65f)
-//                        .clip(RoundedCornerShape(6.dp))
-//                        .background(Color(0xFFE0E0E0)),
-//                    contentAlignment = Alignment.Center
-//                ) {
-//                    Text("—", color = TextSecondary, fontSize = 20.sp)
-//                }
-//            }
-//        }
-//    }
-//}
