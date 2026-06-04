@@ -1,5 +1,6 @@
 package it.di.unipi.sam636694.semelion.viewModels.utilityModels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import it.di.unipi.sam636694.semelion.utilities.SharedRepository
@@ -23,6 +24,8 @@ class LogViewModel: ViewModel() {
     }
 
     fun registerAction(action:String,state: LogUIState){
+        val data = action.toActionData()
+        Log.d("translate","$data")
         _uiState.update {
             state.copy(
                 actions = state.actions + action
@@ -31,16 +34,18 @@ class LogViewModel: ViewModel() {
     }
     fun translateAction(action: String): String {
         val data = action.toActionData()
+       Log.d("translate","$data")
         return when (data.type) {
 
             "reveal" -> {
                 val card = data.outcome.first()
-                "È stata rivelata la carta in posizione ${card.value}: ${cardName(card.name)}"
+                if (card.value == 7) "È stata rivelato il ${cardName(card.name)}"
+                else "È stata rivelata la carta in posizione ${card.value}: ${cardName(card.name)}"
             }
 
             "covered" -> {
                 val card = data.outcome.first()
-                "La carta in posizione ${card.value} è stata coperta"
+                "È stato coperto il ${cardName(card.name)}"
             }
 
             "swap" -> {
@@ -52,19 +57,15 @@ class LogViewModel: ViewModel() {
             }
 
             "King's Rule" -> {
-                val first = data.relevantCards[0]
-                val second = data.relevantCards[1]
-                val firstDesc = if (first.flag) cardName(first.name) else "posizione ${first.value}"
-                val secondDesc = if (second.flag) cardName(second.name) else "posizione ${second.value}"
-                "Re: scambiate $firstDesc con $secondDesc"
+                val direction = data.relevantCards[0].name
+                val riga = data.relevantCards[0].value
+                "il Re ha swipato la riga ${riga+1} verso $direction"
             }
 
             "Queen'Swipe" -> {
-                val first = data.relevantCards[0]
-                val second = data.relevantCards[1]
-                val firstDesc = if (first.flag) cardName(first.name) else "posizione ${first.value}"
-                val secondDesc = if (second.flag) cardName(second.name) else "posizione ${second.value}"
-                "Regina: scambiate $firstDesc con $secondDesc"
+                val direction = data.relevantCards[0].name
+                val colonna = data.relevantCards[0].value
+                "La Donna ha swipato la colonna ${colonna+1} verso l'$direction"
             }
 
             "Jack' chain" -> {
@@ -76,7 +77,8 @@ class LogViewModel: ViewModel() {
 
             "addedFromUncover" -> {
                 val card = data.outcome.first()
-                "Aggiunta dalla pesca: ${cardName(card.name)} in posizione ${card.value}"
+                if (card.value == 7) "Aggiunta dal mazzo scoperta: ${cardName(card.name)}"
+                "Aggiunta dal mazzo scoperta: ${cardName(card.name)} in posizione ${card.value}"
             }
 
             else -> "Azione sconosciuta: ${data.type}"
@@ -99,19 +101,19 @@ class LogViewModel: ViewModel() {
     fun mapValue(value: String): String {
         return when (value) {
             "1"  -> "Asso"
-            "11" -> "Fante"
-            "12" -> "Regina"
-            "13" -> "Re"
+            "8" -> "Jack"
+            "9" -> "Donna"
+            "10" -> "Re"
             else -> value
         }
     }
 
     fun mapSuit(suit: String): String {
         return when (suit) {
-            "H" -> "Cuori"
+            "C" -> "Cuori"
             "D" -> "Quadri"
-            "C" -> "Fiori"
-            "S" -> "Picche"
+            "F" -> "Fiori"
+            "P" -> "Picche"
             else -> suit
         }
     }

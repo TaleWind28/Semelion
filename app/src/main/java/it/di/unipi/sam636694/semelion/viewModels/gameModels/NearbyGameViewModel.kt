@@ -384,19 +384,18 @@ class NearbyGameViewModel(
     fun updateNickname(nickname: String?){
         this.nickname = nickname?:userID
         super.playerName = this.nickname
-        //super.userID = nickname?: userID
     }
 
     fun updateFirstPlayerAvatar(avatar:Int){
         this.firstPlayerAvatar = avatar
     }
 
+    //aggiorna i matchSummary in base al primo giocatore
     fun updateFirstPlayer(){
         _matchSummary.update {
             val (first, second) = it
-            val isFirstPlayer = (connectionState.value.isHost && _uiState.value.firstPlayer == "Host") ||
-                    (!connectionState.value.isHost && _uiState.value.firstPlayer == "Guest")
-
+            val isFirstPlayer =
+                (connectionState.value.isHost && _uiState.value.firstPlayer == "Host") || (!connectionState.value.isHost && _uiState.value.firstPlayer == "Guest")
             Pair(
                 if (first.userId == userID) first.copy( wasFirstPLayer = isFirstPlayer) else first,
                 if (second.userId == userID) second.copy( wasFirstPLayer = isFirstPlayer) else second
@@ -416,12 +415,10 @@ class NearbyGameViewModel(
             when (messageType) {
                 "endpoint:" -> {
                     updateRemoteId(message)
-
                     //inizio il match
                     viewModelScope.launch{
                         matchStart(GameModes.NearBy,opponentName)
                     }
-
                     //se sono host, decido chi è il primo giocatore, aggiorno la variabile relativa e lo comunico al guest
                     if(_connectionState.value.isHost){
                         setFirstPlayer()
@@ -429,12 +426,12 @@ class NearbyGameViewModel(
                         sendMessage("starting player",_uiState.value.firstPlayer)
                     }
                 }
-
+                //imposto il primo giocatore giocando sulla variabile p1Turn
                 "starting player:" ->{
                     if (message == "Guest") _uiState.update { it.copy(firstPlayer = message, p1Turn = false,p1Actions = it.p1Actions+1, phase = GamePhase.PlayerTurn) }
                     if (message == "Host") _uiState.update { it.copy(firstPlayer = message,p2Actions = it.p2Actions+1, phase = GamePhase.WaitingForOpponent) }
                     updateFirstPlayer()
-                    Log.d("coinFlip","fp:${_uiState.value.firstPlayer}")
+                    //Log.d("coinFlip","fp:${_uiState.value.firstPlayer}")
                 }
 
                 "grid:" -> {
@@ -452,9 +449,9 @@ class NearbyGameViewModel(
 
                 "destruction:" -> {
                     stopHeartbeat()
-                    Log.d("disc","hb fermato")
+                    //Log.d("disc","hb fermato")
                     _uiState.update { it.copy(phase = GamePhase.GameOver, winner = userID) }
-                    Log.d("message","fase post destruction:${_uiState.value.phase}")
+                   //Log.d("message","fase post destruction:${_uiState.value.phase}")
                 }
                 "ping:" -> {
                     sendMessage("pong", "")

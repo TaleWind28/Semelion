@@ -34,6 +34,7 @@ import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
+import it.di.unipi.sam636694.semelion.utilities.Direction
 import it.di.unipi.sam636694.semelion.utilities.SnackBarController
 import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import it.di.unipi.sam636694.semelion.utilities.findPowerRow
@@ -50,6 +51,7 @@ import kotlin.collections.chunked
 import kotlin.collections.find
 import kotlin.collections.plus
 import kotlin.math.max
+import kotlin.reflect.typeOf
 
 abstract class BaseGameViewModel(
     val matchesDao: MatchesDao,
@@ -104,8 +106,8 @@ abstract class BaseGameViewModel(
 
 
         //azione per log
-        val pos = _uiState.value.grid.indexOfFirst { it.name == cardId }
-        val relevantCards = listOf(Triple(cardId ,pos , findCard(cardId,_uiState.value)?.isRevealed ?: false))
+        val pos = _uiState.value.grid.indexOfFirst { it.name == cardId } +1
+        val relevantCards = listOf(Triple(cardId ,pos, findCard(cardId,_uiState.value)?.isRevealed ?: false))
 
         _uiState.update { state ->
             val revealedCards = state.revealedCards + cardId
@@ -189,8 +191,8 @@ abstract class BaseGameViewModel(
         }
 
         val relevantCards = listOf(
-            Triple(id1,_uiState.value.grid.indexOfFirst { it.name == id1 }, findCard(id1,_uiState.value)?.isRevealed ?: false),
-            Triple(id2,_uiState.value.grid.indexOfFirst { it.name == id2 }, findCard(id2,_uiState.value)?.isRevealed ?: false)
+            Triple(id1,_uiState.value.grid.indexOfFirst { it.name == id1 }+1, findCard(id1,_uiState.value)?.isRevealed ?: false),
+            Triple(id2,_uiState.value.grid.indexOfFirst { it.name == id2 }+1, findCard(id2,_uiState.value)?.isRevealed ?: false)
         )
 
         _uiState.update {
@@ -207,8 +209,8 @@ abstract class BaseGameViewModel(
         }
 
         val outcome = listOf(
-            Triple(id1,_uiState.value.grid.indexOfFirst { it.name == id1 }, findCard(id1,_uiState.value)?.isRevealed ?: false),
-            Triple(id2,_uiState.value.grid.indexOfFirst { it.name == id2 }, findCard(id2,_uiState.value)?.isRevealed ?: false)
+            Triple(id1,_uiState.value.grid.indexOfFirst { it.name == id1 }+1, findCard(id1,_uiState.value)?.isRevealed ?: false),
+            Triple(id2,_uiState.value.grid.indexOfFirst { it.name == id2 }+1, findCard(id2,_uiState.value)?.isRevealed ?: false)
         )
 
         sendScreenMessage("swap",relevantCards,outcome)
@@ -248,7 +250,7 @@ abstract class BaseGameViewModel(
 
         _uiState.update { state->
             val swappedState =
-                swaps.fold(cardId to state) { (currentId, currentState), nextPosition ->
+                jackSwaps.fold(cardId to state) { (currentId, currentState), nextPosition ->
                     val nextCard = currentState.grid[nextPosition]
 
                     val currentPos = currentState.grid.indexOfFirst { it.name == currentId }
@@ -278,6 +280,12 @@ abstract class BaseGameViewModel(
                 }.grid,
                 phase = GamePhase.Validation          // transizione dentro lo stato
             )
+            //ricalcolo il colId
+            val rId = direction(0,0)
+            if (direction(0,7) == Direction.UP.toFunction(rId)(0,7))
+                sendScreenMessage("Queen'Swipe",listOf(Triple("Alto",rId,true)),listOf(Triple("",rId,true)))
+            else
+                sendScreenMessage("Queen'Swipe",listOf(Triple("Basso",rId,false)),listOf(Triple("",rId,false)))
 
             modifiedState = applyAndValidate(modifiedState,(0 until 3).map { direction(it,0) })
 
@@ -315,6 +323,12 @@ abstract class BaseGameViewModel(
                 }.grid,
                 phase = GamePhase.Validation,
             )
+
+            if (direction(1,0) == Direction.RIGHT.toFunction(rowIndex)(1,0))
+                sendScreenMessage("King's Rule",listOf(Triple("Destra",rowIndex,true)),listOf(Triple("",rowIndex,true)))
+            else
+                sendScreenMessage("King's Rule",listOf(Triple("Sinistra",rowIndex,false)),listOf(Triple("",rowIndex,false)))
+
 
             //validazione postuma
             modifiedState = applyAndValidate(modifiedState,(0 until 6).map { (rowIndex * 7) + it })
@@ -602,8 +616,8 @@ abstract class BaseGameViewModel(
         val card2 = findCard(id2, state) ?: return state
 
         val relevantCards = listOf(
-            Triple(id1,state.grid.indexOfFirst { it.name == id1 }, findCard(id1,state)?.isRevealed ?: false),
-            Triple(id2,state.grid.indexOfFirst { it.name == id2 }, findCard(id2,state)?.isRevealed ?: false)
+            Triple(id1,state.grid.indexOfFirst { it.name == id1 }+1, findCard(id1,state)?.isRevealed ?: false),
+            Triple(id2,state.grid.indexOfFirst { it.name == id2 }+1, findCard(id2,state)?.isRevealed ?: false)
         )
 
         val modifiedState = state.copy(
@@ -617,11 +631,10 @@ abstract class BaseGameViewModel(
         )
 
         val outcome = listOf(
-            Triple(id1,modifiedState.grid.indexOfFirst { it.name == id1 }, findCard(id1,modifiedState)?.isRevealed ?: false),
-            Triple(id2,modifiedState.grid.indexOfFirst { it.name == id2 }, findCard(id2,modifiedState)?.isRevealed ?: false)
+            Triple(id1,modifiedState.grid.indexOfFirst { it.name == id1 }+1 , findCard(id1,modifiedState)?.isRevealed ?: false),
+            Triple(id2,modifiedState.grid.indexOfFirst { it.name == id2 }+1, findCard(id2,modifiedState)?.isRevealed ?: false)
         )
-
-        sendScreenMessage(type,relevantCards,outcome)
+        if (type=="Jack' chain") sendScreenMessage(type,relevantCards,outcome)
 
         return modifiedState
     }
@@ -797,8 +810,8 @@ abstract class BaseGameViewModel(
         val newUncover = state.uncoverDeck
         val nextCard = state.uncoverDeck.first()
         val pos = state.grid.indexOfFirst { it.name==cardID }
-        val relevantCards = listOf(Triple(cardID,pos, true))
-        val outcome = listOf(Triple(nextCard.name,pos, true))
+        val relevantCards = listOf(Triple(cardID,pos+1, true))
+        val outcome = listOf(Triple(nextCard.name,pos+1, true))
 
         sendScreenMessage("addedFromUncover",relevantCards,outcome)
         state.uncoverDeck.forEach { Log.d("uncover",it.name) }

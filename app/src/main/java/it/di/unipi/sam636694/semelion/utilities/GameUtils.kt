@@ -9,7 +9,7 @@ data class ActionData(val type: String, val relevantCards: List<CardInfo>, val o
 enum class RowOrder { CRESCENT, DECRESCENT, BOTH }
 
 fun String.toActionData(): ActionData {
-    val mainRegex = Regex("""^(\w+):\{(.*)\} -> \{(.*)\}\s*$""")
+    val mainRegex = Regex("""^([^:]+):\{(.*)\} -> \{(.*)\}\s*$""")
     val match = mainRegex.find(this) ?: throw IllegalArgumentException("Formato non valido: $this")
 
     val type = match.groupValues[1]
@@ -67,8 +67,7 @@ fun String.toGameIntent(): GameIntent {
 
 // CardUIStates -> String
 // formato: "name|value|house|isRevealed"
-fun CardUIStates.serialize(): String =
-    "$name|$value|$house|$isRevealed"
+fun CardUIStates.serialize(): String = "$name|$value|$house|$isRevealed"
 
 // String -> CardUIStates
 fun deserializeCard(raw: String): CardUIStates {
