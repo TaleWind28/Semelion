@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -63,7 +64,7 @@ fun SemelionRules(modifier: Modifier = Modifier) {
 fun RulesHeader() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = "MANUALE UFFICIALE",
+            text = stringResource(R.string.semelionManual),
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 1.5.sp,
@@ -86,12 +87,12 @@ fun RulesHeader() {
 fun Purpose() {
     SectionBlock(
         iconRes = R.drawable.stars_24px, // sostituisci con la tua icona "target"
-        title = "Scopo del Gioco"
+        title = stringResource(R.string.semelionPurpose)
     ) {
         RoundedCard {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    text = "Il giocatore vince la partita quando riesce a comporre 2 \"righe potenti\".",
+                    text = stringResource(R.string.semelionWinCon),
                     fontSize = 14.sp,
                     color = TextPrimary
                 )
@@ -114,7 +115,7 @@ fun Purpose() {
                         )
                         Column {
                             Text(
-                                text = "RIGA POTENTE",
+                                text = stringResource(R.string.semelionPowerRow),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 1.sp,
@@ -122,7 +123,7 @@ fun Purpose() {
                             )
                             Spacer(Modifier.height(2.dp))
                             Text(
-                                text = "Carte dello stesso seme in ordinamento Crescente A-7 oppure Decrescente 7-A.",
+                                text = stringResource(R.string.semelionPowerRowPosition),
                                 fontSize = 13.sp,
                                 color = TextPrimary
                             )
@@ -141,7 +142,7 @@ fun Purpose() {
 fun HowToPlay() {
     SectionBlock(
         iconRes = R.drawable.play_circle_24px, // sostituisci con la tua icona "play"
-        title = "Svolgimento del Gioco"
+        title = stringResource(R.string.semelionPlaying)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
 
@@ -155,7 +156,7 @@ fun HowToPlay() {
             ) {
                 Column {
                     Text(
-                        text = "FORMULA AZIONI TURNO",
+                        text =stringResource(R.string.semelionActionsTitle),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
@@ -163,7 +164,7 @@ fun HowToPlay() {
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "(carte in posizione corretta / 2) + 1",
+                        text =stringResource(R.string.semelionActionsFormula),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -173,22 +174,21 @@ fun HowToPlay() {
 
             // Azione 1: Rivela Carta
             ActionItem(
-                iconRes = R.drawable.undereye_24px, // sostituisci con icona "eye"
-                title = "Rivela Carta:",
-                description = "Scopri una carta coperta sul tavolo.",
+                iconRes = R.drawable.undereye_24px,
+                title = stringResource(R.string.semelionRevealTitle),
+                description = stringResource(R.string.semelionRevealAction),
                 subItems = emptyList()
             )
 
             // Azione 2: Scambio
             ActionItem(
-                iconRes = R.drawable.swap_horiz_24px, // sostituisci con icona "swap"
-                title = "Scambio:",
-                description = "Scambia due carte rispettando i vincoli:",
+                iconRes = R.drawable.swap_horiz_24px,
+                title = stringResource(R.string.semelionSwapTitle),
+                description = stringResource(R.string.semelionSwapAction),
                 subItems = listOf(
-                    SubItem("Almeno una delle due deve andare in posizione corretta.", isRed = false),
-                    SubItem("Almeno una delle due deve andare in posizione corretta.", isRed = false),
-                    SubItem("Almeno una delle due deve essere nel proprio lato del tavolo.", isRed = false),
-                    SubItem("Non possono far parte di una riga potente.", isRed = true)
+                    SubItem(stringResource(R.string.semelionSwapCorrectnessRule), isRed = false),
+                    SubItem(stringResource(R.string.semelionSwapFairnessRule), isRed = false),
+                    SubItem(stringResource(R.string.semelionSwapPowerRowRule), isRed = true)
                 )
             )
         }
@@ -264,7 +264,7 @@ fun ActionItem(
 fun ValidPosition() {
     SectionBlock(
         iconRes = R.drawable.info_24px, // sostituisci con icona "grid"
-        title = "Posizione Corretta"
+        title = stringResource(R.string.semelionCorrectPositionTitle)
     ) {
         RoundedCard {
             Column(
@@ -273,7 +273,7 @@ fun ValidPosition() {
             ) {
                 // Citazione
                 Text(
-                    text = "\"La posizione di una carta è corretta se è nella posizione pari al suo valore(es: il 3 in posizione 3) in ordine crescente, oppure se è nella corrispettiva in ordine decrescente.\"",
+                    text = stringResource(R.string.semelionCorrectPositionCitation),
                     fontSize = 13.sp,
                     fontStyle = FontStyle.Italic,
                     color = TextSecondary,
@@ -285,8 +285,8 @@ fun ValidPosition() {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OrderBox(label = "CRESCENTE", arrow = "A → 7", modifier = Modifier.weight(1f))
-                    OrderBox(label = "DECRESCENTE", arrow = "7 → A", modifier = Modifier.weight(1f))
+                    OrderBox(label = stringResource(R.string.semelionCorrectPositionOrderAscending), arrow = stringResource(R.string.semelionCorrectPositionOrderAscendingArrow), modifier = Modifier.weight(1f))
+                    OrderBox(label = stringResource(R.string.semelionCorrectPositionOrderDescending), arrow = stringResource(R.string.semelionCorrectPositionOrderDescendingArrow), modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -334,16 +334,16 @@ data class SpecialCard(
 @Composable
 fun SpecialCards() {
     val cards = listOf(
-        SpecialCard("J", "JACK", "Scambio di un numero random di carte sul tavolo, determinato dal valore della prima carta del mazzo scoperta diminuito di 1."),
-        SpecialCard("Q", "QUEEN", "Sposta una colonna verticalmente."),
-        SpecialCard("K", "KING", "Sposta una riga orizzontalmente."),
-        SpecialCard("★", "JOLLY", "È sempre considerato in posizione, quando compare la carta che sostituisce viene rimosso", isDashed = true),
-        SpecialCard("7", "SETTE", "Termina il turno immediatamente se è scoperto e non si trova ai bordi.", isRed = true)
+        SpecialCard("J", stringResource(R.string.semelionJack), stringResource(R.string.semelionJackEffect)),
+        SpecialCard("Q", stringResource(R.string.semelionQueen), stringResource(R.string.semelionQueenEffect)),
+        SpecialCard("K", stringResource(R.string.semelionKing), stringResource(R.string.semelionKingEffect)),
+        SpecialCard("★", stringResource(R.string.semelionJolly), stringResource(R.string.semelionJollyEffect), isDashed = true),
+        SpecialCard("7", stringResource(R.string.semelionSeven), stringResource(R.string.semelionSevenEffect), isRed = true)
     )
 
     SectionBlock(
         iconRes = R.drawable.star_shine_24px, // sostituisci con icona "sparkles"
-        title = "Carte Speciali"
+        title = stringResource(R.string.semelionSpecialCards)
     ) {
         RoundedCard {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {

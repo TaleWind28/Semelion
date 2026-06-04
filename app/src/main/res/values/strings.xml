@@ -25,4 +25,37 @@
     <string name="semelionNearbyGuestAdvice">Assicurati aver attivato Bluetooth e Posizione per poter rilevare correttamente le stanze nelle vicinanze</string>
     <string name="semelionNearbyUsageAdvice">Semelion usa Google Nearby Connections per trovare giocatori nelle vicinanze</string>
     <string name="semelionPermissionDenied">Semelion usa Google Nearby Connections per stabilire la connessione tra dispositivi vicini, per farlo è necessario consentire all\'utilizzo della posizione</string>
+    <string name="semelionManual">MANUALE UFFICIALE</string>
+    <string name="semelionPurpose">Scopo del Gioco</string>
+    <string name="semelionWinCon">Il giocatore vince la partita quando riesce a comporre 2 "righe potenti".</string>
+    <string name="semelionPowerRow">RIGA POTENTE</string>
+    <string name="semelionPowerRowPosition">Carte dello stesso seme in ordinamento Crescente A-7 oppure Decrescente 7-A.</string>
+    <string name="semelionPlaying">Svolgimento del Gioco</string>
+    <string name="semelionActionsTitle">FORMULA AZIONI TURNO</string>
+    <string name="semelionActionsFormula">(carte in posizione corretta / 2) + 1</string>
+    <string name="semelionRevealTitle">Rivela Carta:</string>
+    <string name="semelionRevealAction">Scopri una carta coperta sul tavolo.</string>
+    <string name="semelionSwapTitle">Scambio:"</string>
+    <string name="semelionSwapAction">Scambia due carte rispettando i vincoli:</string>
+    <string name="semelionSwapFairnessRule">Almeno una delle due carte deve essere nel proprio lato del tavolo.</string>
+    <string name="semelionSwapCorrectnessRule">Almeno una delle due deve andare in posizione corretta.</string>
+    <string name="semelionSwapPowerRowRule">Nessuna carta deve far parte di una riga potente.</string>
+    <string name="semelionCorrectPositionTitle">Posizione Corretta</string>
+    <string name="semelionCorrectPositionCitation">\"La posizione di una carta è corretta se è nella posizione pari al suo valore(es: il 3 in posizione 3) in ordine crescente, oppure se è nella corrispettiva in ordine decrescente.\"</string>
+    <string name="semelionCorrectPositionOrderAscending">CRESCENTE</string>
+    <string name="semelionCorrectPositionOrderAscendingArrow">A → 7</string>
+    <string name="semelionCorrectPositionOrderDescending">DECRESCENTE</string>
+    <string name="semelionCorrectPositionOrderDescendingArrow">7 → A</string>
+    <string name="semelionSpecialCards">Carte Speciali</string>
+    <string name="semelionJack">JACK</string>
+    <string name="semelionJackEffect">Scambio di un numero random di carte sul tavolo, determinato dal valore della prima carta del mazzo scoperta diminuito di 1.</string>
+    <string name="semelionQueen">DONNA</string>
+    <string name="semelionQueenEffect">Sposta una colonna verticalmente.</string>
+    <string name="semelionKing">RE</string>
+    <string name="semelionKingEffect">Sposta una riga orizzontalmente.</string>
+    <string name="semelionJolly">JOLLY</string>
+    <string name="semelionJollyEffect">È sempre considerato in posizione, quando compare la carta che sta sostituendo, si scambia con essa e viene sostituito con la prima carta del mazzo scoperta</string>
+    <string name="semelionSeven">SETTE</string>
+    <string name="semelionSevenEffect">Termina il turno immediatamente se è scoperto e non si trova ai bordi.</string>
+
 </resources>
