@@ -73,8 +73,7 @@ fun ProfilePage(
     profile: UserData = UserData(),
     matches: List<RecentMatch> = emptyList(),
     onEditProfile: (String) -> Unit = {},
-    onAvatarChosen: (Int) -> Unit = {},
-    onViewAllMatches: () -> Unit = {}
+    onAvatarChosen: (Int) -> Unit = {}
 ) {
     LazyColumn(
         modifier = Modifier
@@ -85,7 +84,7 @@ fun ProfilePage(
     ) {
         item { ProfileCard(profile = profile, onEdit = onEditProfile, onAvatarChosen = onAvatarChosen) }
         item { StatisticsSection(profile = profile) }
-        item { RecentMatchesSection(matches = matches, onViewAll = onViewAllMatches) }
+        item { RecentMatchesSection(matches = matches) }
         item { Spacer(Modifier.height(8.dp)) }
     }
 }
@@ -337,7 +336,6 @@ fun StatCard(
 @Composable
 fun RecentMatchesSection(
     matches: List<RecentMatch>,
-    onViewAll: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         // Header

@@ -102,7 +102,9 @@ fun SemelionScreen(
 
     //Dialog per chiedere all'utente se vuole davvero uscire dalla schermata
     if (showExitDialog){
-        BasicAlertDialog(onDismissRequest = {showExitDialog = false}) {
+        BasicAlertDialog(onDismissRequest = {
+            showExitDialog = false
+        }) {
             Surface(shape = RoundedCornerShape(16.dp)) {
                 Column{
                     Text(
@@ -172,7 +174,7 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
             val gameoverText = resolveGameoverText(state.winner,viewModel)
             viewModel.playEndSound()
 
-            BasicAlertDialog(onDismissRequest = {}) {
+            BasicAlertDialog(onDismissRequest = {viewModel.player.stop()}) {
                 Surface(shape = RoundedCornerShape(16.dp)) {
                     Column{
                         Text(
@@ -182,7 +184,7 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
                         )
                         Row{
                             if (viewModel is SemelionGameViewModel){
-                                Button(onClick = {viewModel.setup()}) {
+                                Button(onClick = {viewModel.setup();viewModel.player.stop()}) {
                                     Text(text = "Gioca ancora")
                                 }
                             }
@@ -193,6 +195,7 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
                                         viewModel.matchEnd(mode= GameModes.NearBy)
                                         viewModel.disconnect()
                                     }
+                                    viewModel.player.stop()
                                     onBack()
                                 }
                             ) {
@@ -204,7 +207,7 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
             }
         }
         is GamePhase.Disconnected ->{
-            BasicAlertDialog(onDismissRequest = {}) {
+            BasicAlertDialog(onDismissRequest = {viewModel.player.stop()}) {
                 Surface(shape = RoundedCornerShape(16.dp)) {
                     Column {
                         Text(
@@ -213,9 +216,12 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
                             style = MaterialTheme.typography.titleLarge
                         )
 
-                        if (viewModel is NearbyGameViewModel) viewModel.disconnect()
+                        if (viewModel is NearbyGameViewModel) {
+                            viewModel.disconnect()
+                            viewModel.player.stop()
+                        }
+                        viewModel.player.stop()
                         onBack()
-
                         }
                     }
                 }

@@ -19,26 +19,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import it.di.unipi.sam636694.semelion.R
+import it.di.unipi.sam636694.semelion.ui.theme.BgPage
+import it.di.unipi.sam636694.semelion.ui.theme.CardBg
+import it.di.unipi.sam636694.semelion.ui.theme.CardBlue
+import it.di.unipi.sam636694.semelion.ui.theme.CardRed
+import it.di.unipi.sam636694.semelion.ui.theme.CardWhite
 import it.di.unipi.sam636694.semelion.ui.theme.GreenDark
+import it.di.unipi.sam636694.semelion.ui.theme.GreenLight
 import it.di.unipi.sam636694.semelion.ui.theme.GreenMedium
-import it.di.unipi.sam636694.semelion.ui.theme.SemelionTheme
+import it.di.unipi.sam636694.semelion.ui.theme.GreenPrimary
+import it.di.unipi.sam636694.semelion.ui.theme.TextPrimary
+import it.di.unipi.sam636694.semelion.ui.theme.TextSecondary
 
 // ── Colori ───────────────────────────────────────────────────
-private val GreenPrimary  = Color(0xFF3DBE5A)
-private val GreenDark     = Color(0xFF1F6B32)
-private val GreenLight    = Color(0xFFEAF4EA)
-private val BgPage        = Color(0xFFF0F7F0)
-private val CardBg        = Color(0xFFE8F0E8)
-private val TextPrimary   = Color(0xFF1A1A1A)
-private val TextSecondary = Color(0xFF6B6B6B)
-private val CardBlue      = Color(0xFF2B4FC7)
-private val CardRed       = Color(0xFFC72B2B)
-private val CardWhite     = Color(0xFFFFFFFF)
+
 
 // ════════════════════════════════════════════════════════════
 //  SCHERMATA PRINCIPALE

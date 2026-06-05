@@ -366,8 +366,8 @@ fun RevealCard(card: CardUIStates, model: BaseGameViewModel, size: Dp){
         },
         label = "card_reveal_${card.name}"
     ) { isRevealed ->
-        //se il parametro della lambda non viene usato il compilatore dà errore, che non blocca l'esecuzione però mi dava noia.
-        //ps: la lambda lo richiede per forza però non ha senso aggiungere un parametro ad una funzione che prende la classe dalla quale deriva suddetto parametro
+        //Se il parametro della lambda non viene usato il compilatore dà errore, che non blocca l'esecuzione però mi dava noia.
+        //ps: la lambda lo richiede per forza però non ha senso aggiungere un parametro a una funzione che prende la classe dalla quale deriva suddetto parametro
         Log.d("uselessErrorRemover","$isRevealed")
         FinalCard(card = card, model = model,size=size)
     }

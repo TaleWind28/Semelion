@@ -1,14 +1,10 @@
 package it.di.unipi.sam636694.semelion.viewModels.utilityModels
 
 import android.app.Application
-import android.util.Log
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.utilities.SharedRepository
-import it.di.unipi.sam636694.semelion.utilities.rememberGameStrings
 import it.di.unipi.sam636694.semelion.utilities.toActionData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -74,7 +70,6 @@ class LogViewModel(private val app: Application): AndroidViewModel(application =
                 val cards = data.relevantCards.joinToString(" -> ") { card ->
                     if (card.flag) cardName(card.name) else app.getString(R.string.semelionLogCardPosition,card.value)
                 }
-                "Jack: catena di scambi $cards"
                 app.getString(R.string.semelionLogJackMadness,cards)
             }
 

@@ -35,3 +35,7 @@ val OrangeAccent   = Color(0xFFBF6020)
  val RedText      = Color(0xFFD32F2F)
  val CardBg       = Color(0xFFFFFFFF)
  val PageBg       = Color(0xFFF1F8F1)
+
+val CardBlue      = Color(0xFF2B4FC7)
+val CardRed       = Color(0xFFC72B2B)
+val CardWhite     = Color(0xFFFFFFFF)

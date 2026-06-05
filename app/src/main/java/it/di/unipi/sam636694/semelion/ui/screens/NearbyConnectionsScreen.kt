@@ -50,8 +50,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.android.gms.nearby.connection.Payload
-import com.google.android.gms.nearby.connection.*
 import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.NearbyGameViewModel
 import androidx.compose.runtime.collectAsState

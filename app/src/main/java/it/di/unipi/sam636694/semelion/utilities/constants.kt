@@ -15,7 +15,7 @@ val SEMELION_FIGURES = listOf(
     Pair(8,"P")
     )
 //serviceID per NearbyConnections
-val serviceId = "semelion_nearbyConnections"
+const val serviceId = "semelion_nearbyConnections"
 
 // ─── Colori del tema ──────────────────────────────────────────────────────────
 val GreenAccent   = Color(0xFF3BFF7C)

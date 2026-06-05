@@ -51,7 +51,6 @@ import kotlin.collections.chunked
 import kotlin.collections.find
 import kotlin.collections.plus
 import kotlin.math.max
-import kotlin.reflect.typeOf
 
 abstract class BaseGameViewModel(
     val matchesDao: MatchesDao,

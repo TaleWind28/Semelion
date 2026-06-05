@@ -1,6 +1,5 @@
 package it.di.unipi.sam636694.semelion.utilities
 
-import android.app.Application
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -32,9 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import it.di.unipi.sam636694.semelion.viewModels.utilityModels.LogViewModel
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionRules
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionScreen
@@ -49,11 +46,11 @@ enum class AppDestinations(
 ) {
     GAME("Game", Icons.Default.Home, { _,_, viewModel,_,onBack -> SemelionScreen(viewModel = viewModel, onBack = onBack) }),
     RULES("Rules", Icons.Outlined.Settings, { _, _,_,_,_-> SemelionRules() }),
-    ACTIONS("Actions", Icons.Default.AccountBox, { padding, _,_,logViewModel,_ -> LogScreen(viewModel =logViewModel,padding = padding)}),
+    ACTIONS("Actions", Icons.Default.AccountBox, { _, _,_,logViewModel,_ -> LogScreen(viewModel =logViewModel)}),
 }
 
 @Composable
-fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel, padding: PaddingValues){
+fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel){
     val state by viewModel.uiState.collectAsState()
     Log.d("tate","${state.actions}")
     LazyColumn(modifier = modifier.background(Color.LightGray).fillMaxSize().padding(15.dp)) {

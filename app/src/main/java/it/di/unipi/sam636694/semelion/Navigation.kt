@@ -105,8 +105,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                                 scope.launch {
                                     profileVm.onEditAvatar(avatar)
                                 }
-                            },
-                            onViewAllMatches = {}
+                            }
                         )
                     }
 
