@@ -82,5 +82,31 @@
     <string name="semelionWelcomeMessage2">Semelion è un gioco di carte per 2 giocatori con 2 modalità:</string>
     <string name="semelionWelcomeMessage3">Quick Play: due giocatori giocano sullo stesso dispositivo</string>
     <string name="semelionWelcomeMessage4">Connections: gioca con due dispositivi android diversi in modalità wireless</string>
-    <string name="semelionWelcomeMessage5">Benvenuto in Semelion!</string>
+    <string name="semelionLogUncoverNot7Added">Aggiunta dal mazzo scoperta: %1$s in posizione %2$d</string>
+    <string name="semelionLogUncover7Added">Aggiunta dal mazzo scoperta: %1$s</string>
+    <string name="semelionLog7Revealed">È stata rivelato il %1$s</string>
+    <string name="semelionLogNot7Revealed">È stata rivelata la carta %1$s in posizione %2$d</string>
+    <string name="semelionLogCardCovered">È stata coperta la carta %1$s </string>
+    <string name="semelionLogCardPosition">posizione %1$d</string>
+    <string name="semelionLogSwap">Sono state scambiate %1$s e %2$s</string>
+    <string name="semelionLogKingRule">Il Re ha swipato la riga %1$d verso %2$s</string>
+    <string name="semelionLogQueenSwipe">La Donna ha swipato la colonna %1$d in %2$s</string>
+    <string name="semelionLogJackMadness">Jack: catena di scambi %1$s</string>
+    <string name="semelionUnrecognizedAction">Azione sconosciuta: %1$s</string>
+
+    <string name="semelionCardAce">Asso</string>
+    <string name="semelionCardJack">Jack</string>
+    <string name="semelionCardQueen">Donna</string>
+    <string name="semelionCardKing">Re</string>
+
+    <string name="semelionCardJokerRed">Jolly Rosso</string>
+    <string name="semelionCardJokerBlack">Jolly Nero</string>
+
+    <string name="semelionCardSuitHearts">Cuori</string>
+    <string name="semelionCardSuitDiamonds">Quadri</string>
+    <string name="semelionCardSuitClover">Fiori</string>
+    <string name="semelionCardSuitClubs">Picche</string>
+
+
+
 </resources>

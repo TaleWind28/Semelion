@@ -16,6 +16,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -31,6 +33,7 @@ import it.di.unipi.sam636694.semelion.ui.screens.ProfilePage
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionHome
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionRules
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
+import it.di.unipi.sam636694.semelion.viewModels.utilityModels.LogViewModel
 import it.di.unipi.sam636694.semelion.viewModels.utilityModels.UserProfileViewModel
 import kotlinx.coroutines.launch
 import kotlin.String
@@ -41,6 +44,14 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
 
     val backStack = rememberNavBackStack(Route.Home)
     val scope = rememberCoroutineScope()
+    val appContext = LocalContext.current.applicationContext as Application
+    val lvm: LogViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer {
+                LogViewModel(appContext)
+            }
+        }
+    )
 
     NavDisplay(
         modifier = Modifier,
@@ -102,6 +113,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                 }
 
                 is Route.ScreenSharingGame -> NavEntry(key){
+
                     val viewModel: SemelionGameViewModel = viewModel(
                         factory = SemelionGameViewModel.factory(
                             matchesDao= db.matchesDao(),
@@ -112,7 +124,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                             player= player,
                             userID=userID,
                             secondPlayerId = "screenSharing",
-                            application = LocalContext.current.applicationContext as Application
+                            application = appContext
                         )
                     )
 
@@ -141,18 +153,22 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                         NavigationUIApp(
                             snackBarHostState = snackBarHostState,
                             db = db,
-                            viewModel,
+                            viewModel=viewModel,
+                            logViewModel = lvm,
                             onNavigateBack = { backStack.removeLastOrNull()})
                     }
 
                 }
 
                 is Route.SemelionConnections -> NavEntry(key) {
+
+
                     SemelionConnectionsScreen(
                         db=db,
                         snackBarHostState,
                         player=player,
                         userId = userID,
+                        lvm = lvm,
                         onBack = { backStack.removeLastOrNull()},
                     )
                 }

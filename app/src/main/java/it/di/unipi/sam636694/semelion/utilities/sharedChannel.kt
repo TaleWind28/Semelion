@@ -1,13 +1,13 @@
 package it.di.unipi.sam636694.semelion.utilities
 
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 object SharedRepository {
-    private val _channel = Channel<String>(Channel.BUFFERED)
-    val channel = _channel.receiveAsFlow()
+    private val _channel = MutableSharedFlow<String>(extraBufferCapacity = 64)
+    val channel = _channel.asSharedFlow()
 
     suspend fun send(message: String) {
-        _channel.send(message)
+        _channel.emit(message)
     }
 }

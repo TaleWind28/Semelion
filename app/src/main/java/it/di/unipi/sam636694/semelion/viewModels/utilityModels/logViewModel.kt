@@ -1,16 +1,22 @@
 package it.di.unipi.sam636694.semelion.viewModels.utilityModels
 
+import android.app.Application
 import android.util.Log
+import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.utilities.SharedRepository
+import it.di.unipi.sam636694.semelion.utilities.rememberGameStrings
 import it.di.unipi.sam636694.semelion.utilities.toActionData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.text.dropLast
 
-class LogViewModel: ViewModel() {
+class LogViewModel(private val app: Application): AndroidViewModel(application = app) {
     private val _uiState = MutableStateFlow(LogUIState())
 
     val uiState = _uiState.asStateFlow()
@@ -24,8 +30,6 @@ class LogViewModel: ViewModel() {
     }
 
     fun registerAction(action:String,state: LogUIState){
-        val data = action.toActionData()
-        Log.d("translate","$data")
         _uiState.update {
             state.copy(
                 actions = state.actions + action
@@ -34,62 +38,61 @@ class LogViewModel: ViewModel() {
     }
     fun translateAction(action: String): String {
         val data = action.toActionData()
-       Log.d("translate","$data")
         return when (data.type) {
-
             "reveal" -> {
                 val card = data.outcome.first()
-                if (card.value == 7) "È stata rivelato il ${cardName(card.name)}"
-                else "È stata rivelata la carta in posizione ${card.value}: ${cardName(card.name)}"
+                if (card.name.dropLast(1) == "7") app.getString(R.string.semelionLog7Revealed,cardName(card.name))
+                else app.getString(R.string.semelionLogNot7Revealed,cardName(card.name),card.value)
             }
 
             "covered" -> {
                 val card = data.outcome.first()
-                "È stato coperto il ${cardName(card.name)}"
+                app.getString(R.string.semelionLogCardCovered,cardName(card.name))
             }
 
             "swap" -> {
                 val first = data.relevantCards[0]
                 val second = data.relevantCards[1]
-                val firstDesc = if (first.flag) cardName(first.name) else "posizione ${first.value}"
-                val secondDesc = if (second.flag) cardName(second.name) else "posizione ${second.value}"
-                "Sono state scambiate: $firstDesc con $secondDesc"
+                val firstDesc = if (first.flag) cardName(first.name) else app.getString(R.string.semelionLogCardPosition,first.value)
+                val secondDesc = if (second.flag) cardName(second.name) else app.getString(R.string.semelionLogCardPosition,second.value)
+                app.getString(R.string.semelionLogSwap,firstDesc,secondDesc)
             }
 
             "King's Rule" -> {
                 val direction = data.relevantCards[0].name
                 val riga = data.relevantCards[0].value
-                "il Re ha swipato la riga ${riga+1} verso $direction"
+                app.getString(R.string.semelionLogKingRule,riga+1,direction)
             }
 
             "Queen'Swipe" -> {
                 val direction = data.relevantCards[0].name
                 val colonna = data.relevantCards[0].value
-                "La Donna ha swipato la colonna ${colonna+1} verso l'$direction"
+                app.getString(R.string.semelionLogQueenSwipe,colonna+1,direction)
             }
 
             "Jack' chain" -> {
                 val cards = data.relevantCards.joinToString(" -> ") { card ->
-                    if (card.flag) cardName(card.name) else "posizione ${card.value}"
+                    if (card.flag) cardName(card.name) else app.getString(R.string.semelionLogCardPosition,card.value)
                 }
                 "Jack: catena di scambi $cards"
+                app.getString(R.string.semelionLogJackMadness,cards)
             }
 
             "addedFromUncover" -> {
                 val card = data.outcome.first()
-                if (card.value == 7) "Aggiunta dal mazzo scoperta: ${cardName(card.name)}"
-                "Aggiunta dal mazzo scoperta: ${cardName(card.name)} in posizione ${card.value}"
+                if (card.name.dropLast(1) == "7") app.getString(R.string.semelionLogUncover7Added, cardName(card.name))
+                else app.getString(R.string.semelionLogUncoverNot7Added, cardName(card.name), card.value)
             }
 
-            else -> "Azione sconosciuta: ${data.type}"
+            else -> app.getString(R.string.semelionUnrecognizedAction,data.type)
         }
     }
 
     fun cardName(raw: String): String {
         // Raw è nel formato "XY" dove X è il valore e Y è il seme (es. "7F", "joker_red")
         return when {
-            raw.startsWith("joker_red") -> "Jolly Rosso"
-            raw.startsWith("joker_black") -> "Jolly Nero"
+            raw.startsWith("joker_red") -> app.getString(R.string.semelionCardJokerRed)
+            raw.startsWith("joker_black") -> app.getString(R.string.semelionCardJokerBlack)
             else -> {
                 val value = raw.dropLast(1)
                 val suit = raw.last().toString()
@@ -100,20 +103,20 @@ class LogViewModel: ViewModel() {
 
     fun mapValue(value: String): String {
         return when (value) {
-            "1"  -> "Asso"
-            "8" -> "Jack"
-            "9" -> "Donna"
-            "10" -> "Re"
+            "1"  -> app.getString(R.string.semelionCardAce)
+            "8" -> app.getString(R.string.semelionCardJack)
+            "9" -> app.getString(R.string.semelionCardQueen)
+            "10" -> app.getString(R.string.semelionCardKing)
             else -> value
         }
     }
 
     fun mapSuit(suit: String): String {
         return when (suit) {
-            "C" -> "Cuori"
-            "D" -> "Quadri"
-            "F" -> "Fiori"
-            "P" -> "Picche"
+            "C" -> app.getString(R.string.semelionCardSuitHearts)
+            "D" -> app.getString(R.string.semelionCardSuitDiamonds)
+            "F" -> app.getString(R.string.semelionCardSuitClover)
+            "P" -> app.getString(R.string.semelionCardSuitClubs)
             else -> suit
         }
     }

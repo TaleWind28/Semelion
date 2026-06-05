@@ -1,5 +1,6 @@
 package it.di.unipi.sam636694.semelion.utilities
 
+import android.app.Application
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -31,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import it.di.unipi.sam636694.semelion.viewModels.utilityModels.LogViewModel
@@ -43,17 +45,17 @@ import it.di.unipi.sam636694.semelion.viewModels.gameModels.BaseGameViewModel
 enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
-    val screen: @Composable (PaddingValues, SemelionDB, BaseGameViewModel, ()->Unit ) -> Unit
+    val screen: @Composable (PaddingValues, SemelionDB, BaseGameViewModel, LogViewModel,()->Unit ) -> Unit
 ) {
-    GAME("Game", Icons.Default.Home, { _,_, viewModel,onBack -> SemelionScreen(viewModel = viewModel, onBack = onBack) }),
-    RULES("Rules", Icons.Outlined.Settings, { _, _,_,_-> SemelionRules() }),
-    ACTIONS("Actions", Icons.Default.AccountBox, { padding, _,_,_ -> LogScreen(padding = padding)}),
+    GAME("Game", Icons.Default.Home, { _,_, viewModel,_,onBack -> SemelionScreen(viewModel = viewModel, onBack = onBack) }),
+    RULES("Rules", Icons.Outlined.Settings, { _, _,_,_,_-> SemelionRules() }),
+    ACTIONS("Actions", Icons.Default.AccountBox, { padding, _,_,logViewModel,_ -> LogScreen(viewModel =logViewModel,padding = padding)}),
 }
 
 @Composable
-fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel = viewModel(),padding: PaddingValues){
+fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel, padding: PaddingValues){
     val state by viewModel.uiState.collectAsState()
-    Log.d("padding","$padding")
+    Log.d("tate","${state.actions}")
     LazyColumn(modifier = modifier.background(Color.LightGray).fillMaxSize().padding(15.dp)) {
         items(state.actions.reversed()){
             Text(text=viewModel.translateAction(it),color=Color.Black)
@@ -62,13 +64,12 @@ fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel = viewModel
 }
 
 @Composable
-fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewModel: BaseGameViewModel, onNavigateBack: () -> Unit) {
+fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewModel: BaseGameViewModel, logViewModel: LogViewModel,onNavigateBack: () -> Unit) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.GAME) }
     //intercetto il back per tornare alla schermata di gioco e gestirlo effettivamente da lì
     BackHandler(enabled = currentDestination != AppDestinations.GAME) {
         currentDestination = AppDestinations.GAME
     }
-
     NavigationSuiteScaffold(
         navigationSuiteItems = {
             AppDestinations.entries.forEach {
@@ -99,7 +100,7 @@ fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewMo
             containerColor = Color.White,
             contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { innerPadding ->
-            currentDestination.screen(innerPadding,db, viewModel, onNavigateBack)
+            currentDestination.screen(innerPadding,db, viewModel, logViewModel,onNavigateBack)
         }
     }
 }

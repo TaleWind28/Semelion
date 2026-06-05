@@ -67,6 +67,7 @@ import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.ui.states.ConnectionUiState
 import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
 import it.di.unipi.sam636694.semelion.utilities.serviceId
+import it.di.unipi.sam636694.semelion.viewModels.utilityModels.LogViewModel
 
 
 @Composable
@@ -75,6 +76,7 @@ fun SemelionConnectionsScreen(
     snackbarHostState: SnackbarHostState,
     player: AudioPlayer,
     userId: String,
+    lvm: LogViewModel,
     onBack: () -> Unit,
 ) {
     var nickname = "Semelion User:$userId"
@@ -116,7 +118,6 @@ fun SemelionConnectionsScreen(
             application = LocalContext.current.applicationContext as Application,
         )
     )
-
     //richiesta permessi
     LaunchedEffect(nvm) {
         permissionsLauncher.launch(requiredPermissions)
@@ -142,7 +143,13 @@ fun SemelionConnectionsScreen(
     ) {
         DiscoveryScreen(nvm)
     } else {
-        NavigationUIApp(snackBarHostState = snackbarHostState, db = db, viewModel=nvm, onNavigateBack = onBack)
+        NavigationUIApp(
+            snackBarHostState = snackbarHostState,
+            db = db,
+            viewModel=nvm,
+            logViewModel = lvm,
+            onNavigateBack = onBack
+        )
     }
 }
 
