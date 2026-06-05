@@ -75,4 +75,7 @@
     <string name="semelionProfileChooseAvatar">Scegli il tuo Avatar</string>
     <string name="semelionProfileRecentMatches">Partite Recenti</string>
     <string name="semelionHomePageGreetings">Pronto per una nuova partita?</string>
+    <string name="semelionRulesUncoverDeckTitle">Mazzo Scoperta</string>
+    <string name="semelionRulesUncoverDeckComposition">È il mazzo formato togliendo dal mazzo griglia iniziale 8 carte, per fare in modo che tutte le figure, ed i jolly, siano sul tavolo di gioco dall\'inizio</string>
+    <string name="semelionRulesUncoverDeck">Quando viene scoperta una figura essa viene rimossa dal tavolo di gioco e sostituita con la prima carta del mazzo scoperta</string>
 </resources>

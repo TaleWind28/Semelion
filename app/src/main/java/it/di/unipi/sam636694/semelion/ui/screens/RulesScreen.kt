@@ -1,6 +1,5 @@
 package it.di.unipi.sam636694.semelion.ui.screens
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -26,16 +25,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import it.di.unipi.sam636694.semelion.utilities.GreenAccent
 import it.di.unipi.sam636694.semelion.R
+import it.di.unipi.sam636694.semelion.ui.theme.CardBg
+import it.di.unipi.sam636694.semelion.ui.theme.GreenDark
+import it.di.unipi.sam636694.semelion.ui.theme.GreenLight
+import it.di.unipi.sam636694.semelion.ui.theme.GreenMedium
+import it.di.unipi.sam636694.semelion.ui.theme.PageBg
+import it.di.unipi.sam636694.semelion.ui.theme.RedText
 import it.di.unipi.sam636694.semelion.utilities.TextPrimary
 import it.di.unipi.sam636694.semelion.utilities.TextSecondary
 
 // ── Colori tema ──────────────────────────────────────────────
-private val GreenLight   = Color(0xFFE8F5E9)
-private val GreenMedium  = Color(0xFF66BB6A)
-private val GreenDark    = Color(0xFF2E7D32)
-private val RedText      = Color(0xFFD32F2F)
-private val CardBg       = Color(0xFFFFFFFF)
-private val PageBg       = Color(0xFFF1F8F1)
+
 
 // ════════════════════════════════════════════════════════════
 //  SCHERMATA PRINCIPALE
@@ -54,6 +54,7 @@ fun SemelionRules(modifier: Modifier = Modifier) {
         item { HowToPlay() }
         item { ValidPosition() }
         item { SpecialCards() }
+        item { UncoverDeck() }
     }
 }
 
@@ -141,7 +142,7 @@ fun Purpose() {
 @Composable
 fun HowToPlay() {
     SectionBlock(
-        iconRes = R.drawable.play_circle_24px, // sostituisci con la tua icona "play"
+        iconRes = R.drawable.play_circle_24px,
         title = stringResource(R.string.semelionPlaying)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -460,5 +461,43 @@ fun RoundedCard(content: @Composable ColumnScope.() -> Unit) {
             modifier = Modifier.padding(16.dp),
             content = content
         )
+    }
+}
+
+@Composable
+fun UncoverDeck(){
+    SectionBlock(
+        iconRes = R.drawable.play_circle_24px,
+        title = stringResource(R.string.semelionRulesUncoverDeckTitle)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+            // Formula azioni turno
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(GreenAccent)
+                    .padding(14.dp)
+            ) {
+                Column{
+                    Text(
+                        text =stringResource(R.string.semelionRulesUncoverDeckComposition),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                        color = Color.White.copy(alpha = 0.85f)
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        text =stringResource(R.string.semelionRulesUncoverDeck),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+
+        }
     }
 }
