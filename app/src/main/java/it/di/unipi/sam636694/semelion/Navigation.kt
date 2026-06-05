@@ -60,7 +60,6 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                                 "Rules" to {backStack.add(Route.RulesPage)},
                                 "Profile" to {backStack.add(Route.ProfilePage)}
                             ),
-                                navigationFun= {route -> backStack.add(route)},
                             firstLaunch = firstLaunch(),
                             updateFirstLaunch= updateFirstLaunch
                             ,

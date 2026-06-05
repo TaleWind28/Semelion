@@ -19,10 +19,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import it.di.unipi.sam636694.semelion.R
+import it.di.unipi.sam636694.semelion.ui.theme.GreenDark
+import it.di.unipi.sam636694.semelion.ui.theme.GreenMedium
+import it.di.unipi.sam636694.semelion.ui.theme.SemelionTheme
 
 // ── Colori ───────────────────────────────────────────────────
 private val GreenPrimary  = Color(0xFF3DBE5A)
@@ -44,7 +48,7 @@ fun SemelionHome(
     modifier: Modifier = Modifier,
     destinations: Map<String, () -> Unit>,
     firstLaunch:Boolean,
-    updateFirstLaunch: () -> Unit
+    updateFirstLaunch: () -> Unit,
 ) {
     val buttonList = listOf(
         IconButton(
@@ -374,29 +378,33 @@ fun WelcomeBottomSheet(
     onGoToRules: () -> Unit,
     onQuickPlay: () -> Unit
 ){
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = GreenMedium,
+        contentColor = Color.White
+    ) {
         Column(
             modifier = Modifier
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp)
         ) {
             Text(
-                text = "Benvenuto in Semelion! 🃏",
+                text = "${stringResource(R.string.semelionWelcomeMessage1)}🃏",
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
             Text(
-                text = "Semelion è un gioco di carte per 2 giocatori con 2 modalità:",
+                text = stringResource(R.string.semelionWelcomeMessage2),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
             Text(
-                text = "📱  Quick Play: due giocatori giocano sullo stesso dispositivo",
+                text = "📱  ${stringResource(R.string.semelionWelcomeMessage3)}",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             Text(
-                text = "📶  Connections: gioca con due dispositivi android diversi in modalità wireless",
+                text = "📶  ${stringResource(R.string.semelionWelcomeMessage4)}",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(bottom = 24.dp)
             )
@@ -405,23 +413,33 @@ fun WelcomeBottomSheet(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedButton(
+                Button(
                     onClick = {
-                        onDismiss()
                         onGoToRules()
-                              },
-                    modifier = Modifier.padding(end = 12.dp)
+                        onDismiss()
+                    },
+                    modifier = Modifier.padding(end = 12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = GreenDark,
+                        contentColor = Color.White
+                    )
                 ) {
                     Text("📖 ${stringResource(R.string.semelionRulesTitle)}")
                 }
-                Button(onClick ={
-                    onDismiss()
+                Button(
+                    onClick = {
                     onQuickPlay()
-                }) {
+                    onDismiss()
+                    },
+                    modifier = Modifier.padding(end = 12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = GreenDark,
+                        contentColor = Color.White
+                    )
+                ) {
                     Text("Quick Play")
                 }
             }
         }
     }
-
 }

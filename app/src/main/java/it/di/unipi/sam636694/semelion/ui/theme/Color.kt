@@ -29,7 +29,6 @@ val WinColor       = Color(0xFF2E7D32)
 val DrawColor = Color(0xFF1565C0)
 val LossColor      = Color(0xFFC62828)
 val OrangeAccent   = Color(0xFFBF6020)
-
  val GreenLight   = Color(0xFFE8F5E9)
  val GreenMedium  = Color(0xFF66BB6A)
  val GreenDark    = Color(0xFF2E7D32)
