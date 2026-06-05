@@ -9,8 +9,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -65,7 +68,6 @@ class MainActivity : ComponentActivity() {
 
 
 
-
                     Log.d("mainActivity","PreObserve:${prefs.getString("semelion_local_userId",null)}")
 
 
@@ -93,7 +95,14 @@ class MainActivity : ComponentActivity() {
 
                     }
 
-                    SemelionNavigation(snackBarHostState,db, player=player,userID=deviceUser)
+                    SemelionNavigation(
+                        snackBarHostState,
+                        db,
+                        player=player,
+                        userID=deviceUser,
+                        firstLaunch= { prefs.getBoolean("first_launch",true)},
+                        updateFirstLaunch={ prefs.edit { putBoolean("first_launch",false) }}
+                    )
                 }
             }
         }

@@ -37,7 +37,7 @@ import kotlin.String
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, player: AudioPlayer, userID:String){
+fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, player: AudioPlayer, userID:String,firstLaunch:()->Boolean,updateFirstLaunch:()->Unit){
 
     val backStack = rememberNavBackStack(Route.Home)
     val scope = rememberCoroutineScope()
@@ -57,8 +57,14 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                             destinations =  mapOf(
                                 "Quick Play" to {backStack.add(Route.ScreenSharingGame)},
                                 "Connections" to {backStack.add(Route.SemelionConnections)},
+                                "Rules" to {backStack.add(Route.RulesPage)},
+                                "Profile" to {backStack.add(Route.ProfilePage)}
                             ),
-                                navigationFun= {route -> backStack.add(route)}
+                                navigationFun= {route -> backStack.add(route)},
+                            firstLaunch = firstLaunch(),
+                            updateFirstLaunch= updateFirstLaunch
+                            ,
+
                         )
                     }
 

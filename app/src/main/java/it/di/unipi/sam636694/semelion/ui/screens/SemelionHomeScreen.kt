@@ -22,9 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.navigation3.runtime.NavKey
 import it.di.unipi.sam636694.semelion.R
-import it.di.unipi.sam636694.semelion.Route
 
 // ── Colori ───────────────────────────────────────────────────
 private val GreenPrimary  = Color(0xFF3DBE5A)
@@ -45,7 +43,8 @@ private val CardWhite     = Color(0xFFFFFFFF)
 fun SemelionHome(
     modifier: Modifier = Modifier,
     destinations: Map<String, () -> Unit>,
-    navigationFun: (route: NavKey) -> Unit
+    firstLaunch:Boolean,
+    updateFirstLaunch: () -> Unit
 ) {
     val buttonList = listOf(
         IconButton(
@@ -53,14 +52,14 @@ fun SemelionHome(
             stringResource(R.string.semelionRulesSubTitle),
             "icona di regole",
             R.drawable.article_24px,
-            goTo = { navigationFun(Route.RulesPage) }
+            goTo =  destinations["Rules"]?:{}
         ),
         IconButton(
             stringResource(R.string.semelionProfileTitle),
             stringResource(R.string.semelionProfileSubTitle),
             "icona profilo",
             R.drawable.account_circle_24px, // sostituisci con icona settings
-            goTo = { navigationFun(Route.ProfilePage) }
+            goTo =  destinations["Profile"]?:{}
         )
     )
 
@@ -72,7 +71,13 @@ fun SemelionHome(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        GreetingsBox(onQuickPlay = destinations["Quick Play"] ?: {}, onConnections = destinations["Connections"] ?: {})
+        GreetingsBox(
+            onQuickPlay = destinations["Quick Play"] ?: {},
+            onConnections = destinations["Connections"] ?: {},
+            onRules = destinations["Rules"]?:{},
+            showWelcome = firstLaunch,
+            updatePrefs = updateFirstLaunch
+        )
         Spacer(Modifier.height(4.dp))
         buttonList.forEach { button ->
             DestinationButton(button = button)
@@ -87,7 +92,10 @@ fun SemelionHome(
 fun GreetingsBox(
     modifier: Modifier = Modifier,
     onQuickPlay: () -> Unit,
-    onConnections: () -> Unit
+    onConnections: () -> Unit,
+    onRules: ()-> Unit = {},
+    showWelcome: Boolean,
+    updatePrefs:() -> Unit
 ) {
     Surface(
         shape = RoundedCornerShape(20.dp),
@@ -166,6 +174,14 @@ fun GreetingsBox(
             }
 
 
+        }
+
+        if (showWelcome) {
+            WelcomeBottomSheet(
+                onDismiss = updatePrefs,
+                onGoToRules = onRules,
+                onQuickPlay = onQuickPlay
+            )
         }
     }
 }
@@ -349,4 +365,63 @@ fun DestinationButton(modifier: Modifier = Modifier, button: IconButton) {
             )
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WelcomeBottomSheet(
+    onDismiss: () -> Unit,
+    onGoToRules: () -> Unit,
+    onQuickPlay: () -> Unit
+){
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = "Benvenuto in Semelion! 🃏",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            Text(
+                text = "Semelion è un gioco di carte per 2 giocatori con 2 modalità:",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            Text(
+                text = "📱  Quick Play: due giocatori giocano sullo stesso dispositivo",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Text(
+                text = "📶  Connections: gioca con due dispositivi android diversi in modalità wireless",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        onDismiss()
+                        onGoToRules()
+                              },
+                    modifier = Modifier.padding(end = 12.dp)
+                ) {
+                    Text("📖 ${stringResource(R.string.semelionRulesTitle)}")
+                }
+                Button(onClick ={
+                    onDismiss()
+                    onQuickPlay()
+                }) {
+                    Text("Quick Play")
+                }
+            }
+        }
+    }
+
 }
