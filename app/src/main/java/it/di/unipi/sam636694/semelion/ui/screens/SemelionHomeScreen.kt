@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,16 +49,16 @@ fun SemelionHome(
 ) {
     val buttonList = listOf(
         IconButton(
-            "Regole",
-            "Master the Tactical mechanics",
+            stringResource(R.string.semelionRulesTitle),
+            stringResource(R.string.semelionRulesSubTitle),
             "icona di regole",
             R.drawable.article_24px,
             goTo = { navigationFun(Route.RulesPage) }
         ),
         IconButton(
-            "Profilo",
-            "Game preferences & Audio",
-            "icona impostazioni",
+            stringResource(R.string.semelionProfileTitle),
+            stringResource(R.string.semelionProfileSubTitle),
+            "icona profilo",
             R.drawable.account_circle_24px, // sostituisci con icona settings
             goTo = { navigationFun(Route.ProfilePage) }
         )
@@ -103,16 +104,9 @@ fun GreetingsBox(
                 horizontalAlignment = Alignment.Start,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = "WELCOME BACK",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.5.sp,
-                    color = GreenDark
-                )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Ready for your\nnext turn?",
+                    text = stringResource(R.string.semelionHomePageGreetings),
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary,

@@ -25,6 +25,8 @@
     <string name="semelionNearbyGuestAdvice">Assicurati aver attivato Bluetooth e Posizione per poter rilevare correttamente le stanze nelle vicinanze</string>
     <string name="semelionNearbyUsageAdvice">Semelion usa Google Nearby Connections per trovare giocatori nelle vicinanze</string>
     <string name="semelionPermissionDenied">Semelion usa Google Nearby Connections per stabilire la connessione tra dispositivi vicini, per farlo è necessario consentire all\'utilizzo della posizione</string>
+    <string name="semelionRulesTitle">Regole</string>
+    <string name="semelionRulesSubTitle">Impara le basi del gioco</string>
     <string name="semelionManual">MANUALE UFFICIALE</string>
     <string name="semelionPurpose">Scopo del Gioco</string>
     <string name="semelionWinCon">Il giocatore vince la partita quando riesce a comporre 2 "righe potenti".</string>
@@ -57,5 +59,20 @@
     <string name="semelionJollyEffect">È sempre considerato in posizione, quando compare la carta che sta sostituendo, si scambia con essa e viene sostituito con la prima carta del mazzo scoperta</string>
     <string name="semelionSeven">SETTE</string>
     <string name="semelionSevenEffect">Termina il turno immediatamente se è scoperto e non si trova ai bordi.</string>
-
+    <string name="semelionProfileTitle">Profilo</string>
+    <string name="semelionProfileSubTitle">Personalizza il tuo profilo</string>
+    <string name="semelionProfileStatistics">Statistiche</string>
+    <string name="semelionProfileWinRate">WIN RATE</string>
+    <string name="semelionProfileMatchesPlayed">PARTITE GIOCATE</string>
+    <string name="semelionProfileMatchesWon">PARTITE VINTE</string>
+    <string name="semelionProfileMatchesDrawn">PARTITE PAREGGIATE</string>
+    <string name="semelionProfileMatchesLost">PARTITE PERSE</string>
+    <string name="semelionProfileCurrentStreak">SERIE DI VITTORIE ATTUALE</string>
+    <string name="semelionProfileBestStreak">MIGLIOR SERIE DI VITTORIE ATTUALE</string>
+    <string name="semelionProfileWin">VITTORIA</string>
+    <string name="semelionProfileDraw">PAREGGIO</string>
+    <string name="semelionProfileLoss">SCONFITTA</string>
+    <string name="semelionProfileChooseAvatar">Scegli il tuo Avatar</string>
+    <string name="semelionProfileRecentMatches">Partite Recenti</string>
+    <string name="semelionHomePageGreetings">Pronto per una nuova partita?</string>
 </resources>

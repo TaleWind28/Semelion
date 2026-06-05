@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,18 +57,6 @@ data class UserData(
     val selectedAvatar: Int = R.drawable.avatar_1
 )
 
-val mockProfile = UserData(
-    username = "Tactician_Semelion",
-    winRate = 64f,
-    gamesPlayed = 128,
-    winStreak = 40,
-    bestWinStreak = 50,
-    wins = 0,
-    losses = 80,
-    draws = 50,
-    selectedAvatar = R.drawable.avatar_10
-)
- 
 data class RecentMatch(
     val opponent: String,
     val date: String,
@@ -75,21 +64,14 @@ data class RecentMatch(
     val isWin: Boolean?,
     val opponentAvatar:Int = R.drawable.avatar_1,
 )
-
-val mockMatches = listOf(
-    RecentMatch("Shadow_Pulse",  "Nov 24, 2023", "14:20", isWin = true),
-    RecentMatch("Card_King_99",  "Nov 23, 2023", "09:15", isWin = false),
-    RecentMatch("Neon_Striker",  "Nov 22, 2023", "18:45", isWin = true),
-    RecentMatch("Ghost_Dealer",  "Nov 21, 2023", "11:30", isWin = true),
-)
  
 // ════════════════════════════════════════════════════════════
 //  SCHERMATA PROFILO
 // ════════════════════════════════════════════════════════════
 @Composable
 fun ProfilePage(
-    profile: UserData = mockProfile,
-    matches: List<RecentMatch> = mockMatches,
+    profile: UserData = UserData(),
+    matches: List<RecentMatch> = emptyList(),
     onEditProfile: (String) -> Unit = {},
     onAvatarChosen: (Int) -> Unit = {},
     onViewAllMatches: () -> Unit = {}
@@ -141,7 +123,6 @@ fun ProfileCard(profile: UserData, onEdit: (String) -> Unit,onAvatarChosen: (Int
                         .background(Color(0xFF2A3A2A)),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Sostituisci con AsyncImage o Image se hai una foto profilo
                     Image(painter = painterResource(profile.selectedAvatar), contentDescription = "Semelion Avatar")
                 }
  
@@ -171,8 +152,7 @@ fun ProfileCard(profile: UserData, onEdit: (String) -> Unit,onAvatarChosen: (Int
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            Text(text = "Scegli il tuo Avatar", modifier = Modifier.size(60.dp), color = Color.Black)
-
+                            Text(text = stringResource(R.string.semelionProfileChooseAvatar), modifier = Modifier.size(60.dp), color = Color.Black)
                             LazyVerticalGrid(
                                 columns = GridCells.Fixed(4),
                                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -247,7 +227,7 @@ fun ProfileCard(profile: UserData, onEdit: (String) -> Unit,onAvatarChosen: (Int
 fun StatisticsSection(profile: UserData) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
-            text = "Statistics",
+            text = stringResource(R.string.semelionProfileStatistics),
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = TextPrimary
@@ -258,13 +238,13 @@ fun StatisticsSection(profile: UserData) {
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             StatCard(
-                label = "WIN RATE",
+                label = stringResource(R.string.semelionProfileWinRate),
                 value = "${profile.winRate.roundToInt()}%",
                 valueColor = GreenDark,
                 modifier = Modifier.weight(1f)
             )
             StatCard(
-                label = "GAMES PLAYED",
+                label = stringResource(R.string.semelionProfileMatchesPlayed),
                 value = "${profile.gamesPlayed}",
                 valueColor = TextPrimary,
                 modifier = Modifier.weight(1f)
@@ -277,23 +257,23 @@ fun StatisticsSection(profile: UserData) {
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             StatCard(
-                label = "MATCHES WON",
+                label = stringResource(R.string.semelionProfileMatchesWon),
                 value = "${profile.wins}",
-                valueColor = GreenDark,
+                valueColor = WinColor,
                 modifier = Modifier.weight(1f)
             )
 
             StatCard(
-                label = "MATCHES DRAWN",
+                label = stringResource(R.string.semelionProfileMatchesDrawn),
                 value = if (profile.draws < 0) "${profile.draws * -1}" else "${profile.draws}",
-                valueColor = Color.DarkGray,
+                valueColor = DrawColor,
                 modifier = Modifier.weight(1f)
             )
 
             StatCard(
-                label = "MATCHES LOST",
+                label = stringResource(R.string.semelionProfileMatchesLost),
                 value = "${profile.losses}",
-                valueColor = Color.Red,
+                valueColor = LossColor,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -304,13 +284,13 @@ fun StatisticsSection(profile: UserData) {
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             StatCard(
-                label = "CURRENT WIN STREAK",
+                label = stringResource(R.string.semelionProfileCurrentStreak),
                 value = "${profile.winStreak}",
                 valueColor = OrangeAccent,
                 modifier = Modifier.weight(1f)
             )
             StatCard(
-                label = "BEST WIN STREAK",
+                label = stringResource(R.string.semelionProfileBestStreak),
                 value = "${profile.bestWinStreak}",
                 valueColor = Color.Green,
                 modifier = Modifier.weight(1f)
@@ -367,20 +347,11 @@ fun RecentMatchesSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Recent Matches",
+                text = stringResource(R.string.semelionProfileRecentMatches),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
             )
-            TextButton(onClick = onViewAll) {
-                Text(
-                    text = "VIEW ALL",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = GreenDark,
-                    letterSpacing = 0.5.sp
-                )
-            }
         }
  
         // Lista partite
@@ -392,7 +363,10 @@ fun RecentMatchesSection(
  
 @Composable
 fun MatchRow(match: RecentMatch) {
-    val accentColor = if (match.isWin == null) DrawColor  else if (match.isWin) WinColor else LossColor
+    val accentColor =
+        if (match.isWin == null) DrawColor
+        else if (match.isWin) WinColor
+        else LossColor
 
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -426,7 +400,6 @@ fun MatchRow(match: RecentMatch) {
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape),
-//                        .background(if (match.isWin == true) GreenPrimary else if (match.isWin == false) Color(0xFFBDBDBD) else ) ,
                     contentAlignment = Alignment.Center
                 ) {
                    Image(painterResource(match.opponentAvatar), contentDescription = "Opponent Avatar")
@@ -450,7 +423,7 @@ fun MatchRow(match: RecentMatch) {
                 // Risultato
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = if (match.isWin == true) "VITTORIA" else if (match.isWin == false) "SCONFITTA" else "PAREGGIO",
+                        text = if (match.isWin == true) stringResource(R.string.semelionProfileWin) else if (match.isWin == false) stringResource(R.string.semelionProfileLoss) else stringResource(R.string.semelionProfileDraw),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = accentColor
