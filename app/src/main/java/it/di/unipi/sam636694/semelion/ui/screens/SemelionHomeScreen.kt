@@ -45,8 +45,6 @@ import it.di.unipi.sam636694.semelion.ui.theme.TextSecondary
 fun SemelionHome(
     modifier: Modifier = Modifier,
     destinations: Map<String, () -> Unit>,
-    firstLaunch:Boolean,
-    updateFirstLaunch: () -> Unit,
 ) {
     val buttonList = listOf(
         IconButton(
@@ -76,15 +74,14 @@ fun SemelionHome(
         GreetingsBox(
             onQuickPlay = destinations["Quick Play"] ?: {},
             onConnections = destinations["Connections"] ?: {},
-            onRules = destinations["Rules"]?:{},
-            showWelcome = firstLaunch,
-            updatePrefs = updateFirstLaunch
         )
         Spacer(Modifier.height(4.dp))
         buttonList.forEach { button ->
             DestinationButton(button = button)
         }
     }
+
+
 }
 
 // ════════════════════════════════════════════════════════════
@@ -95,9 +92,6 @@ fun GreetingsBox(
     modifier: Modifier = Modifier,
     onQuickPlay: () -> Unit,
     onConnections: () -> Unit,
-    onRules: ()-> Unit = {},
-    showWelcome: Boolean,
-    updatePrefs:() -> Unit
 ) {
     Surface(
         shape = RoundedCornerShape(20.dp),
@@ -178,13 +172,7 @@ fun GreetingsBox(
 
         }
 
-        if (showWelcome) {
-            WelcomeBottomSheet(
-                onDismiss = updatePrefs,
-                onGoToRules = onRules,
-                onQuickPlay = onQuickPlay
-            )
-        }
+
     }
 }
 
@@ -376,10 +364,16 @@ fun WelcomeBottomSheet(
     onGoToRules: () -> Unit,
     onQuickPlay: () -> Unit
 ){
+
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState,
         containerColor = GreenMedium,
-        contentColor = Color.White
+        contentColor = Color.White,
     ) {
         Column(
             modifier = Modifier

@@ -12,7 +12,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -32,6 +35,7 @@ import it.di.unipi.sam636694.semelion.viewModels.gameModels.SemelionGameViewMode
 import it.di.unipi.sam636694.semelion.ui.screens.ProfilePage
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionHome
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionRules
+import it.di.unipi.sam636694.semelion.ui.screens.WelcomeBottomSheet
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.viewModels.utilityModels.LogViewModel
 import it.di.unipi.sam636694.semelion.viewModels.utilityModels.UserProfileViewModel
@@ -64,18 +68,24 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
             when(key){
                 is Route.Home ->
                     NavEntry(key){
-                        SemelionHome(
-                            destinations =  mapOf(
-                                "Quick Play" to {backStack.add(Route.ScreenSharingGame)},
-                                "Connections" to {backStack.add(Route.SemelionConnections)},
-                                "Rules" to {backStack.add(Route.RulesPage)},
-                                "Profile" to {backStack.add(Route.ProfilePage)}
-                            ),
-                            firstLaunch = firstLaunch(),
-                            updateFirstLaunch= updateFirstLaunch
-                            ,
-
+                        val destinations =  mapOf(
+                            "Quick Play" to {backStack.add(Route.ScreenSharingGame);Unit},
+                            "Connections" to {backStack.add(Route.SemelionConnections);Unit},
+                            "Rules" to {backStack.add(Route.RulesPage);Unit},
+                            "Profile" to {backStack.add(Route.ProfilePage);Unit},
+                            "Home" to {backStack.add(Route.Home);Unit}
                         )
+                        SemelionHome(
+                            destinations = destinations,
+                        )
+                        var showWelcomeSheet by remember{ mutableStateOf(firstLaunch()) }
+                        if (showWelcomeSheet) {
+                            WelcomeBottomSheet(
+                                onDismiss ={showWelcomeSheet=false;updateFirstLaunch()},
+                                onGoToRules = destinations["Rules"] ?: {},
+                                onQuickPlay = destinations["Quick Play"] ?: {}
+                            )
+                        }
                     }
 
                 is Route.RulesPage -> NavEntry(key){
