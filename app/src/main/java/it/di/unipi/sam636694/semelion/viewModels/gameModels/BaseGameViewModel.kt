@@ -103,7 +103,6 @@ abstract class BaseGameViewModel(
     //HANDLER PER GESTIRE EVENTI RELATIVI ALLA UI
     protected fun handleCardClicked(cardId: String): Boolean {
 
-
         //azione per log
         val pos = _uiState.value.grid.indexOfFirst { it.name == cardId } +1
         val relevantCards = listOf(Triple(cardId ,pos, findCard(cardId,_uiState.value)?.isRevealed ?: false))
@@ -129,48 +128,68 @@ abstract class BaseGameViewModel(
 
             if (needsDelay) delay(300)
             _uiState.update { validateState(cardId, it) }
-            Log.d("handle","lrc:${_uiState.value.lastReplacedCard}")
+            Log.d("handle","lrc:${_uiState.value.lastReplacedCard}\nfase:${_uiState.value.phase}")
 
-            if (_uiState.value.lastReplacedCard?.contains("7") == true){
-                delay(DELAY_TIME)
-                //se entro qui sicuramente lrc è non null, anzi è del tipo 7House
-                val cardId =_uiState.value.lastReplacedCard ?: "none"
-                _uiState.update {
-                    Log.d("handle","valido:$cardId")
-                    val modifiedState = validateState(cardId,it.copy(lastReplacedCard = null))
-                    actionCounter(modifiedState,modifiedState.grid.chunked(7))
+//            if (_uiState.value.lastReplacedCard?.contains("7") == true){
+//                delay(DELAY_TIME)
+//                //se entro qui sicuramente lrc è non null, anzi è del tipo 7House
+//                val cardId =_uiState.value.lastReplacedCard ?: "none"
+//                _uiState.update {
+//                    Log.d("handle","valido:$cardId")
+//                    val modifiedState = validateState(cardId,it.copy(lastReplacedCard = null))
+//                    actionCounter(modifiedState,modifiedState.grid.chunked(7))
+//                }
+//            }else{
+//                    _uiState.update { actionCounter(it, it.grid.chunked(7)) }
+//                    //primo step della gestione delle figure, comunico all'utente cosa deve fare
+//                    handleFigureRevealed()
+//            }
+            when{
+                _uiState.value.lastReplacedCard?.contains("7") == true -> {
+                    delay(DELAY_TIME)
+                    //se entro qui sicuramente lrc è non null, anzi è del tipo 7House
+                    val cardId =_uiState.value.lastReplacedCard ?: "none"
+                    _uiState.update {
+                        Log.d("handle","valido:$cardId")
+                        val modifiedState = validateState(cardId,it.copy(lastReplacedCard = null))
+                        actionCounter(modifiedState,modifiedState.grid.chunked(7))
+                    }
                 }
-            }else{
-                _uiState.update { actionCounter(it,it.grid.chunked(7)) }
-                when(_uiState.value.phase){
-
-                    is GamePhase.QueenPending ->{
-                        SnackBarController.sendEvent(
-                            event = SnackBarEvent(
-                                message = app.getString(R.string.queenRevealed)
-                            )
-                        )
-
-                    }
-
-                    is GamePhase.KingPending ->{
-                        SnackBarController.sendEvent(
-                            event = SnackBarEvent(
-                                message = app.getString(R.string.kingRevealed)
-                            )
-                        )
-                    }
-
-                    else -> return@launch
+                _uiState.value.phase == GamePhase.PlayerTurn -> {
+                    _uiState.update { actionCounter(it, it.grid.chunked(7)) }
+                    return@launch
+                }
+                else ->{
+                    _uiState.update { actionCounter(it, it.grid.chunked(7)) }
+                    handleFigureRevealed()
                 }
             }
-
         }
         return true
     }
 
+    open suspend fun handleFigureRevealed() {
+        when (_uiState.value.phase) {
+            is GamePhase.QueenPending -> {
+                SnackBarController.sendEvent(
+                    event = SnackBarEvent(
+                        message = app.getString(R.string.queenRevealed)
+                    )
+                )
 
+            }
+            is GamePhase.KingPending -> {
+                SnackBarController.sendEvent(
+                    event = SnackBarEvent(
+                        message = app.getString(R.string.kingRevealed)
+                    )
+                )
+            }
 
+            else -> return
+        }
+
+    }
 
     protected fun handleSwapCards(id1: String, id2: String): Boolean {
 
@@ -228,7 +247,7 @@ abstract class BaseGameViewModel(
     }
 
     protected fun handleJackMadness(swaps:List<Int>):Boolean{
-       if (_uiState.value.phase !is GamePhase.JackMadness) return false
+       if (_uiState.value.phase !is GamePhase.JackMadness && _uiState.value.phase !is GamePhase.WaitingForOpponent) return false
         player.playFile(R.raw.jack)
 
         //scelgo come primo id quello della carta rivelata in modo da gestire il 7
@@ -266,7 +285,7 @@ abstract class BaseGameViewModel(
     }
 
     protected fun handleQueenDirection(direction: (Int, Int) -> Int): Boolean {
-        if (_uiState.value.phase !is GamePhase.QueenPending) return false
+        if (_uiState.value.phase !is GamePhase.QueenPending && _uiState.value.phase !is GamePhase.WaitingForOpponent) return false
         player.playFile(R.raw.queen)
 
         _uiState.update { state ->
@@ -296,7 +315,7 @@ abstract class BaseGameViewModel(
 
     protected fun handleKingDirection(rowIndex:Int, direction: (Int, Int) -> Int) : Boolean {
         //controllo di essere nello stato giusto
-        if (_uiState.value.phase !is GamePhase.KingPending) return false
+        if (_uiState.value.phase !is GamePhase.KingPending && _uiState.value.phase !is GamePhase.WaitingForOpponent) return false
         player.playFile(R.raw.king)
 
         //controllo che il giocatore non abbia selezionato una riga potente

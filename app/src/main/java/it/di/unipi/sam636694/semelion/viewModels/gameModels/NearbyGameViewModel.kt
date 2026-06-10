@@ -45,6 +45,7 @@ import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 import it.di.unipi.sam636694.semelion.utilities.avatarMap
 import android.app.Application
+import kotlin.concurrent.Volatile
 
 
 class NearbyGameViewModel(
@@ -87,6 +88,36 @@ class NearbyGameViewModel(
     private val _connectionState = MutableStateFlow(ConnectionUiState())
     val connectionState: StateFlow<ConnectionUiState> = _connectionState.asStateFlow()
 
+    //coda di azioni da replicare sulla griglia
+    private val pendingActions = ArrayDeque<String>()
+    private var actionFlushJob: Job? = null
+
+    @Volatile
+    private var isSimulating:Boolean = false
+
+    // Lato host: aspetta l'ACK prima di procedere
+    private var gridAckJob: Job? = null
+
+    fun enqueueAction(message: String) {
+        pendingActions.addLast(message)
+        flushActions()
+    }
+
+    private fun flushActions() {
+        if (actionFlushJob?.isActive == true) return
+        actionFlushJob = viewModelScope.launch {
+            while (pendingActions.isNotEmpty()) {
+                val ep = endpoint
+                if (ep == null) {
+                    delay(200) // aspetta che endpoint sia disponibile
+                    continue
+                }
+                val msg = pendingActions.first()
+                sendMessage("gameaction", msg)
+                pendingActions.removeFirst()
+            }
+        }
+    }
 
 
     fun onConnectionResult(endpointId: String, success: Boolean) {
@@ -245,8 +276,10 @@ class NearbyGameViewModel(
         val payload = Payload.fromBytes(formattedMessage.toByteArray(Charsets.UTF_8))
         if (endpoint == null) return
         this.connectionsClient.sendPayload(endpoint!!,payload)
-        Log.d("Payload","Message: $formattedMessage sent")
+        if (formattedMessage == "ping:" || formattedMessage == "pong:" ) return
+        else Log.d("Payload","Message: $formattedMessage sent")
     }
+
 
     //inizializzazione del viewModel -> chiama solo setup
     init {
@@ -264,6 +297,23 @@ class NearbyGameViewModel(
         }
     }
 
+    fun sendGridWithAck() {
+        gridAckJob?.cancel()
+        gridAckJob = viewModelScope.launch {
+            var attempts = 0
+            while (attempts < 5) {
+                sendMessage("grid", _uiState.value.grid.serializeList())
+                sendMessage("uncover", _uiState.value.uncoverDeck.serializeList())
+                delay(1000)
+                // Se nel frattempo è arrivato l'ACK, il job viene cancellato
+                // (vedi payloadCallback sotto)
+                attempts++
+            }
+            // Dopo 5 tentativi senza ACK → errore di connessione
+            onDisconnected()
+        }
+    }
+
     //simula l'azione dell'avversario sulla griglia
     fun produceAction(command: String) {
         if (_uiState.value.phase is GamePhase.GameOver) return
@@ -276,9 +326,7 @@ class NearbyGameViewModel(
     //invia l'azione effettuata all'avversario
     fun sendAction(intent: GameIntent) {
         val action = intent.serialize()
-        Log.d("nvm", "$endpoint:$connectionsClient")
-        if (endpoint == null) return
-        sendMessage("gameaction", action)
+        enqueueAction(action)
     }
 
     //interpreta la direzione del re
@@ -321,13 +369,14 @@ class NearbyGameViewModel(
         //eseguo l'intent
         val result = super.processIntent(mappedIntent)
         if (!result) return false
+
         sendAction(mappedIntent)
         return true
     }
 
     override fun actionCounter(state: GameUIState, rows: List<List<CardUIStates>>): GameUIState{
         val modifiedState = super.actionCounter(state, rows)
-        if (!(modifiedState.phase is GamePhase.Validation || modifiedState.phase is GamePhase.PlayerTurn)) return modifiedState
+        //if (!(modifiedState.phase is GamePhase.Validation || modifiedState.phase is GamePhase.PlayerTurn)) return modifiedState
 
         return if (
             modifiedState.p1Turn && !connectionState.value.isHost
@@ -373,6 +422,16 @@ class NearbyGameViewModel(
             outcome == secondPlayerId -> outcome to false
             else -> outcome to null
         }
+    }
+
+    override suspend fun handleFigureRevealed() {
+        Log.d("semsim","simulating:$isSimulating")
+        try {
+            if (!isSimulating) super.handleFigureRevealed()
+        } finally {
+            isSimulating = false  // garantito anche in caso di eccezione
+        }
+        Log.d("semsim","simulating:$isSimulating")
     }
 
     //UPDATER
@@ -444,6 +503,13 @@ class NearbyGameViewModel(
                         it.copy(uncoverDeck = deserializeCardList(message))
                     }
                     _connectionState.update { it.copy(received = true, gameStarted = true) }
+                    sendMessage("ready", "") // ← ACK all'host
+                }
+                "ready:" -> {
+                    // Guest ha ricevuto tutto, possiamo procedere
+                    gridAckJob?.cancel()
+                    _connectionState.update { it.copy(gameStarted = true) }
+                    onSent()
                 }
                 "gameaction:" -> produceAction(message)
 
@@ -465,9 +531,9 @@ class NearbyGameViewModel(
 
         override fun onPayloadTransferUpdate(endpointId: String, update: PayloadTransferUpdate) {
             when (update.status) {
-                PayloadTransferUpdate.Status.SUCCESS -> Log.d("Payload", "inviato")
+                PayloadTransferUpdate.Status.SUCCESS ->{}// Log.d("Payload", "inviato")
                 PayloadTransferUpdate.Status.FAILURE -> Log.d("Payload", "fallito")
-                PayloadTransferUpdate.Status.IN_PROGRESS -> Log.d("Payload", "trasferimento...")
+                PayloadTransferUpdate.Status.IN_PROGRESS -> {}//Log.d("Payload", "trasferimento...")
             }
         }
     }
@@ -497,7 +563,7 @@ class NearbyGameViewModel(
                     startHeartbeat()
                     if (_connectionState.value.isHost) {
                         //comunico la griglia al guest
-                        sendGrid(endpointId)
+                        sendGridWithAck()
                         _connectionState.update { it.copy(gameStarted = true) }
                     }
                 }
