@@ -45,6 +45,8 @@ import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 import it.di.unipi.sam636694.semelion.utilities.avatarMap
 import android.app.Application
+import it.di.unipi.sam636694.semelion.utilities.SnackBarController
+import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
 import kotlin.concurrent.Volatile
 
 
@@ -376,6 +378,8 @@ class NearbyGameViewModel(
 
     override fun actionCounter(state: GameUIState, rows: List<List<CardUIStates>>): GameUIState{
         val modifiedState = super.actionCounter(state, rows)
+
+        if (modifiedState.phase is GamePhase.GameOver)return modifiedState
         //if (!(modifiedState.phase is GamePhase.Validation || modifiedState.phase is GamePhase.PlayerTurn)) return modifiedState
 
         return if (
@@ -425,13 +429,43 @@ class NearbyGameViewModel(
     }
 
     override suspend fun handleFigureRevealed() {
-        Log.d("semsim","simulating:$isSimulating")
-        try {
-            if (!isSimulating) super.handleFigureRevealed()
-        } finally {
-            isSimulating = false  // garantito anche in caso di eccezione
+        val phase = _uiState.value.phase
+        val nextState = actionCounter(_uiState.value, _uiState.value.grid.chunked(7))
+
+        if (phase != nextState.phase){
+            when(phase){
+                is GamePhase.JackMadness -> {
+                    SnackBarController.sendEvent(
+                        event = SnackBarEvent(
+                            message = app.getString(R.string.opponentJackRevealed,_uiState.value.jackSwaps)
+                        )
+                    )
+
+                }
+                is GamePhase.QueenPending -> {
+                    SnackBarController.sendEvent(
+                        event = SnackBarEvent(
+                            message = app.getString(R.string.opponentQueenRevealed)
+                        )
+                    )
+                }
+                is GamePhase.KingPending -> {
+                    SnackBarController.sendEvent(
+                        event = SnackBarEvent(
+                            message = app.getString(R.string.opponentKingRevealed)
+                        )
+                    )
+                }
+                else -> {
+
+                }
+            }
+            _uiState.update { actionCounter(it, it.grid.chunked(7)) }
+        }else{
+            super.handleFigureRevealed()
         }
-        Log.d("semsim","simulating:$isSimulating")
+
+
     }
 
     //UPDATER

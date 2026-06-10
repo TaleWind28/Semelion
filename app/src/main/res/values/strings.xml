@@ -107,6 +107,10 @@
     <string name="semelionCardSuitClover">Fiori</string>
     <string name="semelionCardSuitClubs">Picche</string>
 
+    <string name="opponentJackRevealed">l\'avversario ha rivelato il Jack che farà questi scambi:%1$s</string>
+    <string name="opponentQueenRevealed">l\'avversario ha rivelato una Donna e può spostare una colonna</string>
+    <string name="opponentKingRevealed">l\'avversario ha rivelato il Re e può swipare una riga</string>
+
 
 
 </resources>

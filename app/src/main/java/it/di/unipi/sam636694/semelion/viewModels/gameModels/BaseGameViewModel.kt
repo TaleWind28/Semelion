@@ -61,7 +61,7 @@ abstract class BaseGameViewModel(
     val player: AudioPlayer,
     var userID: String,
     var secondPlayerId: String,
-    private val app: Application
+    val app: Application
 ) : AndroidViewModel(app) {
 
     var firstPlayerAvatar:Int? = null
@@ -130,20 +130,6 @@ abstract class BaseGameViewModel(
             _uiState.update { validateState(cardId, it) }
             Log.d("handle","lrc:${_uiState.value.lastReplacedCard}\nfase:${_uiState.value.phase}")
 
-//            if (_uiState.value.lastReplacedCard?.contains("7") == true){
-//                delay(DELAY_TIME)
-//                //se entro qui sicuramente lrc è non null, anzi è del tipo 7House
-//                val cardId =_uiState.value.lastReplacedCard ?: "none"
-//                _uiState.update {
-//                    Log.d("handle","valido:$cardId")
-//                    val modifiedState = validateState(cardId,it.copy(lastReplacedCard = null))
-//                    actionCounter(modifiedState,modifiedState.grid.chunked(7))
-//                }
-//            }else{
-//                    _uiState.update { actionCounter(it, it.grid.chunked(7)) }
-//                    //primo step della gestione delle figure, comunico all'utente cosa deve fare
-//                    handleFigureRevealed()
-//            }
             when{
                 _uiState.value.lastReplacedCard?.contains("7") == true -> {
                     delay(DELAY_TIME)
@@ -160,7 +146,6 @@ abstract class BaseGameViewModel(
                     return@launch
                 }
                 else ->{
-                    _uiState.update { actionCounter(it, it.grid.chunked(7)) }
                     handleFigureRevealed()
                 }
             }
@@ -169,6 +154,7 @@ abstract class BaseGameViewModel(
     }
 
     open suspend fun handleFigureRevealed() {
+        _uiState.update { actionCounter(it, it.grid.chunked(7)) }
         when (_uiState.value.phase) {
             is GamePhase.QueenPending -> {
                 SnackBarController.sendEvent(
