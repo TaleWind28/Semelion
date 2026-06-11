@@ -69,7 +69,7 @@ fun SemelionScreen(
     //configurazioni per i giocatori
     val conf = when(viewModel){
         is NearbyGameViewModel ->{
-            val connState by viewModel.connectionState.collectAsState()
+            val connState by viewModel.connectionManager.connectionState.collectAsState()
             if (connState.isHost) {
                 Pair(Triple(state.p2ActionsUsed,state.p2Actions,state.p1Turn),
                     Triple(state.p1ActionsUsed,state.p1Actions,!state.p1Turn))

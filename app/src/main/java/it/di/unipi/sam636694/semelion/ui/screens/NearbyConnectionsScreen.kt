@@ -129,7 +129,7 @@ fun SemelionConnectionsScreen(
 
     }
 
-    val connectionState by nvm.connectionState.collectAsState()
+    val connectionState by nvm.connectionManager.connectionState.collectAsState()
     val gameState by nvm.uiState.collectAsState()
 
     if ((!connectionState.gameStarted) &&
@@ -193,7 +193,7 @@ fun DiscoveryScreen(
         }
 
         LaunchedEffect(isHosting) {
-            viewModel.cancelSearch()
+            viewModel.connectionManager.cancelSearch()
             if (!isHosting) {//l'utente vuole cercare una partita
                 viewModel.disconnect()
                 viewModel.startDiscovery(serviceId)
@@ -389,7 +389,7 @@ fun HostScreen(
             Button(
                 onClick = {
                     if (state.isSearching)
-                        viewModel.cancelSearch()
+                        viewModel.connectionManager.cancelSearch()
                     else viewModel.startHosting(serviceId, nickname = viewModel.nickname)
                           },
                 enabled = true,

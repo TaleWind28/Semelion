@@ -135,7 +135,7 @@ fun produceConfigs(state: GameUIState, viewModel: BaseGameViewModel):List<Triple
             )
         }
         is NearbyGameViewModel ->{
-            if (viewModel.connectionState.value.isHost){
+            if (viewModel.connectionManager.connectionState.value.isHost){
                 listOf(
                     //guest
                     Triple(!state.p1Turn, listOf(rows[0], rows[1]), Pair(Arancione, 180f)),
