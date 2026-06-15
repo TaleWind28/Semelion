@@ -90,12 +90,13 @@ fun SemelionConnectionsScreen(
         }
     }
 
-    //chiamata per pulire il viewmodel
-    nvm.setup()
+
 
     //richiesta permessi
     LaunchedEffect(nvm) {
         permissionsLauncher.launch(requiredPermissions)
+        //chiamata per pulire il viewmodel
+        nvm.setup()
         val user = db.userDao().getUserById(userId)
         if (user!=null){
             nvm.updateNickname(user.nickName)
@@ -116,7 +117,9 @@ fun SemelionConnectionsScreen(
     ) {
         DiscoveryScreen(nvm)
     } else {
-        onGameReady()
+//        LaunchedEffect(Unit) {
+            onGameReady()
+//        }
     }
 }
 
@@ -409,6 +412,8 @@ fun HostScreen(
         }
 
         Spacer(Modifier.weight(1f))
+
+        }
+        //game started && (grid empty || endpointId = null)
     }
-}
 }

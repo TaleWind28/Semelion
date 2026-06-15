@@ -1,6 +1,7 @@
 package it.di.unipi.sam636694.semelion.appNavigation
 
 import androidx.navigation3.runtime.NavKey
+import it.di.unipi.sam636694.semelion.viewModels.gameModels.NearbyGameViewModel
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -20,7 +21,6 @@ sealed interface Route: NavKey {
     @Serializable
     data object ProfilePage : Route
 
-    @Serializable
-    data object SemelionNearbyGame : Route
+    data class SemelionNearbyGame(val viewModel: NearbyGameViewModel) : Route
 
 }

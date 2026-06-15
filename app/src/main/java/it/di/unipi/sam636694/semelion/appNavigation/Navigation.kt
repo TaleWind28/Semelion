@@ -2,6 +2,7 @@ package it.di.unipi.sam636694.semelion.appNavigation
 
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionConnectionsScreen
 import android.app.Application
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.BasicAlertDialog
@@ -57,8 +58,6 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
         }
     )
 
-    var nvm by remember {mutableStateOf<NearbyGameViewModel?>(null) }
-
     NavDisplay(
         modifier = Modifier,
         entryDecorators = listOf(
@@ -80,7 +79,9 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                         SemelionHome(
                             destinations = destinations,
                         )
+
                         var showWelcomeSheet by remember{ mutableStateOf(firstLaunch()) }
+
                         if (showWelcomeSheet) {
                             WelcomeBottomSheet(
                                 onDismiss ={showWelcomeSheet=false;updateFirstLaunch()},
@@ -175,7 +176,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                 is Route.SemelionConnections -> NavEntry(key) {
 
                     //creo il viewmodel per gestire la connessione e la partita
-                    nvm = viewModel(
+                    val nvm: NearbyGameViewModel = viewModel(
                         factory = NearbyGameViewModel.factory(
                             matchesDao = db.matchesDao(),
                             participationsDao = db.participationsDao(),
@@ -192,8 +193,11 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                     SemelionConnectionsScreen(
                         userId = userID,
                         db=db,
-                        nvm = nvm!!,
-                        onGameReady = { backStack.add(Route.SemelionNearbyGame)}
+                        nvm = nvm,
+                        onGameReady = {
+                            //metto la schermata di connessione
+                            backStack.add(Route.SemelionNearbyGame(nvm))
+                        }
                     )
 
                 }
@@ -202,11 +206,14 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                     NavigationUIApp(
                             snackBarHostState = snackBarHostState,
                             db = db,
-                            viewModel=nvm!!,
+                            viewModel=key.viewModel,
                             logViewModel = lvm,
-                            onNavigateBack = { backStack.removeLastOrNull()}
+                            onNavigateBack = {
+                                while (backStack.lastOrNull() != Route.Home){
+                                    backStack.removeLastOrNull()
+                                }
+                            }
                     )
-
                 }
 
                 else ->error("Unknown NavKey:$key")

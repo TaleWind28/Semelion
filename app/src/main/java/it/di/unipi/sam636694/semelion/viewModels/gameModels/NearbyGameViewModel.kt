@@ -99,6 +99,13 @@ class NearbyGameViewModel(
     //disconnessione -> OK
     fun onDisconnected() {
         if (_uiState.value.phase is GamePhase.GameOver) return
+
+// controllare bene ->
+//        if (_uiState.value.phase !is GamePhase.Disconnected){
+//            _uiState.update { it.copy(phase = GamePhase.Disconnected) }
+//            return
+//        }
+
         disconnect()
         //update di _connectionState
         connectionManager.markDisconnected()
@@ -435,6 +442,11 @@ class NearbyGameViewModel(
             Log.d("pinoli","disconnetto dalla callback")
             onDisconnected()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.d("finotto","ammazzo")
     }
 
     //METODO FACTORY PER ISTANZIARE IL VIEWMODEL

@@ -91,10 +91,12 @@ fun SemelionScreen(
     }
 
     LaunchedEffect(dbOperationCompleted, goBack) {
-        if (dbOperationCompleted && showExitDialog  && !hasNavigatedBack){
-            hasNavigatedBack = true
+        if (dbOperationCompleted && showExitDialog){
+            Log.d("pinoli","sto per distruggere")
             viewModel.destroy()
+            Log.d("pinoli","sto per uscire")
             onBack()
+            showExitDialog = false
         }
     }
 
@@ -199,6 +201,15 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
             }
         }
         is GamePhase.Disconnected ->{
+
+            LaunchedEffect(Unit) {
+                if (viewModel is NearbyGameViewModel) {
+                    viewModel.disconnect()
+                }
+                viewModel.player.stop()
+                onBack()
+            }
+
             BasicAlertDialog(onDismissRequest = {viewModel.player.stop()}) {
                 Surface(shape = RoundedCornerShape(16.dp)) {
                     Column {
@@ -207,12 +218,6 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
                             modifier = Modifier.padding(24.dp),
                             style = MaterialTheme.typography.titleLarge
                         )
-
-                        if (viewModel is NearbyGameViewModel) {
-                            viewModel.disconnect()
-                            viewModel.player.stop()
-                            onBack()
-                        }
                     }
                 }
             }
