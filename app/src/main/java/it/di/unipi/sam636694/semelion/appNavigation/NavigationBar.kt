@@ -1,5 +1,6 @@
 package it.di.unipi.sam636694.semelion.appNavigation
 
+import android.content.res.Configuration
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -21,6 +22,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import it.di.unipi.sam636694.semelion.viewModels.utilityModels.LogViewModel
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionRules
@@ -63,11 +66,25 @@ fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel){
 @Composable
 fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewModel: BaseGameViewModel, logViewModel: LogViewModel,onNavigateBack: () -> Unit) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.GAME) }
+
+    // 1. Recuperiamo la configurazione attuale per sapere se siamo in LANDSCAPE
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    // 2. Scegliamo il tipo di layout in base all'orientamento dello schermo
+    val suiteLayoutType = if (isLandscape) {
+        NavigationSuiteType.NavigationRail // Barra Verticale a SINISTRA
+        // Nota: Se preferisci i tre bottoni classici puoi usare anche NavigationSuiteType.NavigationDrawer
+    } else {
+        NavigationSuiteType.NavigationBar  // Barra Orizzontale in BASSO
+    }
+
     //intercetto il back per tornare alla schermata di gioco e gestirlo effettivamente da lì
     BackHandler(enabled = currentDestination != AppDestinations.GAME) {
         currentDestination = AppDestinations.GAME
     }
     NavigationSuiteScaffold(
+        layoutType = suiteLayoutType,
         navigationSuiteItems = {
             AppDestinations.entries.forEach {
                 item(

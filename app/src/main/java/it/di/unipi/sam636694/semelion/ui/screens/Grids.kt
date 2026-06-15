@@ -25,11 +25,14 @@ import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
@@ -80,49 +83,75 @@ import kotlinx.coroutines.launch
 @Composable
 fun FinalGrid(state: GameUIState, model: BaseGameViewModel, cardSize: CardSize = CardSize.SMALL) {
     Log.d("coinFlip", "FinalGrid ricevuto p1Turn=${state.p1Turn}")
-    Box(modifier= Modifier.wrapContentWidth()) {
+    // 1. Usiamo BoxWithConstraints per leggere lo spazio disponibile in Dp
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth() // <-- Si prende tutta la larghezza dello schermo
+            .wrapContentHeight(),
+        contentAlignment = Alignment.Center // <-- SPINGE TUTTO AL CENTRO (Orizzontale e Verticale)
+    ) {
 
-        val playerConfigs = produceConfigs(state = state, viewModel = model)
-        val attentionModifier ={style:Color ->
-            Modifier.border(
-            color = style,
-            width = 6.dp,
-            shape = RoundedCornerShape(8.dp)
-            )
-        }
+        // --- 1. CALCOLO SULLA LARGHEZZA (Ottimale per Portrait) ---
+        val horizontalPaddingSpace = 16.dp // Padding orizzontale di CardRow
+        val availableWidth = maxWidth - horizontalPaddingSpace
+        val widthBasedSize = availableWidth / 7
 
-        //utility per non duplicare codice
-        fun playerModifier(isActive: Boolean, style:Color): Modifier =
-            if (isActive) attentionModifier(style) else Modifier
+        // --- 2. CALCOLO SULL'ALTEZZA (Ottimale per Landscape) ---
+        // Contiamo lo spazio verticale occupato da padding/spacer (circa 60.dp totali tra i vari elementi)
+        val verticalPaddingSpace = 60.dp
+        val availableHeight = maxHeight - verticalPaddingSpace
 
-        Column(
-            modifier = Modifier.wrapContentWidth(),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            playerConfigs.forEachIndexed { index, (isActive, playerRows, style) ->
-                Log.d("SemelionScreen","$index")
-                if (index > 0) Spacer(modifier = Modifier.size(8.dp))
+        // Ci sono 4 righe di carte in totale nella Column (2 per ogni giocatore configurato)
+        val maxRowHeight = availableHeight / 4
 
-                Box(modifier = playerModifier(isActive,style.first)) {
-                    Column(verticalArrangement = Arrangement.SpaceEvenly) {
-                        playerRows.forEachIndexed { rowIndex, rowItems ->
-                            CardRow(
-                                rowIndex = rowIndex + (index * 2),
-                                rowItems = rowItems,
-                                model = model,
-                                rowBackground = style.first.copy(alpha = if (index == 0) 0.15f else 0.08f),
-                                phase = state.phase,
-                                enabled= true,
-                                cardSize = cardSize.dp
-                            )
+        // Convertiamo l'altezza massima della riga nella larghezza corrispondente della carta.
+        // Se le tue carte sono proporzionate (es. larghezza è il 75% dell'altezza), moltiplichiamo per 0.75f
+        val heightBasedSize = maxRowHeight * 0.75f
+
+        // --- 3. SCELTA DELLA DIMENSIONE MINORE ---
+        // In portrait userà widthBasedSize, in landscape si bloccherà a heightBasedSize evitando l'effetto "gigante"
+        val dynamicCardSize = minOf(widthBasedSize, heightBasedSize)
+
+            val playerConfigs = produceConfigs(state = state, viewModel = model)
+            val attentionModifier = { style: Color ->
+                Modifier.border(
+                    color = style,
+                    width = 6.dp,
+                    shape = RoundedCornerShape(8.dp)
+                )
+            }
+
+            //utility per non duplicare codice
+            fun playerModifier(isActive: Boolean, style: Color): Modifier =
+                if (isActive) attentionModifier(style) else Modifier
+
+            Column(
+                modifier = Modifier.wrapContentWidth(),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                playerConfigs.forEachIndexed { index, (isActive, playerRows, style) ->
+                    Log.d("SemelionScreen", "$index")
+                    if (index > 0) Spacer(modifier = Modifier.size(8.dp))
+
+                    Box(modifier = playerModifier(isActive, style.first)) {
+                        Column(verticalArrangement = Arrangement.SpaceEvenly) {
+                            playerRows.forEachIndexed { rowIndex, rowItems ->
+                                CardRow(
+                                    rowIndex = rowIndex + (index * 2),
+                                    rowItems = rowItems,
+                                    model = model,
+                                    rowBackground = style.first.copy(alpha = if (index == 0) 0.15f else 0.08f),
+                                    phase = state.phase,
+                                    enabled = true,
+                                    cardSize = dynamicCardSize
+                                )
+                            }
                         }
                     }
                 }
             }
         }
     }
-}
-
 fun produceConfigs(state: GameUIState, viewModel: BaseGameViewModel):List<Triple<Boolean,List<List<CardUIStates>>,Pair<Color,Float>>>{
     val rows = state.grid.chunked(7)
     return when(viewModel){
