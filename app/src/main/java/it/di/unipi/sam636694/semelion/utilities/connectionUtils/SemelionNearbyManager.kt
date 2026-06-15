@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
 class SemelionNearbyManager(application: Application): SemelionConnectionManager{
     var heartbeatJob: Job? = null
     var lastHeartbeat = System.currentTimeMillis()
@@ -115,6 +116,8 @@ class SemelionNearbyManager(application: Application): SemelionConnectionManager
         connectionsClient.stopAllEndpoints()
         connectionsClient.stopAdvertising()
         connectionsClient.stopDiscovery()
+        connectionTimeoutJob?.cancel()
+        stopHeartbeat()
         _connectionState.update {
             ConnectionUiState() // reset completo
         }
@@ -230,4 +233,5 @@ class SemelionNearbyManager(application: Application): SemelionConnectionManager
 
     fun acceptConnection(endpointId:String,payloadCallback: PayloadCallback){
         connectionsClient.acceptConnection(endpointId, payloadCallback)    }
+
 }

@@ -20,4 +20,7 @@ sealed interface Route: NavKey {
     @Serializable
     data object ProfilePage : Route
 
+    @Serializable
+    data object SemelionNearbyGame : Route
+
 }

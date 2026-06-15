@@ -38,7 +38,6 @@ import it.di.unipi.sam636694.semelion.utilities.connectionUtils.SemelionNearbyMa
 import it.di.unipi.sam636694.semelion.ui.snackbar.SnackBarController
 import it.di.unipi.sam636694.semelion.ui.snackbar.SnackBarEvent
 
-
 class NearbyGameViewModel(
     private val application: Application,
     matchesDao: MatchesDao,
@@ -74,6 +73,8 @@ class NearbyGameViewModel(
 
     private var gridAckJob: Job? = null
 
+    var isDestroyed = false
+
     fun enqueueAction(message: String) {
         pendingActions.addLast(message)
         flushActions()
@@ -98,10 +99,6 @@ class NearbyGameViewModel(
     //disconnessione -> OK
     fun onDisconnected() {
         if (_uiState.value.phase is GamePhase.GameOver) return
-        if (_uiState.value.phase !is GamePhase.Disconnected){
-            _uiState.update { it.copy(phase = GamePhase.Disconnected) }
-            return
-        }
         disconnect()
         //update di _connectionState
         connectionManager.markDisconnected()
@@ -134,7 +131,6 @@ class NearbyGameViewModel(
         wantsToGoBack.value = true
     }
 
-
     //inizializzazione del viewModel -> chiama solo setup
     init {
         setup()
@@ -150,6 +146,7 @@ class NearbyGameViewModel(
                 delay(1000)
                 attempts++
             }
+            Log.d("pinoli","disconnetto gridAckJob")
             // Dopo 10 tentativi senza ACK → disconnetto
             onDisconnected()
         }
@@ -187,6 +184,7 @@ class NearbyGameViewModel(
         Log.d("finder","${decks.first.indexOfFirst { it.value > 7 }}")
         _uiState.update { it.copy(grid = decks.first, uncoverDeck = decks.second, phase = GamePhase.PlayerTurn) }
         validation()
+        isDestroyed = false
     }
 
     override fun setFirstPlayer() {
@@ -244,12 +242,14 @@ class NearbyGameViewModel(
         }
     }
     override fun destroy() {
+        if (isDestroyed) return
         endpoint?.let {
             connectionManager.sendMessage("destruction", "player gave up",endpoint)
         }
         if (endpoint == null){
             matchEnd(GameModes.NearBy,"Connection Lost")
         }
+        isDestroyed = true
         disconnect()
     }
 
@@ -432,6 +432,7 @@ class NearbyGameViewModel(
         }
 
         override fun onDisconnected(endpointId: String) {
+            Log.d("pinoli","disconnetto dalla callback")
             onDisconnected()
         }
     }

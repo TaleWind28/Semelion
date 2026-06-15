@@ -1,4 +1,5 @@
 package it.di.unipi.sam636694.semelion.ui.screens
+
 import android.content.res.Configuration
 import android.util.Log
 import androidx.activity.compose.BackHandler
@@ -66,6 +67,8 @@ fun SemelionScreen(
     val dbOperationCompleted by viewModel.isDBOperationComplete.collectAsState()
     val goBack by viewModel.wantsToGoBack.collectAsState()
     var showExitDialog by remember { mutableStateOf(false) }
+    var hasNavigatedBack by remember { mutableStateOf(false) }
+
     //configurazioni per i giocatori
     val conf = when(viewModel){
         is NearbyGameViewModel ->{
@@ -88,7 +91,8 @@ fun SemelionScreen(
     }
 
     LaunchedEffect(dbOperationCompleted, goBack) {
-        if (dbOperationCompleted && showExitDialog){
+        if (dbOperationCompleted && showExitDialog  && !hasNavigatedBack){
+            hasNavigatedBack = true
             viewModel.destroy()
             onBack()
         }
@@ -114,7 +118,7 @@ fun SemelionScreen(
                     )
                     Row{
                         //Terminazione partita
-                        Button(onClick = {endMatch(viewModel, onBack = onBack)}, enabled = dbOperationCompleted) {
+                        Button(onClick = {endMatch(viewModel)}, enabled = dbOperationCompleted) {
                             Text("Interrompi")
                         }
                         //Sospensione Partita
@@ -131,15 +135,10 @@ fun SemelionScreen(
     Dialogs(state = state, viewModel = viewModel, onBack = onBack)
 }
 
-fun endMatch(viewModel: BaseGameViewModel,onBack:() -> Unit){
+fun endMatch(viewModel: BaseGameViewModel){
     when(viewModel){
         is SemelionGameViewModel -> viewModel.matchEnd(GameModes.ScreenSharing, loser = viewModel.userID)
-        is NearbyGameViewModel ->{
-            Log.d("fines","uid:${viewModel.userID}\nssId:${viewModel.secondPlayerId}")
-            viewModel.matchEnd(GameModes.NearBy, loser = viewModel.userID)
-            viewModel.destroy()
-            onBack()
-        }
+        is NearbyGameViewModel -> viewModel.matchEnd(GameModes.NearBy, loser = viewModel.userID)
         else -> {}
     }
 }
@@ -159,13 +158,10 @@ fun interruptMatch(viewModel: BaseGameViewModel){
 fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
     when(state.phase){
         is GamePhase.GameOver -> {
-
-            LaunchedEffect(Unit) {
-                when(viewModel){
-                    is NearbyGameViewModel -> viewModel.matchEnd(GameModes.NearBy)
-                    is SemelionGameViewModel -> viewModel.matchEnd(GameModes.ScreenSharing)
-                    else -> {}
-                }
+            when(viewModel){
+                is NearbyGameViewModel -> viewModel.matchEnd(GameModes.NearBy)
+                is SemelionGameViewModel -> viewModel.matchEnd(GameModes.ScreenSharing)
+                else -> {}
             }
 
             //victory fanfare ff7 a cappela
@@ -190,11 +186,7 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
                             }
                             Button(
                                 onClick = {
-
-                                    if (viewModel is NearbyGameViewModel) {
-                                        viewModel.matchEnd(mode= GameModes.NearBy)
-                                        viewModel.disconnect()
-                                    }
+                                    if (viewModel is NearbyGameViewModel) viewModel.disconnect()
                                     viewModel.player.stop()
                                     onBack()
                                 }
@@ -219,13 +211,12 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
                         if (viewModel is NearbyGameViewModel) {
                             viewModel.disconnect()
                             viewModel.player.stop()
-                        }
-                        viewModel.player.stop()
-                        onBack()
+                            onBack()
                         }
                     }
                 }
             }
+        }
         is GamePhase.JackMadness -> {
             if (state.jackSwaps.size == 1) {
                 BasicAlertDialog(onDismissRequest = {viewModel.processIntent(GameIntent.JackMadness(state.jackSwaps))}) {
@@ -251,7 +242,6 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
             }
         }
         else -> {
-
         }
     }
 }

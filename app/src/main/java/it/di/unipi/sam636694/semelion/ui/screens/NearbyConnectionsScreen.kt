@@ -1,7 +1,6 @@
 package it.di.unipi.sam636694.semelion.ui.screens
 
 import android.Manifest
-import android.app.Application
 import android.os.Build
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -36,7 +35,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,10 +44,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.NearbyGameViewModel
 import androidx.compose.runtime.collectAsState
@@ -61,25 +57,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import it.di.unipi.sam636694.semelion.R
-import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.ui.states.ConnectionUiState
-import it.di.unipi.sam636694.semelion.appNavigation.NavigationUIApp
 import it.di.unipi.sam636694.semelion.utilities.serviceId
-import it.di.unipi.sam636694.semelion.viewModels.utilityModels.LogViewModel
-
 
 @Composable
 fun SemelionConnectionsScreen(
     db: SemelionDB,
-    snackbarHostState: SnackbarHostState,
-    player: AudioPlayer,
     userId: String,
-    lvm: LogViewModel,
-    onBack: () -> Unit,
+    nvm: NearbyGameViewModel,
+    onGameReady: () -> Unit,
 ) {
-    var nickname = "Semelion User:$userId"
-    var avatar: Int
-
     val requiredPermissions = remember {
         buildList {
             add(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -102,37 +89,25 @@ fun SemelionConnectionsScreen(
             throw Exception("permissions Denied")
         }
     }
-    //creo il viewmodel per gestire la connessione e la partita
-    val nvm: NearbyGameViewModel = viewModel(
-        factory = NearbyGameViewModel.factory(
-            matchesDao = db.matchesDao(),
-            participationsDao = db.participationsDao(),
-            matchStatisticsDao = db.matchStatisticsDao(),
-            playerStatisticsDao = db.playerStatisticsDao(),
-            userDao = db.userDao(),
-            player = player,
-            localId = userId,
-            nickname = nickname,
-            application = LocalContext.current.applicationContext as Application,
-        )
-    )
+
+    //chiamata per pulire il viewmodel
+    nvm.setup()
+
     //richiesta permessi
     LaunchedEffect(nvm) {
         permissionsLauncher.launch(requiredPermissions)
         val user = db.userDao().getUserById(userId)
         if (user!=null){
-            nickname = user.nickName
-            avatar = user.avatar
-            nvm.updateNickname(nickname)
-            nvm.updateFirstPlayerAvatar(avatar)
+            nvm.updateNickname(user.nickName)
+            nvm.updateFirstPlayerAvatar(user.avatar)
         }
-
     }
 
     val connectionState by nvm.connectionManager.connectionState.collectAsState()
     val gameState by nvm.uiState.collectAsState()
 
-    if ((!connectionState.gameStarted) &&
+    if (
+        !connectionState.gameStarted &&
         (
             gameState.grid.isEmpty() ||
             (connectionState.connectedEndpointId == null  && connectionState.isHost) ||
@@ -141,13 +116,7 @@ fun SemelionConnectionsScreen(
     ) {
         DiscoveryScreen(nvm)
     } else {
-        NavigationUIApp(
-            snackBarHostState = snackbarHostState,
-            db = db,
-            viewModel=nvm,
-            logViewModel = lvm,
-            onNavigateBack = onBack
-        )
+        onGameReady()
     }
 }
 

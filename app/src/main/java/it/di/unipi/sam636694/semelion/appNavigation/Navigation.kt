@@ -36,6 +36,7 @@ import it.di.unipi.sam636694.semelion.ui.screens.SemelionHome
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionRules
 import it.di.unipi.sam636694.semelion.ui.screens.WelcomeBottomSheet
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
+import it.di.unipi.sam636694.semelion.viewModels.gameModels.NearbyGameViewModel
 import it.di.unipi.sam636694.semelion.viewModels.utilityModels.LogViewModel
 import it.di.unipi.sam636694.semelion.viewModels.utilityModels.UserProfileViewModel
 import kotlinx.coroutines.launch
@@ -55,6 +56,8 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
             }
         }
     )
+
+    var nvm by remember {mutableStateOf<NearbyGameViewModel?>(null) }
 
     NavDisplay(
         modifier = Modifier,
@@ -163,28 +166,52 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                             db = db,
                             viewModel=viewModel,
                             logViewModel = lvm,
-                            onNavigateBack = { backStack.removeLastOrNull()})
+                            onNavigateBack = { backStack.removeLastOrNull()}
+                        )
                     }
 
                 }
 
                 is Route.SemelionConnections -> NavEntry(key) {
 
+                    //creo il viewmodel per gestire la connessione e la partita
+                    nvm = viewModel(
+                        factory = NearbyGameViewModel.factory(
+                            matchesDao = db.matchesDao(),
+                            participationsDao = db.participationsDao(),
+                            matchStatisticsDao = db.matchStatisticsDao(),
+                            playerStatisticsDao = db.playerStatisticsDao(),
+                            userDao = db.userDao(),
+                            player = player,
+                            localId = userID,
+                            nickname = "Semelion User:$userID",
+                            application = LocalContext.current.applicationContext as Application,
+                        )
+                    )
 
                     SemelionConnectionsScreen(
-                        db=db,
-                        snackBarHostState,
-                        player=player,
                         userId = userID,
-                        lvm = lvm,
-                        onBack = { backStack.removeLastOrNull()},
+                        db=db,
+                        nvm = nvm!!,
+                        onGameReady = { backStack.add(Route.SemelionNearbyGame)}
                     )
+
+                }
+
+                is Route.SemelionNearbyGame -> NavEntry(key){
+                    NavigationUIApp(
+                            snackBarHostState = snackBarHostState,
+                            db = db,
+                            viewModel=nvm!!,
+                            logViewModel = lvm,
+                            onNavigateBack = { backStack.removeLastOrNull()}
+                    )
+
                 }
 
                 else ->error("Unknown NavKey:$key")
             }
 
         }
-
     )
 }
