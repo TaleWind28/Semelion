@@ -46,9 +46,9 @@ import kotlin.String
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, player: AudioPlayer, userID:String,firstLaunch:()->Boolean,updateFirstLaunch:()->Unit){
-
     val backStack = rememberNavBackStack(Route.Home)
     val scope = rememberCoroutineScope()
+
     val appContext = LocalContext.current.applicationContext as Application
     val lvm: LogViewModel = viewModel(
         factory = viewModelFactory {
@@ -67,8 +67,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
         backStack = backStack,
         entryProvider = { key ->
             when(key){
-                is Route.Home ->
-                    NavEntry(key){
+                is Route.Home -> NavEntry(key){
                         val destinations =  mapOf(
                             "Quick Play" to {backStack.add(Route.ScreenSharingGame);Unit},
                             "Connections" to {backStack.add(Route.SemelionConnections);Unit},
@@ -195,7 +194,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                         db=db,
                         nvm = nvm,
                         onGameReady = {
-                            //metto la schermata di connessione
+                            //navigo verso la schermata di gioco
                             backStack.add(Route.SemelionNearbyGame(nvm))
                         }
                     )
