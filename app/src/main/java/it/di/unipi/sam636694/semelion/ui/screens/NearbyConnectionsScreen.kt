@@ -63,7 +63,7 @@ import androidx.compose.ui.unit.sp
 import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.ui.states.ConnectionUiState
-import it.di.unipi.sam636694.semelion.utilities.NavigationUIApp
+import it.di.unipi.sam636694.semelion.appNavigation.NavigationUIApp
 import it.di.unipi.sam636694.semelion.utilities.serviceId
 import it.di.unipi.sam636694.semelion.viewModels.utilityModels.LogViewModel
 

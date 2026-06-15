@@ -35,8 +35,8 @@ import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
 import it.di.unipi.sam636694.semelion.utilities.Direction
-import it.di.unipi.sam636694.semelion.utilities.SnackBarController
-import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
+import it.di.unipi.sam636694.semelion.ui.snackbar.SnackBarController
+import it.di.unipi.sam636694.semelion.ui.snackbar.SnackBarEvent
 import it.di.unipi.sam636694.semelion.utilities.findPowerRow
 import it.di.unipi.sam636694.semelion.utilities.getPredominantOrder
 import kotlinx.coroutines.channels.Channel
@@ -970,6 +970,7 @@ abstract class BaseGameViewModel(
     }
 
     open fun matchEnd(mode: GameModes,loser:String? = null,resumedMatchId:Long? = null){
+        sendScreenMessage("matchEnded",emptyList(),emptyList())
         //calcolo l'outcome della partita
         val (outcome,winningUser) = calculateOutcome(loser,_uiState.value)
 

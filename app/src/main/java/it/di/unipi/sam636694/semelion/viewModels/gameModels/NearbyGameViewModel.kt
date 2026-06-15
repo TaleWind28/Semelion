@@ -34,9 +34,9 @@ import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
 import it.di.unipi.sam636694.semelion.utilities.avatarMap
 import android.app.Application
-import it.di.unipi.sam636694.semelion.utilities.SemelionNearbyManager
-import it.di.unipi.sam636694.semelion.utilities.SnackBarController
-import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
+import it.di.unipi.sam636694.semelion.utilities.connectionUtils.SemelionNearbyManager
+import it.di.unipi.sam636694.semelion.ui.snackbar.SnackBarController
+import it.di.unipi.sam636694.semelion.ui.snackbar.SnackBarEvent
 
 
 class NearbyGameViewModel(

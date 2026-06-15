@@ -67,8 +67,8 @@ import it.di.unipi.sam636694.semelion.ui.theme.Blu
 import it.di.unipi.sam636694.semelion.ui.theme.GreenAccent
 import it.di.unipi.sam636694.semelion.ui.theme.Rosso
 import it.di.unipi.sam636694.semelion.utilities.GameStrings
-import it.di.unipi.sam636694.semelion.utilities.SnackBarController
-import it.di.unipi.sam636694.semelion.utilities.SnackBarEvent
+import it.di.unipi.sam636694.semelion.ui.snackbar.SnackBarController
+import it.di.unipi.sam636694.semelion.ui.snackbar.SnackBarEvent
 import it.di.unipi.sam636694.semelion.utilities.cardImageMap
 import it.di.unipi.sam636694.semelion.utilities.rememberGameStrings
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.BaseGameViewModel

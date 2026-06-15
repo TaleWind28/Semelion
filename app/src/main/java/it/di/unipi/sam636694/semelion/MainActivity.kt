@@ -15,12 +15,13 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import it.di.unipi.sam636694.semelion.database.SemelionDB
-import it.di.unipi.sam636694.semelion.utilities.ObserveAsEvents
-import it.di.unipi.sam636694.semelion.utilities.SnackBarController
+import it.di.unipi.sam636694.semelion.ui.snackbar.ObserveAsEvents
+import it.di.unipi.sam636694.semelion.ui.snackbar.SnackBarController
 import it.di.unipi.sam636694.semelion.ui.theme.SemelionTheme
 
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
+import it.di.unipi.sam636694.semelion.appNavigation.SemelionNavigation
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.utilities.SNACKBAR_DELAY_TIME
 import kotlinx.coroutines.delay
@@ -62,18 +63,10 @@ class MainActivity : ComponentActivity() {
                             putString("semelion_local_userId", deviceUser)
                         }
                     }
-
-
-
                     Log.d("mainActivity","PreObserve:${prefs.getString("semelion_local_userId",null)}")
-
-
                     ObserveAsEvents(flow = SnackBarController.events, snackBarHostState) { event ->
                         scope.launch {
                             snackBarHostState.currentSnackbarData?.dismiss()
-
-
-
                             val job = scope.launch {
                                 val result = snackBarHostState.showSnackbar(
                                     message = event.message,
@@ -95,10 +88,10 @@ class MainActivity : ComponentActivity() {
                     SemelionNavigation(
                         snackBarHostState,
                         db,
-                        player=player,
-                        userID=deviceUser,
-                        firstLaunch= { prefs.getBoolean("first_launch",true)},
-                        updateFirstLaunch={ prefs.edit { putBoolean("first_launch",false) }}
+                        player = player,
+                        userID = deviceUser,
+                        firstLaunch = { prefs.getBoolean("first_launch", true) },
+                        updateFirstLaunch = { prefs.edit { putBoolean("first_launch", false) } }
                     )
                 }
             }

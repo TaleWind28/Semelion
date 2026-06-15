@@ -26,7 +26,9 @@ class LogViewModel(private val app: Application): AndroidViewModel(application =
     }
 
     fun registerAction(action:String,state: LogUIState){
-        _uiState.update {
+        //pulisco i log a fine partita
+        if (action.toActionData().type=="matchEnded") _uiState.update { LogUIState() }
+        else _uiState.update {
             state.copy(
                 actions = state.actions + action
             )
