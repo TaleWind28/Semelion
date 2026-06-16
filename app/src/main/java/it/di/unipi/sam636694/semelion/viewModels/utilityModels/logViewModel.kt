@@ -45,7 +45,7 @@ class LogViewModel(private val app: Application): AndroidViewModel(application =
             "reveal" -> {
                 val card = data.outcome.first()
                 if (card.name.dropLast(1) == "7")
-                    LogEvent(type= EventType.RIVELAZIONE, title = app.getString(R.string.semelionRevealTitle),app.getString(R.string.semelionLog7Revealed,cardName(card.name)))
+                    LogEvent(type= EventType.RIVELAZIONE, title = app.getString(R.string.semelionLogRevealTitle),app.getString(R.string.semelionLog7Revealed,cardName(card.name)))
                 else
                     LogEvent(type= EventType.RIVELAZIONE, title = app.getString(R.string.semelionLogRevealTitle),app.getString(R.string.semelionLogNot7Revealed,cardName(card.name),card.value))
             }

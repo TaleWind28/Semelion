@@ -44,7 +44,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import it.di.unipi.sam636694.semelion.ui.theme.Arancione
 import it.di.unipi.sam636694.semelion.ui.theme.BgGreen
@@ -144,7 +143,7 @@ data class LogEvent(
 fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel){
     val state by viewModel.uiState.collectAsState()
     Log.d("tate","${state.actions}")
-    LazyColumn(modifier = modifier.background(Color.LightGray).fillMaxSize().padding(15.dp)) {
+    LazyColumn(modifier = modifier.background(BgGreen).fillMaxSize().padding(15.dp),verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(state.actions.reversed()){
             LogEventRow(viewModel.translateAction(it))
         }
