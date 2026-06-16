@@ -72,7 +72,13 @@ private val TextDark       = Color(0xFF1A1A1A)
 private val TextMuted      = Color(0xFF6B7B6B)
 
 @Composable
-fun MatchStatScreen(modifier: Modifier = Modifier,winnerStats:DisplayPlayerStats,loserStats:DisplayPlayerStats,localUser: String) {
+fun MatchStatScreen(
+    modifier: Modifier = Modifier,
+    winnerStats:DisplayPlayerStats,
+    loserStats:DisplayPlayerStats,
+    onNewGame: () -> Unit,
+    onHome:()-> Unit
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -86,7 +92,7 @@ fun MatchStatScreen(modifier: Modifier = Modifier,winnerStats:DisplayPlayerStats
         Spacer(modifier = Modifier.height(16.dp))
 
         //VICTORY banner
-        Banner(localUser = localUser, winner = winnerStats.name)
+        Banner()
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -131,8 +137,8 @@ fun MatchStatScreen(modifier: Modifier = Modifier,winnerStats:DisplayPlayerStats
 
         //pulsanti per uscire
         BottomButtons(
-            onNewBattle = { },
-            onBackToBase = { }
+            onNewGame = onNewGame,
+            onBack = onHome
         )
     }
 }
@@ -141,7 +147,7 @@ fun MatchStatScreen(modifier: Modifier = Modifier,winnerStats:DisplayPlayerStats
 // ── Componenti interni ───────────────────────────────────────────────────────
 
 @Composable
-private fun Banner(localUser: String,winner:String) {
+private fun Banner() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -151,7 +157,7 @@ private fun Banner(localUser: String,winner:String) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = if (localUser == winner )"VICTORY" else "DEFEAT",
+            text ="THE WINNER IS ... ",
             fontSize = 32.sp,
             fontWeight = FontWeight.ExtraBold,
             fontStyle = FontStyle.Italic,
@@ -213,15 +219,15 @@ private fun StatColumn(
 
 @Composable
 private fun BottomButtons(
-    onNewBattle: () -> Unit,
-    onBackToBase: () -> Unit
+    onNewGame: () -> Unit,
+    onBack: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Button(
-            onClick = onNewBattle,
+            onClick = onNewGame,
             modifier = Modifier
                 .weight(1f)
                 .height(52.dp),
@@ -236,7 +242,7 @@ private fun BottomButtons(
             )
         }
         OutlinedButton(
-            onClick = onBackToBase,
+            onClick = onBack,
             modifier = Modifier
                 .weight(1f)
                 .height(52.dp),
@@ -428,6 +434,7 @@ fun BattleResultScreenPreview() {
     MatchStatScreen(
         winnerStats = stats.first,
         loserStats = stats.second,
-        localUser = "Pino"
+        onHome = {},
+        onNewGame = {}
     )
 }

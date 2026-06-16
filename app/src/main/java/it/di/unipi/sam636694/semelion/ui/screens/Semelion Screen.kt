@@ -167,38 +167,12 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
             }
 
             //victory fanfare ff7 a cappela
-            Log.d("winner","winner:${state.winner}\nuuid:${viewModel.userID}")
+//            Log.d("winner","winner:${state.winner}\nuuid:${viewModel.userID}")
 
             val gameoverText = resolveGameoverText(state.winner,viewModel)
-            viewModel.playEndSound()
+//            viewModel.playEndSound()
 
-            BasicAlertDialog(onDismissRequest = {viewModel.player.stop()}) {
-                Surface(shape = RoundedCornerShape(16.dp)) {
-                    Column{
-                        Text(
-                            text = gameoverText,
-                            modifier = Modifier.padding(24.dp),
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                        Row{
-                            if (viewModel is SemelionGameViewModel){
-                                Button(onClick = {viewModel.setup();viewModel.player.stop()}) {
-                                    Text(text = "Gioca ancora")
-                                }
-                            }
-                            Button(
-                                onClick = {
-                                    if (viewModel is NearbyGameViewModel) viewModel.disconnect()
-                                    viewModel.player.stop()
-                                    onBack()
-                                }
-                            ) {
-                                Text(text="chiudi")
-                            }
-                        }
-                    }
-                }
-            }
+            onBack()
         }
         is GamePhase.Disconnected ->{
 

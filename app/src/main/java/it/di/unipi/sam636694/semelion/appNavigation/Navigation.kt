@@ -23,11 +23,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import it.di.unipi.sam636694.semelion.database.SemelionDB
+import it.di.unipi.sam636694.semelion.ui.screens.DisplayPlayerStats
+import it.di.unipi.sam636694.semelion.ui.screens.MatchStatScreen
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import kotlin.collections.listOf
 import kotlin.collections.mapOf
@@ -166,7 +170,17 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                             db = db,
                             viewModel=viewModel,
                             logViewModel = lvm,
-                            onNavigateBack = { backStack.removeLastOrNull()}
+                            onNavigateBack = {
+//                                while (backStack.lastOrNull() != Route.Home){
+//                                    backStack.removeLastOrNull()
+//                                }
+
+                                compactNavigation(
+                                    backStack,
+                                    Route.MatchStatScreen(viewModel,Route.ScreenSharingGame)
+                                )
+//                                backStack.add(Route.MatchStatScreen(viewModel,Route.ScreenSharingGame))
+                            }
                         )
                     }
 
@@ -208,16 +222,66 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                             viewModel=key.viewModel,
                             logViewModel = lvm,
                             onNavigateBack = {
-                                while (backStack.lastOrNull() != Route.Home){
-                                    backStack.removeLastOrNull()
-                                }
+                                compactNavigation(backStack,Route.MatchStatScreen(key.viewModel,Route.SemelionConnections))
                             }
+                    )
+                }
+
+                is Route.MatchStatScreen -> NavEntry(key){
+
+                    val p1Stats = key.viewModel.matchSummary.collectAsState().value.first
+                    val p2Stats = key.viewModel.matchSummary.collectAsState().value.second
+
+                    Log.d("MatchStat","p1Stats:$p1Stats\np2Stats:$p2Stats")
+
+                    val p2Display = DisplayPlayerStats(
+                        name= key.viewModel.opponentName,
+                        timePlayed = p2Stats.date.toString(),
+                        figuresRevealed = p2Stats.figureRevealed,
+                        totalMoves = p2Stats.totalActions,
+                        isFirstPlayer = p2Stats.wasFirstPLayer,
+                        avatarRes = key.viewModel.secondPlayerAvatar,
+                        isWinner = p2Stats.winner ?: false
+                    )
+                    val p1Display = DisplayPlayerStats(
+                        name= key.viewModel.playerName,
+                        timePlayed = p1Stats.date.toString(),
+                        figuresRevealed = p1Stats.figureRevealed,
+                        totalMoves = p1Stats.totalActions,
+                        isFirstPlayer = p1Stats.wasFirstPLayer,
+                        avatarRes = key.viewModel.firstPlayerAvatar,
+                        isWinner = p1Stats.winner ?: false
+                    )
+
+                    key.viewModel.playEndSound()
+
+                    MatchStatScreen(
+                        winnerStats= if (p1Stats.winner==null || p1Stats.winner) p1Display else p2Display,
+                        loserStats= if (p1Stats.winner==null || p1Stats.winner) p2Display else p1Display,
+                        onHome = {
+                            while (backStack.lastOrNull() != Route.Home){
+                                backStack.removeLastOrNull()
+                            }
+                        },
+                        onNewGame = {
+                            key.backRoute
+                        }
                     )
                 }
 
                 else ->error("Unknown NavKey:$key")
             }
 
+
+
         }
     )
+}
+
+
+fun compactNavigation(backStack: NavBackStack<NavKey>,route: Route){
+    while (backStack.lastOrNull() != Route.Home){
+        backStack.removeLastOrNull()
+    }
+    backStack.add(route)
 }

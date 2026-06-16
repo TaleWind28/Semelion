@@ -974,9 +974,16 @@ abstract class BaseGameViewModel(
         //calcolo l'outcome della partita
         val (outcome,winningUser) = calculateOutcome(loser,_uiState.value)
 
+        _uiState.update { it.copy(winner = outcome) }
+
         isDBOperationComplete.value = false
 
-        _matchSummary.update { it.copy(first = it.first.copy(outcome=outcome), second = it.second.copy(outcome=outcome)) }
+        _matchSummary.update {
+            it.copy(
+                first = it.first.copy(outcome=outcome, winner = winningUser),
+                second = it.second.copy(outcome=outcome,winner = if (winningUser != null) !winningUser else null)
+            )
+        }
 
         //db operations
         viewModelScope.launch {
@@ -1144,8 +1151,10 @@ abstract class BaseGameViewModel(
     }
 
     fun playEndSound() {
-        if (this is SemelionGameViewModel) return
-        val sound = when (_uiState.value.winner) {
+//        if (this is SemelionGameViewModel) return
+        Log.d("MatchStat","${_uiState.value.winner}\nuserId:$userID\nsecondPlayerId:$secondPlayerId")
+        val winner = _uiState.value.winner?.substringAfterLast(" ")
+        val sound = when (winner) {
             userID -> R.raw.victory_fanfare
             secondPlayerId -> R.raw.gameover
             else -> R.raw.there
