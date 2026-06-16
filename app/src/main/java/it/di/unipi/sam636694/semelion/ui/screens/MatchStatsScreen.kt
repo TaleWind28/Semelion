@@ -219,7 +219,7 @@ private fun BottomButtons(
             colors = ButtonDefaults.buttonColors(containerColor = GreenDark)
         ) {
             Text(
-                text = "⚔ New Game",
+                text = "⚔ Nuova Partita",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -234,7 +234,7 @@ private fun BottomButtons(
             border = BorderStroke(1.5.dp, Color(0xFFCCCCCC))
         ) {
             Text(
-                text = "🏠 Back Home",
+                text = "🏠 Torna alla Home",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
                 color = TextDark
@@ -299,20 +299,20 @@ fun PlayerResultCard(
                     }
                 }
 
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "TIME PLAYED",
-                        fontSize = 10.sp,
-                        color = theme.timeLabelColor,
-                        letterSpacing = 1.sp
-                    )
-                    Text(
-                        text = stats.timePlayed,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = theme.timeValueColor
-                    )
-                }
+//                Column(horizontalAlignment = Alignment.End) {
+//                    Text(
+//                        text = "TIME PLAYED",
+//                        fontSize = 10.sp,
+//                        color = theme.timeLabelColor,
+//                        letterSpacing = 1.sp
+//                    )
+//                    Text(
+//                        text = stats.timePlayed,
+//                        fontSize = 18.sp,
+//                        fontWeight = FontWeight.Bold,
+//                        color = theme.timeValueColor
+//                    )
+//                }
             }
 
             HorizontalDivider(
@@ -347,37 +347,4 @@ fun PlayerResultCard(
             }
         }
     }
-}
-
-@Preview(showBackground = true, widthDp = 380, heightDp = 900)
-@Composable
-fun BattleResultScreenPreview() {
-
-    val stats = Pair(
-        DisplayPlayerStats(
-            name = "Pino",
-            timePlayed = "04:12",
-            figuresRevealed = 4,
-            totalMoves = 10,
-            isFirstPlayer = true,
-            avatarRes = R.drawable.avatar_3,
-            isWinner = true
-        ),
-        DisplayPlayerStats(
-            name = "Pippo",
-            timePlayed = "05:45",
-            figuresRevealed = 0,
-            totalMoves = 12,
-            isFirstPlayer = false,
-            avatarRes = null,
-            isWinner = false,
-        )
-    )
-
-    MatchStatScreen(
-        winnerStats = stats.first,
-        loserStats = stats.second,
-        onHome = {},
-        onNewGame = {}
-    )
 }

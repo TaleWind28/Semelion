@@ -14,7 +14,7 @@ import androidx.room.TypeConverters
         MatchStatistics::class,
         PlayerStatistics::class
     ],
-    version = 19,
+    version = 20,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
