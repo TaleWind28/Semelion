@@ -45,3 +45,5 @@ val CardLight      = Color(0xFFFFFFFF)
 val CardDark       = Color(0xFF2D3B2D)
 val TextDark       = Color(0xFF1A1A1A)
 val TextMuted      = Color(0xFF6B7B6B)
+
+val BgGreen       = Color(0xFFEAF5EA)

@@ -40,6 +40,21 @@ import it.di.unipi.sam636694.semelion.ui.screens.SemelionRules
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionScreen
 import it.di.unipi.sam636694.semelion.database.SemelionDB
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.BaseGameViewModel
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.sp
+import it.di.unipi.sam636694.semelion.ui.theme.Arancione
+import it.di.unipi.sam636694.semelion.ui.theme.BgGreen
+import it.di.unipi.sam636694.semelion.ui.theme.CardBg
+import it.di.unipi.sam636694.semelion.ui.theme.DrawColor
+import it.di.unipi.sam636694.semelion.ui.theme.GreenPrimary
+import it.di.unipi.sam636694.semelion.ui.theme.OcraMorbida
+import it.di.unipi.sam636694.semelion.ui.theme.Purple40
+import it.di.unipi.sam636694.semelion.ui.theme.Purple80
+import it.di.unipi.sam636694.semelion.ui.theme.TextDark
 
 
 enum class AppDestinations(
@@ -52,19 +67,16 @@ enum class AppDestinations(
     ACTIONS("Actions", Icons.Default.AccountBox, { _, _,_,logViewModel,_ -> LogScreen(viewModel =logViewModel)}),
 }
 
-@Composable
-fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel){
-    val state by viewModel.uiState.collectAsState()
-    Log.d("tate","${state.actions}")
-    LazyColumn(modifier = modifier.background(Color.LightGray).fillMaxSize().padding(15.dp)) {
-        items(state.actions.reversed()){
-            Text(text=viewModel.translateAction(it),color=Color.Black)
-        }
-    }
-}
+
 
 @Composable
-fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewModel: BaseGameViewModel, logViewModel: LogViewModel,onNavigateBack: () -> Unit) {
+fun NavigationUIApp(
+    snackBarHostState: SnackbarHostState,
+    db: SemelionDB,
+    viewModel: BaseGameViewModel,
+    logViewModel: LogViewModel,
+    onNavigateBack: () -> Unit
+) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.GAME) }
 
     // 1. Recuperiamo la configurazione attuale per sapere se siamo in LANDSCAPE
@@ -116,5 +128,74 @@ fun NavigationUIApp(snackBarHostState: SnackbarHostState, db: SemelionDB, viewMo
         ) { innerPadding ->
             currentDestination.screen(innerPadding,db, viewModel, logViewModel,onNavigateBack)
         }
+    }
+}
+
+//Tipi di evento
+enum class EventType { RIVELAZIONE, RIMPIAZZO,COPERTURA, SCAMBIO, SCAMBIO_CIRCOLARE,REGINA,RE }
+
+data class LogEvent(
+    val type: EventType,
+    val title: String,
+    val body:String,
+)
+
+@Composable
+fun LogScreen(modifier: Modifier = Modifier, viewModel: LogViewModel){
+    val state by viewModel.uiState.collectAsState()
+    Log.d("tate","${state.actions}")
+    LazyColumn(modifier = modifier.background(Color.LightGray).fillMaxSize().padding(15.dp)) {
+        items(state.actions.reversed()){
+            LogEventRow(viewModel.translateAction(it))
+        }
+    }
+}
+
+//Riga evento
+@Composable
+private fun LogEventRow(event: LogEvent) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = CardBg),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                //titolo
+                Text(
+                    text = event.title,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.sp,
+                    color = eventTitleColor(event.type)
+                )
+                //azione
+                Text(
+                    text = event.body,
+                    fontSize = 15.sp,
+                    color = TextDark,
+                    lineHeight = 22.sp
+                )
+            }
+        }
+
+    }
+}
+
+fun eventTitleColor(type: EventType):Color{
+    return when(type){
+        EventType.RIVELAZIONE-> GreenPrimary
+        EventType.RIMPIAZZO -> DrawColor
+        EventType.COPERTURA -> Color.Black
+        EventType.SCAMBIO -> Arancione
+        EventType.SCAMBIO_CIRCOLARE -> Purple40
+        EventType.RE -> OcraMorbida
+        EventType.REGINA -> Purple80
     }
 }

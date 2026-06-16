@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import it.di.unipi.sam636694.semelion.R
+import it.di.unipi.sam636694.semelion.appNavigation.EventType
+import it.di.unipi.sam636694.semelion.appNavigation.LogEvent
 import it.di.unipi.sam636694.semelion.utilities.SharedRepository
 import it.di.unipi.sam636694.semelion.utilities.toActionData
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,18 +39,20 @@ class LogViewModel(private val app: Application): AndroidViewModel(application =
         }
     }
     //traduco le azioni dello stato
-    fun translateAction(action: String): String {
+    fun translateAction(action: String): LogEvent {
         val data = action.toActionData()
         return when (data.type) {
             "reveal" -> {
                 val card = data.outcome.first()
-                if (card.name.dropLast(1) == "7") app.getString(R.string.semelionLog7Revealed,cardName(card.name))
-                else app.getString(R.string.semelionLogNot7Revealed,cardName(card.name),card.value)
+                if (card.name.dropLast(1) == "7")
+                    LogEvent(type= EventType.RIVELAZIONE, title = app.getString(R.string.semelionRevealTitle),app.getString(R.string.semelionLog7Revealed,cardName(card.name)))
+                else
+                    LogEvent(type= EventType.RIVELAZIONE, title = app.getString(R.string.semelionLogRevealTitle),app.getString(R.string.semelionLogNot7Revealed,cardName(card.name),card.value))
             }
 
             "covered" -> {
                 val card = data.outcome.first()
-                app.getString(R.string.semelionLogCardCovered,cardName(card.name))
+                LogEvent(type = EventType.COPERTURA,title = app.getString(R.string.semelionLogCoverTitle),app.getString(R.string.semelionLogCardCovered,cardName(card.name)))
             }
 
             "swap" -> {
@@ -56,36 +60,38 @@ class LogViewModel(private val app: Application): AndroidViewModel(application =
                 val second = data.relevantCards[1]
                 val firstDesc = if (first.flag) cardName(first.name) else app.getString(R.string.semelionLogCardPosition,first.value)
                 val secondDesc = if (second.flag) cardName(second.name) else app.getString(R.string.semelionLogCardPosition,second.value)
-                app.getString(R.string.semelionLogSwap,firstDesc,secondDesc)
+                LogEvent(EventType.SCAMBIO, title = app.getString(R.string.semelionLogSwapTitle),app.getString(R.string.semelionLogSwap,firstDesc,secondDesc))
             }
 
             "King's Rule" -> {
                 val direction = data.relevantCards[0].name
                 val riga = data.relevantCards[0].value
-                app.getString(R.string.semelionLogKingRule,riga+1,direction)
+                LogEvent(EventType.SCAMBIO, title = app.getString(R.string.semelionLogKingTitle),app.getString(R.string.semelionLogKingRule,riga+1,direction))
             }
 
             "Queen'Swipe" -> {
                 val direction = data.relevantCards[0].name
                 val colonna = data.relevantCards[0].value
-                app.getString(R.string.semelionLogQueenSwipe,colonna+1,direction)
+                LogEvent(EventType.REGINA,title = app.getString(R.string.semelionLogQueenTitle),app.getString(R.string.semelionLogQueenSwipe,colonna+1,direction))
             }
 
             "Jack' chain" -> {
                 val cards = data.relevantCards.joinToString(" -> ") { card ->
                     if (card.flag) cardName(card.name) else app.getString(R.string.semelionLogCardPosition,card.value)
                 }
-                app.getString(R.string.semelionLogJackMadness,cards)
+                LogEvent(EventType.SCAMBIO_CIRCOLARE,title = app.getString(R.string.semelionLogJackTitle),app.getString(R.string.semelionLogJackMadness,cards))
             }
 
             "addedFromUncover" -> {
                 val card = data.outcome.first()
                 if (card.name.dropLast(1) == "7") app.getString(R.string.semelionLogUncover7Added, cardName(card.name))
-                else app.getString(R.string.semelionLogUncoverNot7Added, cardName(card.name), card.value)
+                else
+                    LogEvent(EventType.RIMPIAZZO,app.getString(R.string.semelionLogReplaceTitle),app.getString(R.string.semelionLogUncoverNot7Added, cardName(card.name), card.value))
             }
 
-            else -> app.getString(R.string.semelionUnrecognizedAction,data.type)
-        }
+            else ->
+                LogEvent(EventType.RIMPIAZZO,"BHOOO", app.getString(R.string.semelionUnrecognizedAction,data.type))
+        } as LogEvent
     }
 
     //FUNZIONI DI TRADUZIONI

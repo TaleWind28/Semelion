@@ -81,6 +81,16 @@
     <string name="semelionWelcomeMessage1">Benvenuto in Semelion!</string>
     <string name="semelionWelcomeMessage2">Semelion è un gioco di carte per 2 giocatori con 2 modalità:</string>
     <string name="semelionWelcomeMessage3">Quick Play: due giocatori giocano sullo stesso dispositivo</string>
+
+    <!-- LogViewModel -->
+    <string name="semelionLogRevealTitle">RIVELAZIONE</string>
+    <string name="semelionLogCoverTitle">COPERTURA</string>
+    <string name="semelionLogSwapTitle">SCAMBIO</string>
+    <string name="semelionLogReplaceTitle">RIMPIAZZO</string>
+    <string name="semelionLogKingTitle">RE</string>
+    <string name="semelionLogQueenTitle">DONNA</string>
+    <string name="semelionLogJackTitle">JACK</string>
+
     <string name="semelionWelcomeMessage4">Connections: gioca con due dispositivi android diversi in modalità wireless</string>
     <string name="semelionLogUncoverNot7Added">Aggiunta dal mazzo scoperta: %1$s in posizione %2$d</string>
     <string name="semelionLogUncover7Added">Aggiunta dal mazzo scoperta: %1$s</string>
@@ -113,6 +123,5 @@
 
 
     <!-- NavigationScreens-->
-
     <string name="winnerBanner">THE WINNER IS …</string>
 </resources>
