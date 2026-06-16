@@ -71,33 +71,24 @@ abstract class BaseGameViewModel(
     protected val _uiState = MutableStateFlow(GameUIState())
     val uiState = _uiState.asStateFlow()
 
+    //nomi dei giocatori
     var playerName by mutableStateOf("Semelion User")
     var opponentName by mutableStateOf("Sora")
 
+    //flag per proteggere le scritture sul db
     val isDBOperationComplete = MutableStateFlow(true)
 
     val wantsToGoBack = MutableStateFlow(false)
 
-    val validationQueue = Channel<String>(Channel.BUFFERED)
-
     private val startTime:Long = System.currentTimeMillis()
 
+    //matchSummary per poter salvare nel database
     protected val _matchSummary = MutableStateFlow(Pair(
         MatchStatistics(matchId=-1, userId= userID,outcome = "still playing...",  figureRevealed = 0, winner = null, date = startTime, wasFirstPLayer = true,totalActions = 0),
         MatchStatistics(matchId=-1,userId= secondPlayerId,outcome = "still playing...",  figureRevealed = 0,winner = null, date=startTime, wasFirstPLayer = false,totalActions = 0)
     ))
     val matchSummary = _matchSummary.asStateFlow()
 
-
-    //serve per mettere i dao nel viewmodel
-    open fun validation(){
-        viewModelScope.launch {
-            for (cardId in validationQueue) {
-                delay(200)
-                validateState(cardId, _uiState.value)
-            }
-        }
-    }
 
 
     //HANDLER PER GESTIRE EVENTI RELATIVI ALLA UI
@@ -120,6 +111,7 @@ abstract class BaseGameViewModel(
 
         sendScreenMessage("reveal",relevantCards, outcome =outcome)
 
+        //controllo se applicare delay prima della validazione della carta
         val needsDelay = _uiState.value.grid
             .find { it.name == cardId }
             ?.let { it.value >= 7 } ?: false
@@ -128,23 +120,26 @@ abstract class BaseGameViewModel(
 
             if (needsDelay) delay(300)
             _uiState.update { validateState(cardId, it) }
-            Log.d("handle","lrc:${_uiState.value.lastReplacedCard}\nfase:${_uiState.value.phase}")
 
             when{
+                //se ho rivelato un 7
                 _uiState.value.lastReplacedCard?.contains("7") == true -> {
+                   //do un delay per farlo vedere
                     delay(DELAY_TIME)
                     //se entro qui sicuramente lrc è non null, anzi è del tipo 7House
                     val cardId =_uiState.value.lastReplacedCard ?: "none"
+                    //valido lo stato coprendo il 7
                     _uiState.update {
-                        Log.d("handle","valido:$cardId")
                         val modifiedState = validateState(cardId,it.copy(lastReplacedCard = null))
                         actionCounter(modifiedState,modifiedState.grid.chunked(7))
                     }
                 }
+                //se non ho rivelato un 7 continuo normalmente
                 _uiState.value.phase == GamePhase.PlayerTurn -> {
                     _uiState.update { actionCounter(it, it.grid.chunked(7)) }
                     return@launch
                 }
+                //se non sono in nessuno dei casi precedenti, quindi ho rivelato una figura
                 else ->{
                     handleFigureRevealed()
                 }
@@ -154,7 +149,9 @@ abstract class BaseGameViewModel(
     }
 
     open suspend fun handleFigureRevealed() {
+        //quando viene rivelata una figura aggiorno l'actionCounter
         _uiState.update { actionCounter(it, it.grid.chunked(7)) }
+        //poi in base alla figura comunico all'utente cosa deve fare
         when (_uiState.value.phase) {
             is GamePhase.QueenPending -> {
                 SnackBarController.sendEvent(
@@ -178,11 +175,13 @@ abstract class BaseGameViewModel(
     }
 
     protected fun handleSwapCards(id1: String, id2: String): Boolean {
-
+        //cerco le carte da scambiare sulla griglia
         val card1 = findCard(id1, _uiState.value) ?: return false
         val card2 = findCard(id2, _uiState.value) ?: return false
+        //genero un messaggio di errore in caso lo scambio non sia possibile
         val message = canSwap(card1,card2,_uiState.value)
 
+        //se il messaggio è stato generato allora lo scambio non si può effettuare
         if (message != null){
             viewModelScope.launch {
                 SnackBarController.sendEvent(
@@ -194,11 +193,13 @@ abstract class BaseGameViewModel(
             return false
         }
 
+        //azione per log
         val relevantCards = listOf(
             Triple(id1,_uiState.value.grid.indexOfFirst { it.name == id1 }+1, findCard(id1,_uiState.value)?.isRevealed ?: false),
             Triple(id2,_uiState.value.grid.indexOfFirst { it.name == id2 }+1, findCard(id2,_uiState.value)?.isRevealed ?: false)
         )
 
+        //aggiorno lo stato
         _uiState.update {
             it.copy(
                 grid = it.grid.map { card ->
@@ -212,16 +213,19 @@ abstract class BaseGameViewModel(
             )
         }
 
+        //azione per log
         val outcome = listOf(
             Triple(id1,_uiState.value.grid.indexOfFirst { it.name == id1 }+1, findCard(id1,_uiState.value)?.isRevealed ?: false),
             Triple(id2,_uiState.value.grid.indexOfFirst { it.name == id2 }+1, findCard(id2,_uiState.value)?.isRevealed ?: false)
         )
-
+        //mando azione al LogViewModel
         sendScreenMessage("swap",relevantCards,outcome)
-
+        //valido lo stato
         viewModelScope.launch {
+            //controllo se il delay serve
             val needsDelay = _uiState.value.grid.any { it.name in listOf(id1, id2) && it.value >= 7 }
             if (!needsDelay) delay(DELAY_TIME)
+            //valido e aggiorno lo stato
             _uiState.update {
                 val state = validateState(id2,validateState(id1, it))
                 actionCounter(state,state.grid.chunked(7))
@@ -233,7 +237,10 @@ abstract class BaseGameViewModel(
     }
 
     protected fun handleJackMadness(swaps:List<Int>):Boolean{
-       if (_uiState.value.phase !is GamePhase.JackMadness && _uiState.value.phase !is GamePhase.WaitingForOpponent) return false
+        //se non sto simulando l'azione oppure non ho rivelato il jack la funzione non va eseguita
+        //-> questo succede quando per esempio viene rivelato un 7 dal jack e tale 7 non è in posizione corretta
+        if (_uiState.value.phase !is GamePhase.JackMadness && _uiState.value.phase !is GamePhase.WaitingForOpponent) return false
+        //riproduco il suono del jack
         player.playFile(R.raw.jack)
 
         //scelgo come primo id quello della carta rivelata in modo da gestire il 7
@@ -271,11 +278,13 @@ abstract class BaseGameViewModel(
     }
 
     protected fun handleQueenDirection(direction: (Int, Int) -> Int): Boolean {
+        //se non sto simulando l'azione oppure non ho rivelato il jack la funzione non va eseguita
+        //-> questo succede quando per esempio viene rivelato un 7 dalla donna e tale 7 non è in posizione corretta
         if (_uiState.value.phase !is GamePhase.QueenPending && _uiState.value.phase !is GamePhase.WaitingForOpponent) return false
         player.playFile(R.raw.queen)
 
         _uiState.update { state ->
-
+            //uso una fold per aggiornare consecutivamente lo stato seguendo la direzione scelta dal giocatore
             var modifiedState = state.copy(
                 grid = (0 until 3).fold(state) { acc, i ->
                     val id1 = findCard(acc.grid[direction(i, 0)].name, state)?.name ?: "none"
@@ -285,14 +294,14 @@ abstract class BaseGameViewModel(
                 phase = GamePhase.Validation          // transizione dentro lo stato
             )
             //ricalcolo il colId
-            val rId = direction(0,0)
-            if (direction(0,7) == Direction.UP.toFunction(rId)(0,7))
-                sendScreenMessage("Queen'Swipe",listOf(Triple("Alto",rId,true)),listOf(Triple("",rId,true)))
+            val colId = direction(0,0)
+            if (direction(0,7) == Direction.UP.toFunction(colId)(0,7))
+                sendScreenMessage("Queen'Swipe",listOf(Triple("Alto",colId,true)),listOf(Triple("",colId,true)))
             else
-                sendScreenMessage("Queen'Swipe",listOf(Triple("Basso",rId,false)),listOf(Triple("",rId,false)))
-
+                sendScreenMessage("Queen'Swipe",listOf(Triple("Basso",colId,false)),listOf(Triple("",colId,false)))
+            //dopo aver spostato la colonna valido lo stato
             modifiedState = applyAndValidate(modifiedState,(0 until 3).map { direction(it,0) })
-
+            //ed aggiorno l'actionCounter
             actionCounter(modifiedState,modifiedState.grid.chunked(7))
         }
 
@@ -300,7 +309,8 @@ abstract class BaseGameViewModel(
     }
 
     protected fun handleKingDirection(rowIndex:Int, direction: (Int, Int) -> Int) : Boolean {
-        //controllo di essere nello stato giusto
+        //se non sto simulando l'azione oppure non ho rivelato il Re la funzione non va eseguita
+        //-> questo succede quando per esempio viene rivelato un 7 dal Re e tale 7 non è in posizione corretta
         if (_uiState.value.phase !is GamePhase.KingPending && _uiState.value.phase !is GamePhase.WaitingForOpponent) return false
         player.playFile(R.raw.king)
 
@@ -342,6 +352,7 @@ abstract class BaseGameViewModel(
         return true
     }
 
+    //la funzione applica più volte validate tramite una fold
     protected fun applyAndValidate(
         state: GameUIState,
         positions: List<Int>
@@ -353,27 +364,28 @@ abstract class BaseGameViewModel(
 
     //FUNZIONI HELPER PER GLI HANDLER
     fun generateJackChain(state: GameUIState,jackHouse:String,swapCount:Int):List<Int>{
+        //posizioni valide per gli scambi del jack
         val validPositions = (0..27).filter { colorHouse(state.grid[it].house) == colorHouse(jackHouse) }
         val positions = mutableListOf<Int>()
-        Log.d("jackSwap","numeri: $swapCount")
+        //popolo la lista positions
         repeat(swapCount) {
             val last = positions.lastOrNull()
             positions.add(validPositions.filter { it != last }.random())
         }
-        Log.d("jackSwap","posizioni: $positions")
-        positions.forEach { Log.d("jackSwap","${state.grid[it]}") }
+        //ritorno le posizoni da scambiare
         return positions
     }
 
+    //applico le regole per scambiare carte -> queste regole non valgono per le figure
     fun canSwap(card1: CardUIStates,card2: CardUIStates,state: GameUIState): String?{
         val row = state.grid.chunked(7)
         val rows = Pair(row[0] + row[1],row[2] + row[3])
-
+        //prendo in considerazione le righe delle carte
         val cardInfos = Pair(
             state.grid.indexOfFirst { it.name== card1.name }.let{it to it/7},
             state.grid.indexOfFirst { it.name== card2.name }.let { it to it/7 },
         )
-
+        //controllo che almeno una delle due carte sia in pozione corretta dopo lo scambio
         fun valueControl(rowId:Int,globalPosition:Int,value:Int): Boolean{
             return when (value) {
                 POSITION_VALUES.first(rowId,globalPosition)-> true
@@ -382,6 +394,7 @@ abstract class BaseGameViewModel(
             }
         }
 
+        //controllo che lo scambio avvenga con al più una carta dell'avversario
         fun fairnessControl(card1: CardUIStates,card2: CardUIStates,playerTurn: Boolean):Boolean{
             return when{
                 //turno di p2 carte nelle sue righe
@@ -394,7 +407,7 @@ abstract class BaseGameViewModel(
                 else -> false
             }
         }
-
+        //messaggio di errore da generare
         fun errorMessage(positionValid: Boolean,fairness: Boolean):String?{
             return if (!positionValid && !fairness){
                 app.getString(R.string.swapViolatesAll)
@@ -410,35 +423,35 @@ abstract class BaseGameViewModel(
             }
         }
 
-        Log.d("swap","$cardInfos")
-
+        //controllo che le carte non siano in un ariga potente
         if (row[cardInfos.first.second].findPowerRow() == 1 || row[cardInfos.second.second].findPowerRow() == 1) {
             return app.getString(R.string.swapViolatesPowerRow)
         }
 
+        //controllo se posso scambiare la seconda carta secondo la posizione corretta
         val c2SwapValid = !card2.isRevealed || card2.name.contains("joker") ||
                 valueControl(rowId= cardInfos.first.second,globalPosition= cardInfos.first.first, value= card2.value)
 
+        //controllo se posso scambiare la prima carta secondo la posizione corretta
         val c1SwapValid = !card1.isRevealed || card1.name.contains("joker") ||
                 valueControl(rowId= cardInfos.second.second,globalPosition= cardInfos.second.first,value= card1.value)
 
+        //validità globale dello scambio in base alle posizioni
         val positionValid = when{
             !card1.isRevealed && !card2.isRevealed -> true
             !card1.isRevealed -> c2SwapValid
             !card2.isRevealed -> c1SwapValid
             else -> c1SwapValid || c2SwapValid
         }
-
+        //ritorno il risultato di errorMessage
         return  errorMessage(positionValid,fairnessControl(card1,card2,state.p1Turn))
     }
 
     //FUNZIONE DI VALIDAZIONE
     open fun validateState(cardId: String, state: GameUIState): GameUIState {
-        Log.d("coinFlip", "lrc:${state.lastReplacedCard}\nvalidateState: cardId=$cardId, phase=${state.phase},\n incorrectSeven=${state.incorrectSevenReveled}, p1Turn=${state.p1Turn}")
-        Log.d("finder","lrc:${state.lastReplacedCard}\ncardId=$cardId, phase=${state.phase},\n incorrectSeven=${state.incorrectSevenReveled}")
+        //carta da validare
         val card = findCard(cardId, state) ?: return state
-        Log.d("finder","passato findCard")
-
+        //stato da modificare
         var modifiedState = state
 
         //controllo se la carta è rivelata
@@ -448,19 +461,16 @@ abstract class BaseGameViewModel(
             if (modifiedState.lastReplacedCard?.contains("7") == true) return modifiedState
         }
 
-        Log.d("finder","preJolly")
 
         //cercare jolly sulla griglia -> actually vorrei usare uno stato diverso per le invocazioni però non so
         JOLLY_COLOR.forEach {
             modifiedState = jollyApplier(modifiedState, "joker_$it")
             modifiedState = substituteJolly(modifiedState, "joker_$it")
         }
-       Log.d("finder","preCover:${state.incorrectSevenReveled}\n${state.phase}")
 
         //controllo se la carta deve essere coperta
         modifiedState = coverCard(cardId,modifiedState)
 
-        Log.d("finder","passato coverCard:${state.incorrectSevenReveled}\n${state.phase}")
         //se sono ancora in fase di validazione modifico il numero di azioni
         if (modifiedState.phase is GamePhase.Validation){
                 //aggiorna azioni
@@ -484,13 +494,11 @@ abstract class BaseGameViewModel(
         val upperHalf = listOf(rows[0], rows[1])
         val bottomHalf = listOf(rows[2], rows[3])
 
-        Log.d("finder","preWinner:${state.incorrectSevenReveled}\n${state.phase}")
         //controllo se un giocatore ha vinto
         modifiedState = findWinner(upperHalf,bottomHalf,modifiedState)
 
         //se la validazione ha avuto successo torna al turno del giocatore
         return if (modifiedState.phase == GamePhase.Validation) {
-            Log.d("coinFlip","p1Turn:${modifiedState.p1Turn}")
             modifiedState.copy(
                 phase = GamePhase.PlayerTurn
             )
@@ -502,18 +510,18 @@ abstract class BaseGameViewModel(
 
     //funzioni di utility
     fun createDecks(): Pair<List<CardUIStates>, List<CardUIStates>> {
-
+        //genero tutte le carte e le mescolo
         val allCards = createCards(figures = SEMELION_FIGURES, jolly = JOLLY_COLOR).shuffled()
 
-        //testing filtro solo carte <7
+        //creo una lista con solo numeri
         val noFiguresDeck = allCards.filter { it.value in 1..7 }
-
+        //creo il mazzo con figure e jolly
         val specialDeck = allCards.filter { it.value > 7 || it.value == 0 }
-
+        //droppo le prime UNCOVER_DECK_SIZE carte dal mazzo senza figure e aggiungo le figure
         val gridDeck = noFiguresDeck.drop(UNCOVER_DECK_SIZE) + specialDeck
-
+        //droppo le prime UNCOVER_DECK_SIZE carte dal mazzo senza figure per creare il mazzo scoperta
         val uncoverDeck = noFiguresDeck.take(UNCOVER_DECK_SIZE).map { it.copy(isRevealed = true) }
-
+        //ritorno i mazzi
         return Pair(gridDeck.shuffled(), uncoverDeck.shuffled())
 
     }
@@ -536,10 +544,9 @@ abstract class BaseGameViewModel(
 
     fun createCards(figures: List<Pair<Int, String>>, jolly: List<String>): List<CardUIStates> {
         return buildList {
-
             for (i in 1..4) {
+                //aggiungo una carta per seme per ogni valore
                 val currentHouse = mapHouse(i)
-                //aggiungi tutto
                 for (j in 1..7) {
                     add(
                         CardUIStates(
@@ -578,6 +585,7 @@ abstract class BaseGameViewModel(
         }
     }
 
+    //rivelo una carta sulla griglia
     fun revealOnGrid(revealedCards: List<String>, state: GameUIState): List<CardUIStates> {
         return state.grid.map { card ->
             card.copy(
@@ -586,28 +594,28 @@ abstract class BaseGameViewModel(
         }
     }
 
+    //controllo se una carta deve essere coperta
     fun coverCard(cardId: String, state: GameUIState): GameUIState {
-        Log.d("finder","id:$cardId")
-
+        //cerco la carta sulla griglia
         val selectedCard = findCard(cardId, state) ?: return state
-        Log.d("finder","id:${selectedCard.name},isRevealed:${selectedCard.isRevealed} ")
+        //l'unica carta da coprire è il 7, quindi se la carta ha valore diverso oppure è coperta termino
         if (selectedCard.value != 7 || !selectedCard.isRevealed) return state
-        Log.d("finder","id:$cardId")
+        //controllo la posizione della carta
         val position = state.grid.indexOfFirst { card -> (card.name == selectedCard.name)}
-        Log.d("finder","pos:$position")
-        Log.d("validate","cardToValidate: $cardId\n position:$position")
+
         //controllo se il 7 può essere rivelato
         if (position % 7 == 0 || position % 7 == 6) return state
-
+        //il 7 deve essere coperto
         val revealedCards = state.revealedCards - cardId
-
+        //azioni per log
         val relevantCards = listOf(Triple(cardId,position,true))
         val outcome = listOf(Triple(cardId,position,false))
-
         sendScreenMessage("covered",relevantCards,outcome)
 
+        //riproduco suono per far capire che il 7 è stato coperto
         player.playFile(R.raw.seven)
 
+        //ritorno una copia dello stato con la carta coperta
         return state.copy(
             grid = revealOnGrid(revealedCards, state),
             revealedCards = revealedCards,
@@ -615,6 +623,7 @@ abstract class BaseGameViewModel(
         )
     }
 
+    //swap usato dalle figure per evitare le regole di scambio
     fun figureSwap(id1: String, id2: String, state: GameUIState, type: String): GameUIState {
         val card1 = findCard(id1, state) ?: return state
         val card2 = findCard(id2, state) ?: return state
@@ -638,11 +647,13 @@ abstract class BaseGameViewModel(
             Triple(id1,modifiedState.grid.indexOfFirst { it.name == id1 }+1 , findCard(id1,modifiedState)?.isRevealed ?: false),
             Triple(id2,modifiedState.grid.indexOfFirst { it.name == id2 }+1, findCard(id2,modifiedState)?.isRevealed ?: false)
         )
+
         if (type=="Jack' chain") sendScreenMessage(type,relevantCards,outcome)
 
         return modifiedState
     }
 
+    //aumento il numero di azioni usate
     fun increaseUsedActions(state: GameUIState): Pair<Int, Int> {
         return if (state.p1Turn) {
             Pair(state.p1ActionsUsed + 1, state.p2ActionsUsed)
@@ -651,12 +662,11 @@ abstract class BaseGameViewModel(
         }
     }
 
+    //scambio il jolly con la carta che sta sostituendo
     fun swapJolly(state: GameUIState, suit: String): GameUIState {
         val jolly = findCard(suit, state) ?: return state
-        Log.d("jolly", "jolly: $jolly")
         val correctCard = findCard("${jolly.value}${jolly.house}", state) ?: return state
-        Log.d("jolly", "carta corretta:${correctCard.name},jolly: $jolly")
-
+        //controllo se la carta è rivelata e se lo è anche il jolly
         if (!correctCard.isRevealed || !jolly.isRevealed) return state
 
         return state.copy(
@@ -675,6 +685,7 @@ abstract class BaseGameViewModel(
         )
     }
 
+    //controllo se il jolly deve essere sostituito e ritorno lo stato risultante
     fun substituteJolly(state: GameUIState, suit: String): GameUIState {
         val position = state.grid.indexOfFirst { it.name == suit }
         var currentState = swapJolly(state, suit)
@@ -685,6 +696,7 @@ abstract class BaseGameViewModel(
         }
     }
 
+    //funzione per far assumere al jolly il valore relativo alla sua posizione
     fun jollyApplier(state: GameUIState, cardId: String): GameUIState {
         //cerco il jolly
         val jolly = findCard(cardId, state) ?: return state
@@ -696,14 +708,19 @@ abstract class BaseGameViewModel(
 
         //il diviso funge da modulo perchè sto usando gli interi
         val row = pos / 7
-
+        //seguo l'ordinamento predominante
         val orders = state.grid.chunked(7)[row].getPredominantOrder()
+        //se non è presente il jolly non fa niente
         if (orders.isEmpty()) return state
 
         //trovo il colore della riga
         var dominantHouse = colorHouse(orders.first().first)
 
-        //per adesso lo ignoro -> tripla d'esempio (F,2,0) (C,0,2) (D,0,2) -> ritestare ma credo funzioni
+        //
+        // per adesso lo ignoro ->
+        // tripla d'esempio (F,2,0) (C,0,2) (D,0,2)
+        // -> ritestare ma credo funzioni
+        // -> questa tripla dovrebbe dare 1 azione o forse 2 non mi ricordo alla fine che regola abbiamo scelto ma so che è corretto
         var i = 0
         orders.forEach {
             val house = colorHouse(it.first)
@@ -745,8 +762,6 @@ abstract class BaseGameViewModel(
             }
 
         //assume il valore in base all'ordinamento predominante
-        Log.d("validate", "valore calcolato:$value, seme:$dominantHouse")
-
         return state.copy(
             grid = state.grid.map { card ->
                 when (card.name) {
@@ -763,13 +778,17 @@ abstract class BaseGameViewModel(
         )
     }
 
+    //applico uno stato diverso in base alla figura rivelata
     fun figureRevealed(cardId: String, state: GameUIState): GameUIState {
         val card = findCard(cardId, state) ?: return state
+        //controllo che sia effettivamente una figura
         if (card.value < 8) return state
+        //trovo la posizione
         val position = _uiState.value.grid.indexOfFirst { it.name == card.name }
 
         var modifiedState = state
 
+        //applico la fase corretta in base alla figura
         when {
             cardId.contains("8") -> { //circular swap
                 player.playFile(R.raw.jackannouncer)
@@ -793,9 +812,9 @@ abstract class BaseGameViewModel(
                 )
             }
 
-
         }
 
+        //aggiorno i matchSummary
         _matchSummary.update { summary ->
             if(state.p1Turn)
                 Pair(summary.first.copy(figureRevealed= summary.first.figureRevealed + 1),summary.second)
@@ -803,24 +822,32 @@ abstract class BaseGameViewModel(
                 Pair(summary.first,summary.second.copy(figureRevealed= summary.second.figureRevealed + 1))
         }
 
+        //aggiorno lo stato aggiungendo la carta dal mazzo scoperta e togliendo la figura
         modifiedState = replaceCard(modifiedState, cardId)
 
+        //ritorno lo stato modificato
         return modifiedState
     }
 
+    //rimpiazzo una carta sulla griglia
     fun replaceCard(state: GameUIState, cardID: String): GameUIState {
+        //trovo la carta da sostituire
         val card = findCard(cardID, state) ?: return state
+        //sostituisco solo se è rivelata
         if (!card.isRevealed) return state
+        //memorizzo il mazzo scoperta
         val newUncover = state.uncoverDeck
+        //memorizzo la carta da aggiungere alla griglia
         val nextCard = state.uncoverDeck.first()
+        //cerco la posizione della carta da sostituire sulla griglia
         val pos = state.grid.indexOfFirst { it.name==cardID }
+
+        //azioni per log
         val relevantCards = listOf(Triple(cardID,pos+1, true))
         val outcome = listOf(Triple(nextCard.name,pos+1, true))
-
         sendScreenMessage("addedFromUncover",relevantCards,outcome)
-        state.uncoverDeck.forEach { Log.d("uncover",it.name) }
-        Log.d("uncover","carta:${nextCard.name}")
 
+        //aggiorno lo stato
         val currState = state.copy(
             grid = state.grid.map {
                 when (it.name) {
@@ -832,15 +859,17 @@ abstract class BaseGameViewModel(
             revealedCards = state.revealedCards + nextCard.name,
             lastReplacedCard = nextCard.name,
         )
+        //se la carta aggiunta è un 7 allora ritorno senza validare per lasciare che sia handleCardRevealed a gestirlo
         return if (nextCard.value == 7) currState
-        else validateState(nextCard.name,currState)
+        else validateState(nextCard.name,currState) //altrimenti lo valido lo stato
     }
 
+    //controllo se il giocatore di turno ha usato tutte le azioni
     open fun actionCounter(state: GameUIState, rows: List<List<CardUIStates>>): GameUIState {
+        //azioni massime dei giocatori
         val p1Actions = calcActions(listOf(rows[2], rows[3]))
         val p2Actions = calcActions(listOf(rows[0], rows[1]))
 
-        Log.d("coinFlip", "actionCounter: incorrectSeven=${state.incorrectSevenReveled}, p1Turn=${state.p1Turn}, phase=${state.phase}")
         //mi sembrava più elegante farlo così
         val isSecondPlayer = {player:Boolean, turn:Int-> (if((!player && turn == 0) || (player && turn == 1)) 1 else 0)}
 
@@ -878,6 +907,7 @@ abstract class BaseGameViewModel(
                 )
 
             else ->
+                //se non ho finito le azioni e non ho rivelato un 7 allora posso far continuare il turno
                 state.copy(
                     p1Actions= p1Actions+ isSecondPlayer(state.p1Turn,state.turnsPlayed),
                     p2Actions= p2Actions + isSecondPlayer(!state.p1Turn,state.turnsPlayed)
@@ -885,22 +915,27 @@ abstract class BaseGameViewModel(
         }
     }
 
+    //helper per trovare le carte sulla griglia
     fun findCard(cardID: String, state: GameUIState): CardUIStates? {
         return state.grid.find { it.name == cardID }
     }
 
+    //calcolo delle azioni disponibili
     fun calcActions(rows: List<List<CardUIStates>>): Int {
+        //numero di azioni pari a 1 + carte in posizione corretta / 2
         return 1 + rows.sumOf { row ->
             val revealed = row.filter { it.isRevealed }
             if (revealed.size < 2) return@sumOf 0
-            //regola alternativa -> abbiamo visto che porta al bullismo
+            //regola alternativa -> abbiamo visto che porta al bullismo senza avvantaggiare troppo il bullo
             //val houseActions = row.getBonusActions()
             //houseActions.sumOf { triple ->  triple.second / 2 + triple.third / 2}
             row.getPredominantOrder().sumOf { triple -> max(triple.second, triple.third) / 2 }
         }
     }
 
+    //controllo se la partita deve finire
     open fun findWinner(upperHalf:List<List<CardUIStates>>, bottomHalf:List<List<CardUIStates>>, state: GameUIState): GameUIState {
+        //righe potenti dei giocatori
         val predRows = Pair(
             first = upperHalf.fold(0) { acc:Int, row ->
                 acc + row.findPowerRow()
@@ -909,9 +944,7 @@ abstract class BaseGameViewModel(
                 acc + row.findPowerRow()
             }
         )
-
-        Log.d("winner","p2:${predRows.first}, p1:${predRows.second} ")
-
+        //quando un giocatore ha 2 righe potenti allora quel giocatore ha vinto
         return when{
             (predRows.first == 2 && predRows.second == 2) -> state.copy( winner = "Pareggio", phase = GamePhase.GameOver)
             predRows.first == 2 -> state.copy( winner = secondPlayerId, phase = GamePhase.GameOver)
@@ -940,6 +973,7 @@ abstract class BaseGameViewModel(
     }
 
     abstract fun setup()
+    //Paradigma MVI per gestire le azioni dell'utente
     open fun processIntent(intent: GameIntent): Boolean {
         Log.d("MVI", "Intent: $intent | Phase: ${_uiState.value.phase}")
          return when (intent) {
@@ -953,6 +987,7 @@ abstract class BaseGameViewModel(
 
     }
 
+    //trovare il vincitore e comunicarlo per il db
     open fun calculateOutcome(loser:String?,state: GameUIState):Pair<String,Boolean?>{
         val outcome = loser ?: state.winner ?: "interrotta"
         Log.d("outcome","$outcome, ${state.winner}")
@@ -969,13 +1004,16 @@ abstract class BaseGameViewModel(
         }
     }
 
+    //procedura di chiusura del match
     open fun matchEnd(mode: GameModes,loser:String? = null,resumedMatchId:Long? = null){
+        //messaggio di flush del logViewModel per averlo pulito alla prossima partita
         sendScreenMessage("matchEnded",emptyList(),emptyList())
         //calcolo l'outcome della partita
         val (outcome,winningUser) = calculateOutcome(loser,_uiState.value)
 
         _uiState.update { it.copy(winner = outcome) }
 
+        //flag per proteggere le operazioni del db
         isDBOperationComplete.value = false
 
         _matchSummary.update {
@@ -1002,6 +1040,7 @@ abstract class BaseGameViewModel(
         }
     }
 
+    //aggiorno la tabella Partite del db
     suspend fun updateMatch(resumedMatchId: Long?,mode: GameModes,outcome:String,winningUser: Boolean?){
         val matchId = resumedMatchId ?: (matchesDao.getNextMatchId() - 1)
         //inserisco il match nel db
@@ -1016,10 +1055,9 @@ abstract class BaseGameViewModel(
         matchStatisticsDao.upsert(p2Stats)
     }
 
+    //aggiorno le statistiche dei giocatori
     suspend fun updatePlayerStats(userId:String,winningUser: Boolean?){
-        Log.d("DB","inserting data for user:$userId")
         //se non ha delle statistiche le creo
-
         //winninguser sarà true se il vincitore è l'utente locale, false se il vincitore è l'avversario, null altrimenti
         var stats = PlayerStatistics(
             userId= userId,
@@ -1066,6 +1104,7 @@ abstract class BaseGameViewModel(
         playersStatisticsDao.update(stats)
     }
 
+    //interrompo un mathc
     open fun interruptMatch(mode: GameModes){
         isDBOperationComplete.value = false
 
@@ -1089,12 +1128,11 @@ abstract class BaseGameViewModel(
             isDBOperationComplete.value = true
         }
     }
-
+    //inizio una partita
     suspend fun matchStart(mode: GameModes, nickname:String? = null){
 
-        Log.d("coinFlip","turno inizio ms:${_uiState.value.p1Turn}")
 
-        //devo metterlo da un'altra parte
+        //devo metterlo da un'altra parte -> no alla fine qui sta bene
         updateUsers(nickname=nickname)
 
         if (nickname!=null){
@@ -1108,19 +1146,20 @@ abstract class BaseGameViewModel(
         participationsDao.insert(Participations(matchId= matchID,userId = userID, role = "Host"))
         //flag per consentire modifiche in sicurezza nella UI
         isDBOperationComplete.value = true
-        Log.d("coinFlip","turno fine ms:${_uiState.value.p1Turn}")
     }
 
+    //decido il primo giocatore
     open fun setFirstPlayer() {
+
         val coinFlip = SecureRandom().nextBoolean()
 
         if(coinFlip)
             this._uiState.update { it.copy(firstPlayer = "Host", p2Actions = it.p2Actions+1)}
         else
             this._uiState.update { it.copy(firstPlayer = "Guest", p1Turn = false, p1Actions=it.p1Actions + 1)}
-        Log.d("coinFlip","coinFlip:$coinFlip\n${_uiState.value.firstPlayer},\np1Actions:${_uiState.value.p1Actions}\np2Actions:${_uiState.value.p2Actions}")
     }
 
+    //aggiorno la tabella utenti
     suspend fun updateUsers(nickname:String?){
         //controllo se devo creare l'utente nel db
         var localUser = userDao.getUserById(userID)
@@ -1138,21 +1177,19 @@ abstract class BaseGameViewModel(
         //controllo se esiste l'avversario nel db
         val opponent = userDao.getUserById(secondPlayerId)
 
-        Log.d("avatar","avatar_DB:$secondPlayerAvatar")
-
         //controllo se in caso l'avversario esista il nickname sia diverso da quello in memoria, solo se il nickname non è null
         if (opponent == null) userDao.insert(User(secondPlayerId, nickName = nickname ?: "Sora", avatar = R.drawable.avatar_1))
         else  userDao.update(User(userId=secondPlayerId,nickName=nickname?:opponent.nickName,avatar=secondPlayerAvatar?:opponent.avatar))
     }
 
+    //aggiorno il secondo giocatore
     protected fun updateSecondPlayer(secondPlayerId: String){
         this.secondPlayerId = secondPlayerId
         _matchSummary.update { Pair(it.first,it.second.copy(userId=secondPlayerId)) }
     }
 
+    //riproduco il suono in base all'outcome della partita
     fun playEndSound() {
-//        if (this is SemelionGameViewModel) return
-        Log.d("MatchStat","${_uiState.value.winner}\nuserId:$userID\nsecondPlayerId:$secondPlayerId")
         val winner = _uiState.value.winner?.substringAfterLast(" ")
         val sound = when (winner) {
             userID -> R.raw.victory_fanfare
@@ -1162,5 +1199,6 @@ abstract class BaseGameViewModel(
         player.playFile(sound)
     }
 
+    //metodo per distruggere il vm da implementare
     abstract fun destroy()
 }

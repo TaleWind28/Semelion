@@ -234,7 +234,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
 
                     val p2Display = DisplayPlayerStats(
                         name = key.viewModel.opponentName,
-                        timePlayed = p2Stats.date.toString(),
+                        timePlayed = (System.currentTimeMillis() - p1Stats.date).toString(),
                         figuresRevealed = p2Stats.figureRevealed,
                         totalMoves = p2Stats.totalActions,
                         isFirstPlayer = p2Stats.wasFirstPLayer,
@@ -243,7 +243,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                     )
                     val p1Display = DisplayPlayerStats(
                         name = key.viewModel.playerName,
-                        timePlayed = p1Stats.date.toString(),
+                        timePlayed = (System.currentTimeMillis() - p1Stats.date).toString(),
                         figuresRevealed = p1Stats.figureRevealed,
                         totalMoves = p1Stats.totalActions,
                         isFirstPlayer = p1Stats.wasFirstPLayer,

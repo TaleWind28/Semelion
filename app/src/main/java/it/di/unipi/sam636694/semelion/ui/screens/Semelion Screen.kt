@@ -43,9 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import it.di.unipi.sam636694.semelion.utilities.GreenAccent
 import it.di.unipi.sam636694.semelion.R
-import it.di.unipi.sam636694.semelion.utilities.TextSecondary
 import it.di.unipi.sam636694.semelion.database.GameModes
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.BaseGameViewModel
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.NearbyGameViewModel
@@ -53,7 +51,9 @@ import it.di.unipi.sam636694.semelion.viewModels.gameModels.SemelionGameViewMode
 import it.di.unipi.sam636694.semelion.ui.states.GameIntent
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import it.di.unipi.sam636694.semelion.ui.states.GameUIState
-import it.di.unipi.sam636694.semelion.utilities.Pergamena
+import it.di.unipi.sam636694.semelion.ui.theme.GreenAccent
+import it.di.unipi.sam636694.semelion.ui.theme.Pergamena
+import it.di.unipi.sam636694.semelion.ui.theme.TextSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -223,7 +223,7 @@ fun GameScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Pergamena)  // <-- qui
+            .background(Pergamena)
     ) {
         val configuration = LocalConfiguration.current
 
