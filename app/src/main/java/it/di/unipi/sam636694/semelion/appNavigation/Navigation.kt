@@ -50,10 +50,12 @@ import kotlin.String
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, player: AudioPlayer, userID:String,firstLaunch:()->Boolean,updateFirstLaunch:()->Unit){
+    //backstack per la navigazione
     val backStack = rememberNavBackStack(Route.Home)
     val scope = rememberCoroutineScope()
 
     val appContext = LocalContext.current.applicationContext as Application
+    //creo lvm per poterlo usare in tutte le partite
     val lvm: LogViewModel = viewModel(
         factory = viewModelFactory {
             initializer {
@@ -62,6 +64,9 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
         }
     )
 
+    //creo un NavDisplay per consentire la navigazione
+    //Mix del tutorial di Philippe Lackner su youtube e android Developer anche se prevalentemente segue il tutorial
+    //https://www.youtube.com/watch?v=jhrfx8Uk_y0&t=294s
     NavDisplay(
         modifier = Modifier,
         entryDecorators = listOf(
@@ -70,6 +75,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
         ),
         backStack = backStack,
         entryProvider = { key ->
+            //in base alla Route sceglo la schermata da mostrare
             when(key){
                 is Route.Home -> NavEntry(key){
                         val destinations =  mapOf(
@@ -82,7 +88,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                         SemelionHome(
                             destinations = destinations,
                         )
-
+                    //BottomSheet di benvenuto per dare una prima direzione ai nuovi utenti, la variabile associata è gestita dalle preferenze
                         var showWelcomeSheet by remember{ mutableStateOf(firstLaunch()) }
 
                         if (showWelcomeSheet) {
@@ -99,7 +105,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                 }
 
                 is Route.ProfilePage -> NavEntry(key){
-
+                    //creo il viewModel per mostrare i dati del giocatore
                     val profileVm: UserProfileViewModel = viewModel {
                         UserProfileViewModel(db = db, userId = userID)
                     }
@@ -128,7 +134,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                 }
 
                 is Route.ScreenSharingGame -> NavEntry(key){
-
+                    //creo il viewModel per giocare in ScreenSharing
                     val viewModel: SemelionGameViewModel = viewModel(
                         factory = SemelionGameViewModel.factory(
                             matchesDao= db.matchesDao(),
@@ -146,6 +152,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                     val uiState by viewModel.uiState.collectAsState()
 
                     if (uiState.phase is GamePhase.Loading) {
+                        //Mostro una partita sospesa
                         Text(text = "Loading..")
                         if (viewModel.suspendedFound){
                             BasicAlertDialog(onDismissRequest = {}) {
@@ -165,6 +172,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                             }
                         }
                     } else {
+                        //vado in navigationUIApp per visualizzare la schermata di gioco con anche lo schermo delle regole e dei log
                         NavigationUIApp(
                             snackBarHostState = snackBarHostState,
                             db = db,
@@ -197,7 +205,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                             application = LocalContext.current.applicationContext as Application,
                         )
                     )
-
+                    //schermo per connettersi
                     SemelionConnectionsScreen(
                         userId = userID,
                         db=db,
@@ -211,6 +219,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                 }
 
                 is Route.SemelionNearbyGame -> NavEntry(key) {
+                    //partita di Semelion in NearbyConnections
                     NavigationUIApp(
                         snackBarHostState = snackBarHostState,
                         db = db,
@@ -226,6 +235,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                 }
 
                 is Route.MatchStatScreen -> NavEntry(key) {
+                    //schermo di fine partita con le statistiche dei giocatori
 
                     val p1Stats = key.viewModel.matchSummary.collectAsState().value.first
                     val p2Stats = key.viewModel.matchSummary.collectAsState().value.second
