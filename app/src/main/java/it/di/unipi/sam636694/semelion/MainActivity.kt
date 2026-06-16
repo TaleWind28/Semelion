@@ -28,33 +28,38 @@ import kotlinx.coroutines.delay
 import java.util.UUID
 
 class MainActivity : ComponentActivity() {
+    //creo il db
     private val db by lazy { SemelionDB.getDatabase(this) }
-
+    //preparo la variabile dove memorizzare le preferenze
     private lateinit var prefs: SharedPreferences
-
+    //creo l'audioplayer
     private val player by lazy {
         AudioPlayer(applicationContext)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        //recupero le preferenze di sistema
         prefs = getSharedPreferences("settings", MODE_PRIVATE)
+
         enableEdgeToEdge()
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
 
-        windowInsetsController.systemBarsBehavior =
-            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
-        // 4. Nasconde sia la Status Bar (alto) che la Navigation Bar (basso)
+        //Nasconde sia la Status Bar (alto) che la Navigation Bar (basso)
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
 
         setContent {
                 SemelionTheme {
+                    //creo uno stato per la snackbar
                     val snackBarHostState = remember {
                         SnackbarHostState()
                     }
+                    //creo uno scope per le coroutine
                     val scope  = rememberCoroutineScope()
-                    Log.d("mainActivity","1")
+                    //recupero l'userId dalle preferenze se presente
                     var deviceUser = prefs.getString("semelion_local_userId", null)
                     if (deviceUser == null){
                         deviceUser = UUID.randomUUID().toString()
@@ -63,7 +68,7 @@ class MainActivity : ComponentActivity() {
                             putString("semelion_local_userId", deviceUser)
                         }
                     }
-                    Log.d("mainActivity","PreObserve:${prefs.getString("semelion_local_userId",null)}")
+                    //metto un Observe per avere la Snackbar(Philippe Lackner)
                     ObserveAsEvents(flow = SnackBarController.events, snackBarHostState) { event ->
                         scope.launch {
                             snackBarHostState.currentSnackbarData?.dismiss()
@@ -77,14 +82,14 @@ class MainActivity : ComponentActivity() {
                                     event.action?.action?.invoke()
                                 }
                             }
-
+                            //attendo il delay deciso in costants prima di cancellare il job
                             delay(SNACKBAR_DELAY_TIME)
                             job.cancel()
                         }
 
 
                     }
-
+                    //schermata principale SemelionNavigation dalla quale si accede alle varie modalità
                     SemelionNavigation(
                         snackBarHostState,
                         db,
