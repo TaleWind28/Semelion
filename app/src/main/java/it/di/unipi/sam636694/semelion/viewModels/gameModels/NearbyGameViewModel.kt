@@ -64,22 +64,27 @@ class NearbyGameViewModel(
         app = application
     ) {
 
+    //gestore della connessione
     val connectionManager = SemelionNearbyManager(application)
+    //stato della connessione
     val connectionState = connectionManager.connectionState
 
     //coda di azioni da replicare sulla griglia
     private val pendingActions = ArrayDeque<String>()
     private var actionFlushJob: Job? = null
-
+    //job per accertarsi che la griglia sia ricevuta correttamente
     private var gridAckJob: Job? = null
 
+    //variabile per capire se è già stata eseguita la distruzione del VM
     var isDestroyed = false
 
+    //incodo un'azione per farla replicare sul dispositivo dell'avversario
     fun enqueueAction(message: String) {
         pendingActions.addLast(message)
         flushActions()
     }
 
+    //invio tutte le azioni all'altro dispositivo
     private fun flushActions() {
         if (actionFlushJob?.isActive == true) return
         actionFlushJob = viewModelScope.launch {
@@ -97,6 +102,7 @@ class NearbyGameViewModel(
     }
 
     //disconnessione -> OK
+    //callback per la disconnessione
     fun onDisconnected() {
         if (_uiState.value.phase is GamePhase.GameOver) return
 
@@ -121,7 +127,6 @@ class NearbyGameViewModel(
         this.blankGrid()
         connectionManager.startDiscovery(serviceId)
     }
-
 
     //inizia la connessione con un endpoint -> OK
     fun connectToEndpoint(endpointId:String){
@@ -152,7 +157,6 @@ class NearbyGameViewModel(
                 delay(1000)
                 attempts++
             }
-            Log.d("pinoli","disconnetto gridAckJob")
             // Dopo 10 tentativi senza ACK → disconnetto
             onDisconnected()
         }
@@ -173,7 +177,7 @@ class NearbyGameViewModel(
         enqueueAction(action)
     }
 
-    //interpreta la direzione del re
+    //interpreta la direzione del re, questo è necessario perchè lo schermo è specchiato sul dispositivo guest
     fun mapKingDirection(intent: GameIntent.KingDirectionChosen): GameIntent {
         return when (intent.rowIndex) {
             0 -> GameIntent.KingDirectionChosen(rowIndex = 2, direction = intent.direction)
@@ -192,6 +196,7 @@ class NearbyGameViewModel(
         isDestroyed = false
     }
 
+    //imposta il primo giocatore
     override fun setFirstPlayer() {
         if (!connectionManager.connectionState.value.isHost) return
         super.setFirstPlayer()
@@ -199,6 +204,7 @@ class NearbyGameViewModel(
 
     }
 
+    //override di processiIntent per aggiungere logica
     override fun processIntent(intent: GameIntent): Boolean {
         if (connectionState.value.connectedEndpointId == null){
             _uiState.update { it.copy(phase = GamePhase.GameOver)}
@@ -220,6 +226,7 @@ class NearbyGameViewModel(
         return true
     }
 
+    //override di actionCounter per aggiungere la fase WaitingForOpponent
     override fun actionCounter(state: GameUIState, rows: List<List<CardUIStates>>): GameUIState{
         val modifiedState = super.actionCounter(state, rows)
 
@@ -234,9 +241,9 @@ class NearbyGameViewModel(
         } else {
             modifiedState
         }
-
     }
 
+    //override di findWinner per consentire di usare le righe specchiate
     override fun findWinner(upperHalf:List<List<CardUIStates>>, bottomHalf:List<List<CardUIStates>>,state: GameUIState): GameUIState{
 
         return if (connectionManager.connectionState.value.isHost){
@@ -246,6 +253,7 @@ class NearbyGameViewModel(
             super.findWinner(upperHalf = bottomHalf,bottomHalf=upperHalf,state=state)
         }
     }
+    //implementazione della distruzione del viewModel
     override fun destroy() {
         if (isDestroyed) return
         endpoint?.let {
@@ -258,6 +266,7 @@ class NearbyGameViewModel(
         disconnect()
     }
 
+    //override di calculate outcome per avere un outcome personalizzato
     override fun calculateOutcome(loser:String?,state: GameUIState):Pair<String,Boolean?>{
         val outcome = loser ?: state.winner ?: "interrotta"
         Log.d("outcome","$outcome, ${state.winner}")
@@ -272,7 +281,7 @@ class NearbyGameViewModel(
             else -> outcome to null
         }
     }
-
+    //override di handleFigureRevealed per far comparire messaggi riguardo le azioni dell'avversario
     override suspend fun handleFigureRevealed() {
         val phase = _uiState.value.phase
         val nextState = actionCounter(_uiState.value, _uiState.value.grid.chunked(7))
@@ -313,7 +322,7 @@ class NearbyGameViewModel(
 
     }
 
-    //UPDATER
+    //UPDATER -> aggiornano campi del ViewModel legati al secondo giocatore
     fun updateRemoteId(remoteId: String){
         this.remoteId = remoteId
         super.updateSecondPlayer(remoteId)
@@ -342,12 +351,13 @@ class NearbyGameViewModel(
     }
 
     //CALLBACKS
+    //callback per la ricezione dei messaggi
     val payloadCallback = object : PayloadCallback() {
         override fun onPayloadReceived(endpointId: String, payload: Payload) {
             val raw = String(payload.asBytes()!!, Charsets.UTF_8)
             val messageType = raw.substringBefore(":") + ":"
             val message = raw.substringAfter(":")
-
+            //fai gestire al connectionManager l'heartBeat
             connectionManager.pinPongLogic(messageType = messageType, endpoint = endpoint)
 
             when (messageType) {
@@ -371,11 +381,13 @@ class NearbyGameViewModel(
                     updateFirstPlayer()
                 }
 
+                //è arrivato il messaggio con la griglia
                 "grid:" -> {
                     _uiState.update {
                         it.copy(grid = deserializeCardList(message))
                     }
                 }
+                //è arrivato il messaggio col mazzo scoperta
                 "uncover:" -> {
                     _uiState.update {
                         it.copy(uncoverDeck = deserializeCardList(message))
@@ -383,15 +395,17 @@ class NearbyGameViewModel(
                     connectionManager.sendMessage("ready", "",endpoint) // ← ACK all'host
                     connectionManager.markReceived()
                 }
+                //ack per essere sicuri di poter iniziare la partita
                 "ready:" -> {
                     // Guest ha ricevuto tutto, possiamo procedere
                     gridAckJob?.cancel()
 
                     connectionManager.markSent()
                 }
-
+                //azione da eseguire sulla griglia
                 "gameaction:" -> produceAction(message)
 
+                //messaggio di disconnessione
                 "destruction:" -> {
                     connectionManager.stopHeartbeat()
                     _uiState.update { it.copy(phase = GamePhase.GameOver, winner = userID) }
@@ -410,7 +424,9 @@ class NearbyGameViewModel(
         }
     }
 
+    //callback di connessione
     val connectionCallback = object : ConnectionLifecycleCallback() {
+        //istanziazione della connessione
         override fun onConnectionInitiated(endpointId: String, info: ConnectionInfo) {
             connectionManager.markConnectionPending(info)
             val parts = info.endpointName.split("|")
@@ -420,31 +436,24 @@ class NearbyGameViewModel(
             // accetta la connessione
             connectionManager.acceptConnection(endpointId,payloadCallback)
         }
-
+        //risultato della connessione
         override fun onConnectionResult(endpointId: String, result: ConnectionResolution) {
-
+            //faccio gestire al manager il risultato
             connectionManager.onConnectionResult(endpointId=endpointId,localId=localId, result = result){
                 if (_uiState.value.phase !is GamePhase.GameOver) destroy()
             }
-
+            //in caso di successo salvo endpointId e comunico la griglia al guest
             if (result.status.isSuccess) {
                 endpoint = endpointId
-                Log.d("Payload","epdId:$endpoint\nepd:$endpointId")
                 //comunico la griglia al guest
                 if (connectionState.value.isHost) sendGridWithAck()
             }
 
         }
-
+        //callback di disconnessione
         override fun onDisconnected(endpointId: String) {
-            Log.d("pinoli","disconnetto dalla callback")
             onDisconnected()
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        Log.d("finotto","ammazzo")
     }
 
     //METODO FACTORY PER ISTANZIARE IL VIEWMODEL

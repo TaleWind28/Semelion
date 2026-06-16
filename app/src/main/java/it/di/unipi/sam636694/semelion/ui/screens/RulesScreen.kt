@@ -23,19 +23,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import it.di.unipi.sam636694.semelion.utilities.GreenAccent
+
 import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.ui.theme.CardBg
+import it.di.unipi.sam636694.semelion.ui.theme.GreenAccent
 import it.di.unipi.sam636694.semelion.ui.theme.GreenDark
 import it.di.unipi.sam636694.semelion.ui.theme.GreenLight
 import it.di.unipi.sam636694.semelion.ui.theme.GreenMedium
 import it.di.unipi.sam636694.semelion.ui.theme.PageBg
 import it.di.unipi.sam636694.semelion.ui.theme.RedText
-import it.di.unipi.sam636694.semelion.utilities.TextPrimary
-import it.di.unipi.sam636694.semelion.utilities.TextSecondary
-
-// ── Colori tema ──────────────────────────────────────────────
-
+import it.di.unipi.sam636694.semelion.ui.theme.TextPrimary
+import it.di.unipi.sam636694.semelion.ui.theme.TextSecondary
 
 // ════════════════════════════════════════════════════════════
 //  SCHERMATA PRINCIPALE
