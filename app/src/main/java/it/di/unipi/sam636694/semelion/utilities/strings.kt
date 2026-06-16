@@ -10,6 +10,7 @@ data class GameStrings(
     val waitingHint: String
 )
 
+//composable per permettere di usare le stringhe di strings.xml in funzioni non composable
 @Composable
 fun rememberGameStrings() = GameStrings(
     queenHint = stringResource(R.string.queenEffectResolverHint),

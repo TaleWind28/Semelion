@@ -1,16 +1,7 @@
 package it.di.unipi.sam636694.semelion.utilities
-
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import it.di.unipi.sam636694.semelion.R
 
 data class CardInfo(val name: String, val value: Int, val flag: Boolean)
-
-enum class CardSize(val dp: Dp) {
-    SMALL(48.dp),
-    MEDIUM(120.dp),
-    LARGE(150.dp)
-}
 
 fun mapHouse(value:Int):String{
     return when (value){

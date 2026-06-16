@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class SemelionNearbyManager(application: Application): SemelionConnectionManager{
+class SemelionNearbyManager(application: Application){
     var heartbeatJob: Job? = null
     var lastHeartbeat = System.currentTimeMillis()
 
