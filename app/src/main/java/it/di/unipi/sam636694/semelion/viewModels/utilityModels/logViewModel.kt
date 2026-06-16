@@ -18,6 +18,7 @@ class LogViewModel(private val app: Application): AndroidViewModel(application =
     val uiState = _uiState.asStateFlow()
 
     init {
+        //creo la sharedRepo per poter registrare tutte le azioni e vivrà assieme al viewmodel
         viewModelScope.launch{
             SharedRepository.channel.collect{ message ->
                 registerAction(action = message, state = _uiState.value)
@@ -25,6 +26,7 @@ class LogViewModel(private val app: Application): AndroidViewModel(application =
         }
     }
 
+    //registro un'azione aggiungendola allo stato
     fun registerAction(action:String,state: LogUIState){
         //pulisco i log a fine partita
         if (action.toActionData().type=="matchEnded") _uiState.update { LogUIState() }
@@ -34,6 +36,7 @@ class LogViewModel(private val app: Application): AndroidViewModel(application =
             )
         }
     }
+    //traduco le azioni dello stato
     fun translateAction(action: String): String {
         val data = action.toActionData()
         return when (data.type) {
@@ -85,6 +88,7 @@ class LogViewModel(private val app: Application): AndroidViewModel(application =
         }
     }
 
+    //FUNZIONI DI TRADUZIONI
     fun cardName(raw: String): String {
         // Raw è nel formato "XY" dove X è il valore e Y è il seme (es. "7F", "joker_red")
         return when {
