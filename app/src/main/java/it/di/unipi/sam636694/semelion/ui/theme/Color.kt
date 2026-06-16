@@ -12,7 +12,7 @@ val Pink40 = Color(0xFF7D5260)
 
 val GreenAccent   = Color(0xFF3BFF7C)
 
-
+//colori di prova per il background
 val Pergamena = Color(0xFFF5EFE0)
 val SabbiaCalda = Color(0xFFEDE0C8)
 val BeigeMiddio = Color(0xFFD6C9A8)
@@ -39,3 +39,9 @@ val OrangeAccent   = Color(0xFFBF6020)
 val CardBlue      = Color(0xFF2B4FC7)
 val CardRed       = Color(0xFFC72B2B)
 val CardWhite     = Color(0xFFFFFFFF)
+
+val BackgroundLight = Color(0xFFEAF0EA)
+val CardLight      = Color(0xFFFFFFFF)
+val CardDark       = Color(0xFF2D3B2D)
+val TextDark       = Color(0xFF1A1A1A)
+val TextMuted      = Color(0xFF6B7B6B)

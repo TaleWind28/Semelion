@@ -58,7 +58,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.scale
-import it.di.unipi.sam636694.semelion.utilities.CardSize
 import it.di.unipi.sam636694.semelion.utilities.Direction
 import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.ui.states.CardUIStates
@@ -81,36 +80,25 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
-fun FinalGrid(state: GameUIState, model: BaseGameViewModel, cardSize: CardSize = CardSize.SMALL) {
-    Log.d("coinFlip", "FinalGrid ricevuto p1Turn=${state.p1Turn}")
-    // 1. Usiamo BoxWithConstraints per leggere lo spazio disponibile in Dp
+fun FinalGrid(state: GameUIState, model: BaseGameViewModel) {
+    //per garantire una buona visualizzazione su qualsiasi dispositivo, in entrambe le modalità uso una BoxWithCostraint
     BoxWithConstraints(
         modifier = Modifier
-            .fillMaxWidth() // <-- Si prende tutta la larghezza dello schermo
+            .fillMaxWidth()
             .wrapContentHeight(),
-        contentAlignment = Alignment.Center // <-- SPINGE TUTTO AL CENTRO (Orizzontale e Verticale)
+        contentAlignment = Alignment.Center
     ) {
+            //Calcolo width
+            val widthBasedSize = (maxWidth - 16.dp)/7 // Padding orizzontale di CardRow
+            //Calcolo Height
+            //divido l'altezza massima per il numero di righe
+            val maxRowHeight =  (maxHeight - 60.dp)/4 // Padding verticale
 
-        // --- 1. CALCOLO SULLA LARGHEZZA (Ottimale per Portrait) ---
-        val horizontalPaddingSpace = 16.dp // Padding orizzontale di CardRow
-        val availableWidth = maxWidth - horizontalPaddingSpace
-        val widthBasedSize = availableWidth / 7
+            // Convertiamo l'altezza massima della riga nella larghezza corrispondente della carta.
+            val heightBasedSize = maxRowHeight * 0.75f
 
-        // --- 2. CALCOLO SULL'ALTEZZA (Ottimale per Landscape) ---
-        // Contiamo lo spazio verticale occupato da padding/spacer (circa 60.dp totali tra i vari elementi)
-        val verticalPaddingSpace = 60.dp
-        val availableHeight = maxHeight - verticalPaddingSpace
-
-        // Ci sono 4 righe di carte in totale nella Column (2 per ogni giocatore configurato)
-        val maxRowHeight = availableHeight / 4
-
-        // Convertiamo l'altezza massima della riga nella larghezza corrispondente della carta.
-        // Se le tue carte sono proporzionate (es. larghezza è il 75% dell'altezza), moltiplichiamo per 0.75f
-        val heightBasedSize = maxRowHeight * 0.75f
-
-        // --- 3. SCELTA DELLA DIMENSIONE MINORE ---
-        // In portrait userà widthBasedSize, in landscape si bloccherà a heightBasedSize evitando l'effetto "gigante"
-        val dynamicCardSize = minOf(widthBasedSize, heightBasedSize)
+            // In portrait le carte usano width mentre in landscape usano height
+            val dynamicCardSize = minOf(widthBasedSize, heightBasedSize)
 
             val playerConfigs = produceConfigs(state = state, viewModel = model)
             val attentionModifier = { style: Color ->
@@ -130,9 +118,7 @@ fun FinalGrid(state: GameUIState, model: BaseGameViewModel, cardSize: CardSize =
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 playerConfigs.forEachIndexed { index, (isActive, playerRows, style) ->
-                    Log.d("SemelionScreen", "$index")
                     if (index > 0) Spacer(modifier = Modifier.size(8.dp))
-
                     Box(modifier = playerModifier(isActive, style.first)) {
                         Column(verticalArrangement = Arrangement.SpaceEvenly) {
                             playerRows.forEachIndexed { rowIndex, rowItems ->
@@ -142,7 +128,6 @@ fun FinalGrid(state: GameUIState, model: BaseGameViewModel, cardSize: CardSize =
                                     model = model,
                                     rowBackground = style.first.copy(alpha = if (index == 0) 0.15f else 0.08f),
                                     phase = state.phase,
-                                    enabled = true,
                                     cardSize = dynamicCardSize
                                 )
                             }
@@ -194,7 +179,7 @@ fun produceConfigs(state: GameUIState, viewModel: BaseGameViewModel):List<Triple
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewModel, rowBackground: Color, phase: GamePhase, enabled:Boolean, cardSize:Dp) {
+fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewModel, rowBackground: Color, phase: GamePhase, cardSize:Dp) {
 
     val draggableState = remember {
         AnchoredDraggableState(initialValue = 0)
@@ -202,11 +187,12 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
 
     //risoluzione swipe left/right
     LaunchedEffect(draggableState.currentValue) {
-        if (phase !is GamePhase.KingPending || !enabled) return@LaunchedEffect
+        //lo swipe può essere solo effettuato se è stato rivelato un re
+        if (phase !is GamePhase.KingPending) return@LaunchedEffect
         when (draggableState.currentValue) {
             -1 -> {
                 model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex, direction = Direction.LEFT))
-                draggableState.animateTo(0) // ritorna al centro dopo lo swipe
+                draggableState.animateTo(0)
             }
             1 -> {
                 model.processIntent(GameIntent.KingDirectionChosen(rowIndex = rowIndex, direction = Direction.RIGHT))
@@ -245,7 +231,7 @@ fun CardRow(rowIndex: Int, rowItems: List<CardUIStates>, model: BaseGameViewMode
 
                 //risoluzione swipe up/down
                 LaunchedEffect(colState.currentValue) {
-                    if (phase !is GamePhase.QueenPending || !enabled) return@LaunchedEffect
+                    if (phase !is GamePhase.QueenPending) return@LaunchedEffect
                     when (colState.currentValue) {
                         //verso l'alto
                         -1 -> {

@@ -32,9 +32,8 @@ import kotlinx.coroutines.launch
 class SemelionNearbyManager(application: Application): SemelionConnectionManager{
     var heartbeatJob: Job? = null
     var lastHeartbeat = System.currentTimeMillis()
-    // Salvi il riferimento alla coroutine
-    // 1. Definiamo uno Scope legato al SupervisorJob.
-    // Se una coroutine fallisce, non farà crashare l'intero scope.
+
+    // Salvo uno scope dove far eseguire timeout ed heartbeat job, il supervisor evita che crashi l'intero scope in caso di fallimento di una coroutine
     private val managerJob = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.Main + managerJob)
 

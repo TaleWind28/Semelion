@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,19 +40,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import it.di.unipi.sam636694.semelion.R
+import it.di.unipi.sam636694.semelion.ui.theme.BackgroundLight
+import it.di.unipi.sam636694.semelion.ui.theme.GreenDark
+import it.di.unipi.sam636694.semelion.ui.theme.GreenPrimary
+import it.di.unipi.sam636694.semelion.ui.theme.LoserTheme
+import it.di.unipi.sam636694.semelion.ui.theme.TextDark
+import it.di.unipi.sam636694.semelion.ui.theme.TextMuted
+import it.di.unipi.sam636694.semelion.ui.theme.WinnerTheme
 
-//MatchStatistics(
-// matchId=-1,
-// userId= userID, -> name
-// outcome = "still playing...",
-// figureRevealed = 0, -> figuresReveales
-// winner = null, -> isWinner
-// date = startTime, -> timePlayed
-// wasFirstPLayer = true, -> isFirstPlayer
-// totalActions = 0 -> totalMoves
-// )
-
-// ── Data classes ─────────────────────────────────────────────────────────────
 data class DisplayPlayerStats(
     val name: String,
     val timePlayed: String,
@@ -61,15 +57,6 @@ data class DisplayPlayerStats(
     val avatarRes: Int? = null,
     val isWinner: Boolean
 )
-
-// ── Colori ──────────────────────────────────────────────────────────────────
-private val GreenPrimary   = Color(0xFF2ECC40)
-private val GreenDark      = Color(0xFF1A8A2A)
-private val BackgroundLight = Color(0xFFEAF0EA)
-private val CardLight      = Color(0xFFFFFFFF)
-private val CardDark       = Color(0xFF2D3B2D)
-private val TextDark       = Color(0xFF1A1A1A)
-private val TextMuted      = Color(0xFF6B7B6B)
 
 @Composable
 fun MatchStatScreen(
@@ -143,9 +130,6 @@ fun MatchStatScreen(
     }
 }
 
-
-// ── Componenti interni ───────────────────────────────────────────────────────
-
 @Composable
 private fun Banner() {
     Box(
@@ -157,7 +141,7 @@ private fun Banner() {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text ="THE WINNER IS ... ",
+            text = stringResource(R.string.winnerBanner),
             fontSize = 32.sp,
             fontWeight = FontWeight.ExtraBold,
             fontStyle = FontStyle.Italic,
@@ -235,7 +219,7 @@ private fun BottomButtons(
             colors = ButtonDefaults.buttonColors(containerColor = GreenDark)
         ) {
             Text(
-                text = "⚔ New Battle",
+                text = "⚔ New Game",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -250,7 +234,7 @@ private fun BottomButtons(
             border = BorderStroke(1.5.dp, Color(0xFFCCCCCC))
         ) {
             Text(
-                text = "🏠 Back to Base",
+                text = "🏠 Back Home",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
                 color = TextDark
@@ -259,7 +243,6 @@ private fun BottomButtons(
     }
 }
 
-// ── Composable unificato ──────────────────────────────────────────────────────
 @Composable
 fun PlayerResultCard(
     stats: DisplayPlayerStats,
@@ -365,46 +348,6 @@ fun PlayerResultCard(
         }
     }
 }
-
-
-private data class MatchSummaryCardTheme(
-    val containerColor: Color,
-    val borderStroke: BorderStroke?,
-    val nameColor: Color,
-    val statusText: String,
-    val statusColor: Color,
-    val timeLabelColor: Color,
-    val timeValueColor: Color,
-    val dividerColor: Color,
-    val statLabelColor: Color,
-    val statValueColor: Color
-)
-
-private val WinnerTheme = MatchSummaryCardTheme(
-    containerColor  = CardLight,
-    borderStroke    = BorderStroke(2.dp, GreenPrimary),
-    nameColor       = Color.Black,
-    statusText      = "WINNER",
-    statusColor     = GreenPrimary,
-    timeLabelColor  = TextMuted,
-    timeValueColor  = TextDark,
-    dividerColor    = Color(0xFFDDEEDD),
-    statLabelColor  = TextMuted,
-    statValueColor  = TextDark
-)
-
-private val LoserTheme = MatchSummaryCardTheme(
-    containerColor  = CardDark,
-    borderStroke    = null,
-    nameColor       = Color.White,
-    statusText      = "DEFEATED",
-    statusColor     = Color(0xFFFF6B6B),
-    timeLabelColor  = Color(0xFF8FA88F),
-    timeValueColor  = Color.White,
-    dividerColor    = Color(0xFF3D4D3D),
-    statLabelColor  = Color(0xFF8FA88F),
-    statValueColor  = Color.White
-)
 
 @Preview(showBackground = true, widthDp = 380, heightDp = 900)
 @Composable

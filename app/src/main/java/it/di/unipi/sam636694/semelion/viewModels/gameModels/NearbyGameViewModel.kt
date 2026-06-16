@@ -100,11 +100,10 @@ class NearbyGameViewModel(
     fun onDisconnected() {
         if (_uiState.value.phase is GamePhase.GameOver) return
 
-// controllare bene ->
-//        if (_uiState.value.phase !is GamePhase.Disconnected){
-//            _uiState.update { it.copy(phase = GamePhase.Disconnected) }
-//            return
-//        }
+        if (_uiState.value.phase !is GamePhase.Disconnected){
+            _uiState.update { it.copy(phase = GamePhase.Disconnected) }
+            return
+        }
 
         disconnect()
         //update di _connectionState

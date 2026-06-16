@@ -112,5 +112,7 @@
     <string name="opponentKingRevealed">l\'avversario ha rivelato il Re e può swipare una riga</string>
 
 
+    <!-- NavigationScreens-->
 
+    <string name="winnerBanner">THE WINNER IS …</string>
 </resources>

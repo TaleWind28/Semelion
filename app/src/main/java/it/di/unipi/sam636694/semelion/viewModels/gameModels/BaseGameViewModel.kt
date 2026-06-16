@@ -263,7 +263,7 @@ abstract class BaseGameViewModel(
 
                     currentId to figureSwap(currentId, nextCard.name, currentState, "Jack' chain")
                 }.second
-            val modifiedState = applyAndValidate(swappedState,swaps)
+            val modifiedState = applyAndValidate(swappedState,(0..27).toList())
             actionCounter(modifiedState,modifiedState.grid.chunked(7))
         }
 

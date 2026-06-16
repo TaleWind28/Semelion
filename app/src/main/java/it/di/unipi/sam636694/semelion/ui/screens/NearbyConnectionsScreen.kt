@@ -117,9 +117,7 @@ fun SemelionConnectionsScreen(
     ) {
         DiscoveryScreen(nvm)
     } else {
-//        LaunchedEffect(Unit) {
             onGameReady()
-//        }
     }
 }
 

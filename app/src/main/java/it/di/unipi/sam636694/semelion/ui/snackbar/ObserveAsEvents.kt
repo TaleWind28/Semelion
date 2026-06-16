@@ -8,7 +8,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-
+//Preso dal tutorial di Philippe lackner :
+//https://www.youtube.com/watch?v=KFazs62lIkE
 @Composable
 fun <T> ObserveAsEvents(
     flow: Flow<T>,

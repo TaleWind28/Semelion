@@ -14,5 +14,5 @@ data class GameStrings(
 fun rememberGameStrings() = GameStrings(
     queenHint = stringResource(R.string.queenEffectResolverHint),
     kingHint = stringResource(R.string.kingEffectResolverHint),
-    waitingHint = stringResource(R.string.opponentTurnNotice)
+    waitingHint = stringResource(R.string.opponentTurnNotice),
 )

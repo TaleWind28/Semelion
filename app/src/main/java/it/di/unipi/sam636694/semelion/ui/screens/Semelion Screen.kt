@@ -43,7 +43,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import it.di.unipi.sam636694.semelion.utilities.CardSize
 import it.di.unipi.sam636694.semelion.utilities.GreenAccent
 import it.di.unipi.sam636694.semelion.R
 import it.di.unipi.sam636694.semelion.utilities.TextSecondary
@@ -67,7 +66,6 @@ fun SemelionScreen(
     val dbOperationCompleted by viewModel.isDBOperationComplete.collectAsState()
     val goBack by viewModel.wantsToGoBack.collectAsState()
     var showExitDialog by remember { mutableStateOf(false) }
-    var hasNavigatedBack by remember { mutableStateOf(false) }
 
     //configurazioni per i giocatori
     val conf = when(viewModel){
@@ -165,37 +163,19 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
                 is SemelionGameViewModel -> viewModel.matchEnd(GameModes.ScreenSharing)
                 else -> {}
             }
-
             //victory fanfare ff7 a cappela
-//            Log.d("winner","winner:${state.winner}\nuuid:${viewModel.userID}")
-
-            val gameoverText = resolveGameoverText(state.winner,viewModel)
-//            viewModel.playEndSound()
-
+//            val gameoverText = resolveGameoverText(state.winner,viewModel)
             onBack()
         }
+        //disconnessione
         is GamePhase.Disconnected ->{
-
-            LaunchedEffect(Unit) {
-                if (viewModel is NearbyGameViewModel) {
-                    viewModel.disconnect()
-                }
-                viewModel.player.stop()
-                onBack()
+            if (viewModel is NearbyGameViewModel) {
+                viewModel.disconnect()
             }
-
-            BasicAlertDialog(onDismissRequest = {viewModel.player.stop()}) {
-                Surface(shape = RoundedCornerShape(16.dp)) {
-                    Column {
-                        Text(
-                            text = "La connessione è stata persa, la partità verrà registrata come un pareggio",
-                            modifier = Modifier.padding(24.dp),
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                    }
-                }
-            }
+            viewModel.player.stop()
+            onBack()
         }
+        //messaggio in caso di scoperta del jack
         is GamePhase.JackMadness -> {
             if (state.jackSwaps.size == 1) {
                 BasicAlertDialog(onDismissRequest = {viewModel.processIntent(GameIntent.JackMadness(state.jackSwaps))}) {
@@ -225,14 +205,14 @@ fun Dialogs(state: GameUIState, viewModel: BaseGameViewModel,onBack:()-> Unit) {
     }
 }
 
-fun resolveGameoverText(winner: String?, viewModel: BaseGameViewModel): String {
-    val isMultiplayer = viewModel is SemelionGameViewModel
-    return when (winner) {
-        viewModel.userID -> if (isMultiplayer) "Vince il giocatore Blu" else "Complimenti hai vinto!!"
-        viewModel.secondPlayerId -> if (isMultiplayer) "Vince il giocatore Rosso" else "Peccato, andrà meglio la prossima volta..."
-        else -> "Wow, è stato uno scontro ad armi pari"
-    }
-}
+//fun resolveGameoverText(winner: String?, viewModel: BaseGameViewModel): String {
+//    val isMultiplayer = viewModel is SemelionGameViewModel
+//    return when (winner) {
+//        viewModel.userID -> if (isMultiplayer) "Vince il giocatore Blu" else "Complimenti hai vinto!!"
+//        viewModel.secondPlayerId -> if (isMultiplayer) "Vince il giocatore Rosso" else "Peccato, andrà meglio la prossima volta..."
+//        else -> "Wow, è stato uno scontro ad armi pari"
+//    }
+//}
 
 @Composable
 fun GameScreen(
@@ -252,7 +232,6 @@ fun GameScreen(
                 Landscape(
                     viewModel = viewModel,
                     state = state,
-                    cardSize = CardSize.LARGE,
                     conf = conf
                 )
             }
@@ -270,7 +249,6 @@ fun GameScreen(
 @Composable
 fun Landscape(
     conf:Pair<Triple<Int,Int, Boolean>,Triple<Int,Int, Boolean>>,
-    cardSize: CardSize = CardSize.LARGE,
     viewModel: BaseGameViewModel,
     state: GameUIState
 ){
@@ -292,7 +270,7 @@ fun Landscape(
             avatar = viewModel.secondPlayerAvatar ?: R.drawable.avatar_12
         )
 
-        FinalGrid(state = state, model = viewModel, cardSize = cardSize)
+        FinalGrid(state = state, model = viewModel)
 
         //giocatore
         OpponentHeader(
@@ -309,7 +287,6 @@ fun Landscape(
 @Composable
 fun Portrait(
     conf:Pair<Triple<Int,Int, Boolean>,Triple<Int,Int, Boolean>>,
-    cardSize: CardSize = CardSize.SMALL,
     viewModel: BaseGameViewModel,
     state: GameUIState
 ) {
@@ -336,7 +313,7 @@ fun Portrait(
 
         Spacer(Modifier.size(32.dp))
 
-        FinalGrid(state = state, model = viewModel, cardSize = cardSize)
+        FinalGrid(state = state, model = viewModel)
 
         Spacer(Modifier.size(32.dp))
 

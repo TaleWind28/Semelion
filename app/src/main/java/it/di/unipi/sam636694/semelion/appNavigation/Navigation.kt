@@ -171,15 +171,10 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                             viewModel=viewModel,
                             logViewModel = lvm,
                             onNavigateBack = {
-//                                while (backStack.lastOrNull() != Route.Home){
-//                                    backStack.removeLastOrNull()
-//                                }
-
                                 compactNavigation(
                                     backStack,
                                     Route.MatchStatScreen(viewModel,Route.ScreenSharingGame)
                                 )
-//                                backStack.add(Route.MatchStatScreen(viewModel,Route.ScreenSharingGame))
                             }
                         )
                     }
@@ -269,6 +264,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                         },
                         onNewGame = {
                             key.viewModel.player.stop()
+                            key.viewModel.setup()
                             compactNavigation(backStack,key.backRoute)
                         }
                     )
