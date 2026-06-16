@@ -215,27 +215,30 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
 
                 }
 
-                is Route.SemelionNearbyGame -> NavEntry(key){
+                is Route.SemelionNearbyGame -> NavEntry(key) {
                     NavigationUIApp(
-                            snackBarHostState = snackBarHostState,
-                            db = db,
-                            viewModel=key.viewModel,
-                            logViewModel = lvm,
-                            onNavigateBack = {
-                                compactNavigation(backStack,Route.MatchStatScreen(key.viewModel,Route.SemelionConnections))
-                            }
+                        snackBarHostState = snackBarHostState,
+                        db = db,
+                        viewModel = key.viewModel,
+                        logViewModel = lvm,
+                        onNavigateBack = {
+                            compactNavigation(
+                                backStack,
+                                Route.MatchStatScreen(key.viewModel, Route.SemelionConnections)
+                            )
+                        }
                     )
                 }
 
-                is Route.MatchStatScreen -> NavEntry(key){
+                is Route.MatchStatScreen -> NavEntry(key) {
 
                     val p1Stats = key.viewModel.matchSummary.collectAsState().value.first
                     val p2Stats = key.viewModel.matchSummary.collectAsState().value.second
 
-                    Log.d("MatchStat","p1Stats:$p1Stats\np2Stats:$p2Stats")
+                    Log.d("MatchStat", "p1Stats:$p1Stats\np2Stats:$p2Stats")
 
                     val p2Display = DisplayPlayerStats(
-                        name= key.viewModel.opponentName,
+                        name = key.viewModel.opponentName,
                         timePlayed = p2Stats.date.toString(),
                         figuresRevealed = p2Stats.figureRevealed,
                         totalMoves = p2Stats.totalActions,
@@ -244,7 +247,7 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                         isWinner = p2Stats.winner ?: false
                     )
                     val p1Display = DisplayPlayerStats(
-                        name= key.viewModel.playerName,
+                        name = key.viewModel.playerName,
                         timePlayed = p1Stats.date.toString(),
                         figuresRevealed = p1Stats.figureRevealed,
                         totalMoves = p1Stats.totalActions,
@@ -256,15 +259,17 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                     key.viewModel.playEndSound()
 
                     MatchStatScreen(
-                        winnerStats= if (p1Stats.winner==null || p1Stats.winner) p1Display else p2Display,
-                        loserStats= if (p1Stats.winner==null || p1Stats.winner) p2Display else p1Display,
+                        winnerStats = if (p1Stats.winner == null || p1Stats.winner) p1Display else p2Display,
+                        loserStats = if (p1Stats.winner == null || p1Stats.winner) p2Display else p1Display,
                         onHome = {
-                            while (backStack.lastOrNull() != Route.Home){
+                            key.viewModel.player.stop()
+                            while (backStack.lastOrNull() != Route.Home) {
                                 backStack.removeLastOrNull()
                             }
                         },
                         onNewGame = {
-                            key.backRoute
+                            key.viewModel.player.stop()
+                            compactNavigation(backStack,key.backRoute)
                         }
                     )
                 }
