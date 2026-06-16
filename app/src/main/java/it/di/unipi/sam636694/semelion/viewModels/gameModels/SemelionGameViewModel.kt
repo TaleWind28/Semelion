@@ -1,7 +1,6 @@
 package it.di.unipi.sam636694.semelion.viewModels.gameModels
 
 import android.app.Application
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -39,6 +38,7 @@ class SemelionGameViewModel(
     init {
         setup()
     }
+    //variabili per la riesumazione delle partite
     private var wasResumed = false
 
     var suspendedFound by mutableStateOf(false)
@@ -48,7 +48,9 @@ class SemelionGameViewModel(
     private var resumedMatchState: GameUIState = GameUIState()
 
     override fun setup(){
+        //creo i mazzi
         val decks = createDecks()
+        //aggiorno lo stato di gioco
         _uiState.value = GameUIState(
             grid = decks.first,
             uncoverDeck = decks.second,
@@ -57,16 +59,19 @@ class SemelionGameViewModel(
         //imposto il primo giocatore
         setFirstPlayer()
         viewModelScope.launch {
+            //se sono in fase di caricamento oltre a impostare i giocatori controllo se esistono partite sospese
             if (_uiState.value.phase is GamePhase.Loading){
                 super.playerName = userDao.getUserById(userID)?.nickName ?: "Player 1"
                 firstPlayerAvatar = userDao.getUserById(userID)?.avatar
                 secondPlayerAvatar = R.drawable.sora_avatar
                 val suspendedMatch = matchesDao.getSuspendedMatch()
                 if ( suspendedMatch == null) {
+                    //se non esistono inizio una partita normale
                     matchStart(GameModes.ScreenSharing)
                     _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }
                 }
                 else{
+                    //altrimenti lo notifico all'utente e attendo
                     resumedMatchId = suspendedMatch.matchId
                     resumedMatchState = suspendedMatch.gameState
                     suspendedFound = true
@@ -75,19 +80,18 @@ class SemelionGameViewModel(
         }
     }
 
+    //riprendo un match
     fun resumeMatch(){
         wasResumed = true
         _uiState.update { resumedMatchState }
     }
 
+    //creo una nuova partita
     fun newMatch(){
         viewModelScope.launch {
-            Log.d("finn","cerco:$resumedMatchId")
-
+            //cancello il match rimasto sospeso se era presente
             endResumedMatch()
-
             matchesDao.update(Matches(matchId = resumedMatchId, GameModes.ScreenSharing,resumedMatchState, isCompleted = true))
-
             matchStart(GameModes.ScreenSharing)
 
             _uiState.update { it.copy(phase = GamePhase.PlayerTurn) }
@@ -141,14 +145,16 @@ class SemelionGameViewModel(
 
     }
 
+    //termino il match
     override fun matchEnd(mode: GameModes,loser:String?,resumedMatchId:Long?) {
-        Log.d("DBMS","resumed:$wasResumed, $resumedMatchId")
-        super.matchEnd(mode, loser, resumedMatchId = if (wasResumed) this.resumedMatchId else null)
+       super.matchEnd(mode, loser, resumedMatchId = if (wasResumed) this.resumedMatchId else null)
     }
 
+    //non è servito distruggere il vm ma ovviamente la funzione deve essere implementata
     override fun destroy() {
     }
 
+    //METODO FACTORY PER ISTANZIARE IL VIEWMODEL
     companion object {
         fun factory(
             matchesDao: MatchesDao,
