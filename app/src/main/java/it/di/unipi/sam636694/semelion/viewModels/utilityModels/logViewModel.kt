@@ -84,14 +84,16 @@ class LogViewModel(private val app: Application): AndroidViewModel(application =
 
             "addedFromUncover" -> {
                 val card = data.outcome.first()
-                if (card.name.dropLast(1) == "7") app.getString(R.string.semelionLogUncover7Added, cardName(card.name))
+                if (card.name.dropLast(1) == "7")
+                    //bug della consegna: mi ero dimenticato di restituire un LogEvent
+                    LogEvent(EventType.RIMPIAZZO,"RIMPIAZZO",app.getString(R.string.semelionLogUncover7Added, cardName(card.name)))
                 else
                     LogEvent(EventType.RIMPIAZZO,app.getString(R.string.semelionLogReplaceTitle),app.getString(R.string.semelionLogUncoverNot7Added, cardName(card.name), card.value))
             }
 
             else ->
                 LogEvent(EventType.RIMPIAZZO,"BHOOO", app.getString(R.string.semelionUnrecognizedAction,data.type))
-        } as LogEvent
+        }
     }
 
     //FUNZIONI DI TRADUZIONI

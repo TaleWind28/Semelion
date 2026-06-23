@@ -2,7 +2,6 @@ package it.di.unipi.sam636694.semelion.appNavigation
 
 import it.di.unipi.sam636694.semelion.ui.screens.SemelionConnectionsScreen
 import android.app.Application
-import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.BasicAlertDialog
@@ -30,7 +29,6 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import it.di.unipi.sam636694.semelion.database.SemelionDB
-import it.di.unipi.sam636694.semelion.ui.screens.DisplayPlayerStats
 import it.di.unipi.sam636694.semelion.ui.screens.MatchStatScreen
 import it.di.unipi.sam636694.semelion.ui.states.GamePhase
 import kotlin.collections.listOf
@@ -43,6 +41,7 @@ import it.di.unipi.sam636694.semelion.ui.screens.WelcomeBottomSheet
 import it.di.unipi.sam636694.semelion.utilities.AudioPlayer
 import it.di.unipi.sam636694.semelion.viewModels.gameModels.NearbyGameViewModel
 import it.di.unipi.sam636694.semelion.viewModels.utilityModels.LogViewModel
+import it.di.unipi.sam636694.semelion.viewModels.utilityModels.MatchViewModel
 import it.di.unipi.sam636694.semelion.viewModels.utilityModels.UserProfileViewModel
 import kotlinx.coroutines.launch
 import kotlin.String
@@ -63,6 +62,15 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
             }
         }
     )
+    // aggiunta per correzione bug dopo consegna: -> mvm che consente di visualizzare le stat dei giocartori a fine partita
+    val mvm: MatchViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer {
+                MatchViewModel(appContext)
+            }
+        }
+    )
+
 
     //creo un NavDisplay per consentire la navigazione
     //Mix del tutorial di Philippe Lackner su youtube e android Developer anche se prevalentemente segue il tutorial
@@ -179,9 +187,11 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                             viewModel=viewModel,
                             logViewModel = lvm,
                             onNavigateBack = {
+                                viewModel.playEndSound()
+                                mvm.retrieveEndGameStatsInfo(viewModel)
                                 compactNavigation(
                                     backStack,
-                                    Route.MatchStatScreen(viewModel,Route.ScreenSharingGame)
+                                    Route.MatchStatScreen(Route.ScreenSharingGame)
                                 )
                             }
                         )
@@ -226,55 +236,35 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                         viewModel = key.viewModel,
                         logViewModel = lvm,
                         onNavigateBack = {
+                            key.viewModel.player.stop()
+                            key.viewModel.playEndSound()
+                            mvm.retrieveEndGameStatsInfo(key.viewModel)
                             compactNavigation(
                                 backStack,
-                                Route.MatchStatScreen(key.viewModel, Route.SemelionConnections)
+                                Route.MatchStatScreen(Route.SemelionConnections)
                             )
                         }
                     )
                 }
 
                 is Route.MatchStatScreen -> NavEntry(key) {
+                    //bug nella consegna, lo schermo non sopravviveva alla rotazione dello schermoù
+                    // -> Ho risolto aggiungendo un viewModel dedicato e togliendo di conseguenza il viewmodel nella route
+                    // Rendendo così Serializable la rotta, inoltre ho spostato la creazione dei "display" per le stat dei giocatori nel vm stesso
+                    val matchStatState = mvm.uiState.collectAsState().value
+                    if (matchStatState.p1Stats == null || matchStatState.p2Stats == null) return@NavEntry
                     //schermo di fine partita con le statistiche dei giocatori
-
-                    val p1Stats = key.viewModel.matchSummary.collectAsState().value.first
-                    val p2Stats = key.viewModel.matchSummary.collectAsState().value.second
-
-                    Log.d("MatchStat", "p1Stats:$p1Stats\np2Stats:$p2Stats")
-
-                    val p2Display = DisplayPlayerStats(
-                        name = key.viewModel.opponentName,
-                        timePlayed = (System.currentTimeMillis() - p1Stats.date).toString(),
-                        figuresRevealed = p2Stats.figureRevealed,
-                        totalMoves = p2Stats.totalActions,
-                        isFirstPlayer = p2Stats.wasFirstPLayer,
-                        avatarRes = key.viewModel.secondPlayerAvatar,
-                        isWinner = p2Stats.winner ?: false
-                    )
-                    val p1Display = DisplayPlayerStats(
-                        name = key.viewModel.playerName,
-                        timePlayed = (System.currentTimeMillis() - p1Stats.date).toString(),
-                        figuresRevealed = p1Stats.figureRevealed,
-                        totalMoves = p1Stats.totalActions,
-                        isFirstPlayer = p1Stats.wasFirstPLayer,
-                        avatarRes = key.viewModel.firstPlayerAvatar,
-                        isWinner = p1Stats.winner ?: false
-                    )
-
-                    key.viewModel.playEndSound()
-
+                    val winner = if (matchStatState.p1Wins) matchStatState.p1Stats else matchStatState.p2Stats
+                    val loser = if (!matchStatState.p1Wins) matchStatState.p1Stats else matchStatState.p2Stats
                     MatchStatScreen(
-                        winnerStats = if (p1Stats.winner == null || p1Stats.winner) p1Display else p2Display,
-                        loserStats = if (p1Stats.winner == null || p1Stats.winner) p2Display else p1Display,
+                        winnerStats = winner,
+                        loserStats = loser,
                         onHome = {
-                            key.viewModel.player.stop()
                             while (backStack.lastOrNull() != Route.Home) {
                                 backStack.removeLastOrNull()
                             }
                         },
                         onNewGame = {
-                            key.viewModel.player.stop()
-                            key.viewModel.setup()
                             compactNavigation(backStack,key.backRoute)
                         }
                     )
@@ -296,3 +286,4 @@ fun compactNavigation(backStack: NavBackStack<NavKey>,route: Route){
     }
     backStack.add(route)
 }
+
