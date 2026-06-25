@@ -23,8 +23,6 @@ sealed interface Route: NavKey {
     @Serializable
     data object ProfilePage : Route
 
-    data class SemelionNearbyGame(val viewModel: NearbyGameViewModel) : Route
-
     @Serializable
     data class MatchStatScreen(val backRoute: Route): Route
 }

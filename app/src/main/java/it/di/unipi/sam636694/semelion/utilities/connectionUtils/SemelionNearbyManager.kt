@@ -118,7 +118,7 @@ class SemelionNearbyManager(application: Application){
         connectionTimeoutJob?.cancel()
         stopHeartbeat()
         _connectionState.update {
-            ConnectionUiState() // reset completo
+            ConnectionUiState(gameStarted = it.gameStarted) // reset completo
         }
     }
 

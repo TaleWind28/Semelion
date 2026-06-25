@@ -215,36 +215,40 @@ fun SemelionNavigation(snackBarHostState: SnackbarHostState, db: SemelionDB, pla
                             application = LocalContext.current.applicationContext as Application,
                         )
                     )
-                    //schermo per connettersi
-                    SemelionConnectionsScreen(
-                        userId = userID,
-                        db=db,
-                        nvm = nvm,
-                        onGameReady = {
-                            //navigo verso la schermata di gioco
-                            backStack.add(Route.SemelionNearbyGame(nvm))
-                        }
-                    )
 
-                }
+                    val connectionState by nvm.connectionManager.connectionState.collectAsState()
+                    val gameState by nvm.uiState.collectAsState()
 
-                is Route.SemelionNearbyGame -> NavEntry(key) {
-                    //partita di Semelion in NearbyConnections
-                    NavigationUIApp(
-                        snackBarHostState = snackBarHostState,
-                        db = db,
-                        viewModel = key.viewModel,
-                        logViewModel = lvm,
-                        onNavigateBack = {
-                            key.viewModel.player.stop()
-                            key.viewModel.playEndSound()
-                            mvm.retrieveEndGameStatsInfo(key.viewModel)
-                            compactNavigation(
-                                backStack,
-                                Route.MatchStatScreen(Route.SemelionConnections)
-                            )
-                        }
-                    )
+                    if (
+                        !connectionState.gameStarted &&
+                        (
+                                gameState.grid.isEmpty() ||
+                                (connectionState.connectedEndpointId == null  && connectionState.isHost) ||
+                                (!connectionState.received && !connectionState.isHost)
+                        )
+                    ){
+                        //schermo per connettersi
+                        SemelionConnectionsScreen(
+                            userId = userID,
+                            db=db,
+                            nvm = nvm,
+                        )
+                    }else{
+                        NavigationUIApp(
+                            snackBarHostState = snackBarHostState,
+                            db = db,
+                            viewModel = nvm,
+                            logViewModel = lvm,
+                            onNavigateBack = {
+                                nvm.playEndSound()
+                                mvm.retrieveEndGameStatsInfo(nvm)
+                                compactNavigation(
+                                    backStack,
+                                    Route.MatchStatScreen(Route.SemelionConnections)
+                                )
+                            }
+                        )
+                    }
                 }
 
                 is Route.MatchStatScreen -> NavEntry(key) {

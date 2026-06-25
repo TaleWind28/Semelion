@@ -39,18 +39,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         //recupero le preferenze di sistema
         prefs = getSharedPreferences("settings", MODE_PRIVATE)
-
         enableEdgeToEdge()
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-
         windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-
         //Nasconde sia la Status Bar (alto) che la Navigation Bar (basso)
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
-
         setContent {
                 SemelionTheme {
                     //creo uno stato per la snackbar
@@ -86,8 +81,6 @@ class MainActivity : ComponentActivity() {
                             delay(SNACKBAR_DELAY_TIME)
                             job.cancel()
                         }
-
-
                     }
                     //schermata principale SemelionNavigation dalla quale si accede alle varie modalità
                     SemelionNavigation(

@@ -65,7 +65,6 @@ fun SemelionConnectionsScreen(
     db: SemelionDB,
     userId: String,
     nvm: NearbyGameViewModel,
-    onGameReady: () -> Unit,
 ) {
     val requiredPermissions = remember {
         buildList {
@@ -104,21 +103,7 @@ fun SemelionConnectionsScreen(
         }
     }
 
-    val connectionState by nvm.connectionManager.connectionState.collectAsState()
-    val gameState by nvm.uiState.collectAsState()
-
-    if (
-        !connectionState.gameStarted &&
-        (
-            gameState.grid.isEmpty() ||
-            (connectionState.connectedEndpointId == null  && connectionState.isHost) ||
-            (!connectionState.received && !connectionState.isHost)
-        )
-    ) {
-        DiscoveryScreen(nvm)
-    } else {
-            onGameReady()
-    }
+    DiscoveryScreen(nvm)
 }
 
 
