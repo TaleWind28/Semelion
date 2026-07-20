@@ -1069,6 +1069,7 @@ abstract class BaseGameViewModel(
 
         //ottengo le statistiche del player dal db
         val playerStats: PlayerStatistics? = playersStatisticsDao.getStatsByUser(userId)
+        Log.d("stats","${playerStats?.bestStreak}")
 
         //se non ho la riga allora la creo con le stats ottenute attualmente
         if (playerStats == null ){
@@ -1196,6 +1197,7 @@ abstract class BaseGameViewModel(
             secondPlayerId -> R.raw.gameover
             else -> R.raw.there
         }
+        player.stop()
         player.playFile(sound)
     }
 
